@@ -1,0 +1,40 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: webhook-validation-cr
+rules:
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+    - validatingwebhookconfigurations
+  verbs:
+    - list
+    - patch
+    - get
+  resourceNames:
+    - sre-validate-webhook
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+    - validatingwebhookconfigurations
+  verbs:
+    - list
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: validation-webhook
+  namespace: validation-webhook
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: webhook-validation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: webhook-validation-cr
+subjects:
+  - kind: ServiceAccount
+    name: validation-webhook
+    namespace: validation-webhook

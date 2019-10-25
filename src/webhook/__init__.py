@@ -1,0 +1,9 @@
+from flask import Flask
+from flask import request
+
+app = Flask(__name__,instance_relative_config=True)
+
+from webhook import group_validation
+app.register_blueprint(group_validation.bp)
+
+# invoke: gunicorn --workers 5 --bind 0.0.0.0:5000 webhook
