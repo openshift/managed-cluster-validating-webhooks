@@ -12,6 +12,14 @@ Configuration for this webhook is provided by environment variables:
 * `GROUP_VALIDATION_ADMIN_GROUP` - Admin group, which the requestor must be a member in order to have access granted.
 * `DEBUG_GROUP_VALIDATION` - Debug the webhook? Set to `True` to enable, all other values (including absent) disable.
 
+## How it works
+
+In order for a validating webhook to talk to the code which is performing the validation (eg, the code in this repository), which is running in-cluster, Kubernetes needs to talk to it via a `Service` over HTTPS. This forces the Python Flask app to serve itself with a TLS certificate and the corresponding webhook configuration to specify the CA Bundle (`caBundle`) that matches up for those TLS certs.
+
+The TLS cert is provisioned by using the [openshift-ca-operator](https://github.com/openshift/service-ca-operator). Refer to its documentation for how TLS keys are requested and stored. See also: [02-webhook-cacert.configmap.yaml.tmpl](/templates/02-webhook-cacert.configmap.yaml.tmpl) and [05-group-validation-webhook.service.yaml.tmpl](/templates/05-group-validation-webhook.service.yaml.tmpl).
+
+Getting the TLS certificates is only part of the battle, as the operator does not inject them into the `ValidatingWebhookConfiguration`. To accomplish that, a small Python script has been written that is used as an `initContainer` in the Deployment of the webhook framework. The "injector" script, when run, will find all `ValidatingWebhookConfiguration` objects with an `managed.openshift.io/inject-cabundle-from` annotation. The annotation's value is in the format `namespace/configmap` from whence the CA Bundle can be found (as the key `service-ca.crt`). Thus an annotation `managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert` will have the "injector" script look in the `openshift-validation-webhook` `Namespace` for the `webhook-cert` `ConfigMap` to contain a `service-ca.crt` key and therein, a PEM encoded certificate. The certificate is base64-encoded and set as the `caBundle` for each webhook defined in the `ValidatingWebhookConfiguration`.
+
 ## Development
 
 ### Adding New Webhooks

@@ -23,13 +23,6 @@ spec:
         - /app/init.py
         - -a
         - #VWC_ANNOTATION#
-        volumeMounts:
-        - name: service-certs
-          mountPath: /service-certs
-          readOnly: true
-        - name: service-ca
-          mountPath: /service-ca
-          readOnly: true
       containers:
       - image: #IMG#:#IMAGETAG#
         imagePullPolicy: Always
