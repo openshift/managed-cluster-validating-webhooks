@@ -2,21 +2,36 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: validation-webhook
-    deployment: validation-webhook
-  name: validation-webhook
-  namespace: validation-webhook
+    app: #SVCNAME#
+    deployment: #SVCNAME#
+  name: #SVCNAME#
+  namespace: #NAMESPACE#
 spec:
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: validation-webhook
+        app: #SVCNAME#
     spec:
-      serviceAccountName: validation-webhook
+      serviceAccountName: #SANAME#
+      initContainers:
+      - image: #IMG#:#IMAGETAG#
+        name: inject-cert
+        command:
+        - python
+        - /app/init.py
+        - -a
+        - #VWC_ANNOTATION#
+        volumeMounts:
+        - name: service-certs
+          mountPath: /service-certs
+          readOnly: true
+        - name: service-ca
+          mountPath: /service-ca
+          readOnly: true
       containers:
-      - image: quay.io/lseelye/python3-webhookbase:latest
+      - image: #IMG#:#IMAGETAG#
         imagePullPolicy: Always
         command: 
         - gunicorn
@@ -45,7 +60,7 @@ spec:
       volumes:
         - name: service-certs
           secret:
-            secretName: webhook-cert
+            secretName: #CABUNDLECONFIGMAP#
         - name: service-ca
           configMap:
-            name: webhook-cert
+            name: #CABUNDLECONFIGMAP#

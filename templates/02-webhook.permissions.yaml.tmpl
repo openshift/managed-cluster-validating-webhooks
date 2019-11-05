@@ -22,8 +22,8 @@ rules:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: validation-webhook
-  namespace: openshift-validation-webhook
+  name: #SANAME#
+  namespace: #NAMESPACE#
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -35,5 +35,5 @@ roleRef:
   name: webhook-validation-cr
 subjects:
   - kind: ServiceAccount
-    name: validation-webhook
-    namespace: openshift-validation-webhook
+    name: #SANAME#
+    namespace: #NAMESPACE#

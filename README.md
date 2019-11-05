@@ -18,6 +18,62 @@ Configuration for this webhook is provided by environment variables:
 
 In order to add new webhooks, create a new Python file in [src/webhook](src/webhook), following the pattern from [src/webhook/group_validation.py](src/webhook/group_validation.py). Add an entry to [src/webhook/__init__.py](src/webhook/__init__.py) in the pattern of the group validation webhook.
 
+#### Register with the Flask application
+
+To register your webhook with the Flask app:
+
+```python
+# src/webhook/__init__.py
+from flask import Flask
+from flask import request
+
+app = Flask(__name__,instance_relative_config=True)
+
+from webhook import group_validation
+app.register_blueprint(group_validation.bp)
+
+from webhook import your_hook
+app.register_blueprint(your_hook.bp)
+```
+
+#### Adding YAML Manifests
+
+To add a new YAML Manifest:
+
+Create a new file in [templates](/templates) directory with a `10-` prefix, ex `10-your-hook.ValidatingWebhookConfiguration.yaml.tmpl` with contents:
+
+```yaml
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata: 
+  name: your-webhook-name-here
+  annotations:
+    # Typically  managed.openshift.io/inject-cabundle-from: namespace/configmap
+    # The configmap must have the cert in PEM format in a key named service-ca.crt.
+    # Each webhook in this object with a service clientConfig will have the bundle injected.
+    #VWC_ANNOTATION#: #NAMESPACE#/#CABUNDLECONFIGMAP#
+webhooks:
+  - clientConfig:
+      service:
+        namespace: #NAMESPACE#
+        name: #SVCNAME#
+        path: /your-webhook
+    failurePolicy:
+      # What to do if the hook itself fails (Ignore/Fail)
+    name: your-webhook.managed.openshift.io
+    rules:
+      - operations:
+          # operations list
+        apiGroups:
+          # apiGroups list
+        apiVersions:
+          # apiVersions list
+        resources:
+          # resources List
+```
+
+From here, `make render` will populate [deploy](/deploy) with YAML manifests that can be `oc apply` to the cluster in question. Note that new hooks require a restart of the Flask application.
+
 ### Request Helpers
 
 There are helper methods within the [src/webhook/request_helper](src/webhook/request_helper) to aid with:
