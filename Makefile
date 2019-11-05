@@ -4,7 +4,6 @@ TEMPLATEFILES := $(shell find ./templates -type f -name "*.yaml.tmpl")
 
 NAMESPACE ?= openshift-validation-webhook
 SVCNAME ?= validation-webhook
-WEBHOOKSVCADDR ?= $(SVCNAME).$(NAMESPACE).svc
 SANAME ?= validation-webhook
 IMAGETAG ?= latest
 CABUNDLECONFIGMAP ?= webhook-cert
@@ -26,7 +25,6 @@ render: $(TEMPLATEFILES) build/Dockerfile
 		sed \
 			-e "s!\#NAMESPACE\#!$(NAMESPACE)!g" \
 			-e "s!\#SVCNAME\#!$(SVCNAME)!g" \
-			-e "s!\#WEBHOOKSVCADDR\#!$(WEBHOOKSVCADDR)!g" \
 			-e "s!\#SANAME\#!$(SANAME)!g" \
 			-e "s!\#IMAGETAG\#!$(IMAGETAG)!g" \
 			-e "s!\#IMG\#!$(IMG)!g" \
