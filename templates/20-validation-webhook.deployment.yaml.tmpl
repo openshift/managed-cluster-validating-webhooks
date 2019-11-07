@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: #SVCNAME#
+    deployment: #SVCNAME#
+  name: #SVCNAME#
+  namespace: #NAMESPACE#
+spec:
+  replicas: 3
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: #SVCNAME#
+    spec:
+      serviceAccountName: #SANAME#
+      initContainers:
+      - image: #IMG#:#IMAGETAG#
+        name: inject-cert
+        command:
+        - python
+        - /app/init.py
+        - -a
+        - #VWC_ANNOTATION#
+      containers:
+      - image: #IMG#:#IMAGETAG#
+        imagePullPolicy: Always
+        command: 
+        - gunicorn
+        - --config
+        - /app/gunicorn.py
+        - --ca-certs
+        - /service-ca/service-ca.crt
+        - --keyfile
+        - /service-certs/tls.key
+        - --certfile
+        - /service-certs/tls.crt
+        - --access-logfile
+        - "-"
+        - webhook:app
+        name: validation-webhook
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: service-certs
+          mountPath: /service-certs
+          readOnly: true
+        - name: service-ca
+          mountPath: /service-ca
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: service-certs
+          secret:
+            secretName: #CABUNDLECONFIGMAP#
+        - name: service-ca
+          configMap:
+            name: #CABUNDLECONFIGMAP#

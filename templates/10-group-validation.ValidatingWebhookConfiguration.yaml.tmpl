@@ -1,0 +1,31 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata: 
+  name: sre-group-validation
+  annotations:
+    # Typically  managed.openshift.io/inject-cabundle-from: namespace/configmap
+    # The configmap must have the cert in PEM format in a key named service-ca.crt.
+    # Each webhook in this object with a service clientConfig will have the bundle injected.
+    #VWC_ANNOTATION#: #NAMESPACE#/#CABUNDLECONFIGMAP#
+webhooks:
+  - clientConfig:
+      service:
+        namespace: #NAMESPACE#
+        name: #SVCNAME#
+        path: /group-validation
+    failurePolicy:
+      "Fail"
+    name: group-validation.managed.openshift.io
+    rules: 
+      - operations: 
+          - "UPDATE"
+          - "CREATE"
+          - "DELETE"
+        apiGroups: 
+          - "user.openshift.io"
+        apiVersions: 
+          - "*"
+        resources: 
+          - "groups"
+        scope: 
+          "Namespaced"
