@@ -21,6 +21,7 @@ build-base: build/Dockerfile
 # TODO: Change the render to allow for the permissions to have a list of all the webhook names
 # TODO: Pull that list of names from the yaml files?
 render: $(TEMPLATEFILES) build/Dockerfile
+	mkdir deploy || true ;\
 	for f in $(TEMPLATEFILES); do \
 		sed \
 			-e "s!\#NAMESPACE\#!$(NAMESPACE)!g" \
