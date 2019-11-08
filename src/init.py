@@ -32,7 +32,7 @@ def encode_cert(cert):
 def get_validating_webhook_configuration_objects_with_annotation(client, annotation):
   ret = []
   for o in client.list_validating_webhook_configuration().items:
-    if annotation in o.metadata.annotations:
+    if o.metadata.annotations is not None and annotation in o.metadata.annotations:
       ret.append(o)
   return ret
 
