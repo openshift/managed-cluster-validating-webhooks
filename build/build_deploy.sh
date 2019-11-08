@@ -6,7 +6,7 @@ set -exv
 
 CURRENT_DIR=$(dirname "$0")
 
-BASE_IMG="tbd"
+BASE_IMG="managed-cluster-validating-webhooks"
 QUAY_IMAGE="quay.io/app-sre/${BASE_IMG}"
 IMG="${BASE_IMG}:latest"
 
