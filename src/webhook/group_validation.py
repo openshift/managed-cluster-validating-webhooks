@@ -10,7 +10,7 @@ bp = Blueprint("group-webhook", __name__)
 group_prefix = os.getenv("GROUP_VALIDATION_PREFIX", "osd-sre-")
 admin_group = os.getenv("GROUP_VALIDATION_ADMIN_GROUP", "osd-sre-admins")
 
-@bp.route('/group-validation', methods=('GET','POST'))
+@bp.route('/group-validation', methods=('POST'))
 def handle_request():
   debug = os.getenv("DEBUG_GROUP_VALIDATION", "False")
   debug = (debug == "True")
