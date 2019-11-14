@@ -1,7 +1,7 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata: 
-  name: sre-group-validation
+  name: sre-subscription-validation
   annotations:
     # Typically  managed.openshift.io/inject-cabundle-from: namespace/configmap
     # The configmap must have the cert in PEM format in a key named service-ca.crt.
@@ -12,19 +12,18 @@ webhooks:
       service:
         namespace: #NAMESPACE#
         name: #SVCNAME#
-        path: /group-validation
+        path: /subscription-validation
     failurePolicy:
       "Fail"
-    name: group-validation.managed.openshift.io
+    name: subscription-validation.managed.openshift.io
     rules: 
       - operations: 
           - "UPDATE"
           - "CREATE"
-          - "DELETE"
         apiGroups: 
-          - "user.openshift.io"
+          - "operators.coreos.com"
         apiVersions: 
           - "*"
         resources: 
-          - "groups"
-        scope: "Cluster"
+          - "subscriptions"
+        scope: "Namespaced"
