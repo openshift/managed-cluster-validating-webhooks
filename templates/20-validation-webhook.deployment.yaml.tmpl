@@ -26,6 +26,13 @@ spec:
       containers:
       - image: #IMG#:#IMAGETAG#
         imagePullPolicy: Always
+        env:
+        - name: SUBSCRIPTION_VALIDATION_NAMESPACES
+          value: "openshift-operators"
+        - name: GROUP_VALIDATION_ADMIN_GROUP
+          value: "osd-sre-admins"
+        - name: GROUP_VALIDATION_PREFIX
+          value: "osd-sre-"
         command: 
         - gunicorn
         - --config

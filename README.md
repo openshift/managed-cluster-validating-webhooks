@@ -4,13 +4,22 @@ A Flask app designed to act as a webhook admission controller for OpenShift.
 
 Presently there is a single webhook, [group-validation](#group_validation), which is provided via `/group-validation` endpoint.
 
-## Group Validation
+## Webhooks
+
+### Group Validation
 
 Configuration for this webhook is provided by environment variables:
 
 * `GROUP_VALIDATION_PREFIX` - Group prefix to apply the webhook, such as `osd-` to apply to `CREATE`, `UPDATE`, `DELETE` operations on groups starting with `osd-`.
 * `GROUP_VALIDATION_ADMIN_GROUP` - Admin group, which the requestor must be a member in order to have access granted.
 * `DEBUG_GROUP_VALIDATION` - Debug the webhook? Set to `True` to enable, all other values (including absent) disable.
+
+### Subscription Validation
+
+Restrict dedicated-admins to creating `Subscription` objects with `.spec.sourceNamespace` from a pre-approved list. The list is specified by environment variable:
+
+* `SUBSCRIPTION_VALIDATION_NAMESPACES` - Comma-separated list of namespaces for which dedicated-admins are allowed to use as `.spec.sourceNamespace` in `Subscription` objects. (default "openshift-operators")
+* `DEBUG_SUBSCRIPTION_VALIDATION` - Debug the hook (not currently used)
 
 ## How it works
 
