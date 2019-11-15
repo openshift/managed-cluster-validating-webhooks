@@ -49,14 +49,6 @@ objects:
         verbs:
           - list
           - get
-    - apiVersion: operators.coreos.com/v1alpha2
-      kind: OperatorGroup
-      metadata:
-        name: dedicated-admin-operator
-        namespace: openshift-dedicated-admin
-      spec:
-        targetNamespaces:
-        - openshift-dedicated-admin
     - apiVersion: v1
       kind: ServiceAccount
       metadata:
