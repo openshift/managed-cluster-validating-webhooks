@@ -11,7 +11,10 @@ QUAY_IMAGE="quay.io/app-sre/${BASE_IMG}"
 IMG="${BASE_IMG}:${VERSION_MAJOR}.${VERSION_MINOR}-${GIT_HASH}"
 VERSION_MAJOR=0
 VERSION_MINOR=1
-
+SELECTOR_SYNC_SET_TEMPLATE_DIR=templates
+YAML_DIRECTORY=deploy
+SELECTOR_SYNC_SET_DESTINATION=templates/00-osd-managed-cluster-validating-webhooks.selectorsyncset.yaml.tmpl
+REPO_NAME=managed-cluster-validating-webhooks
 GIT_HASH=$(git rev-parse --short=7 HEAD)
 
 # build the image
