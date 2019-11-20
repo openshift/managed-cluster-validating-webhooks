@@ -11,7 +11,7 @@ valid_source_namespaces = os.getenv("SUBSCRIPTION_VALIDATION_NAMESPACES", "opens
 
 valid_source_namespaces = valid_source_namespaces.split(",")
 
-@bp.route('/subscription-validation', methods=('POST'))
+@bp.route('/subscription-validation', methods=['POST'])
 def handle_request():
   debug = os.getenv("DEBUG_SUBSCRIPTION_VALIDATION", "False")
   debug = (debug == "True")
