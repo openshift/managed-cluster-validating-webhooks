@@ -7,11 +7,9 @@ import sys
 import argparse
 import copy
 
-cluster_platform_ann = "hive.openshift.io/cluster-platform"
-
 def get_yaml_all(filename):
     with open(filename,'r') as input_file:
-        return list(yaml.safe_load_all(input_file))
+        return list(yaml.load_all(input_file))
 
 def get_yaml(filename):
     with open(filename,'r') as input_file:
@@ -36,22 +34,46 @@ def get_all_yaml_obj(file_paths):
             yaml_objs.append(obj)
     return yaml_objs
 
-def process_yamls(name, directory, obj, platform="", sss_mode="sync"):
+def process_yamls(name, directory, obj):
     o = copy.deepcopy(obj)
-
-    # Set the SSS mode, the default value is sync
-    o['spec']['resourceApplyMode'] = sss_mode
-
-    # Set the platform label if one is specified
-    if platform in ("aws", "gcp"):
-        o['spec']['clusterDeploymentSelector']['matchLabels'][cluster_platform_ann] = platform
-
     # Get all yaml files as array of yaml objects
     yamls = get_all_yaml_obj(get_all_yaml_files(directory))
     if len(yamls) == 0:
         return
 
+    # Find SA name.  It will be used for processing.
+    sa_name = ""
     for y in yamls:
+        if y['kind'] == 'ServiceAccount':
+            sa_name = y['metadata']['name']
+            break
+
+    # Find all Roles bound to the SA where the subject is in the same NS as the SA.
+    # These Roles are managed by CSV only.
+    sa_role_names = []
+    for y in yamls:
+        if y['kind'] == 'RoleBinding':
+            for s in y['subjects']:
+                if y['roleRef']['kind'] == "Role" and s['kind'] == 'ServiceAccount' and y['metadata']['namespace'] == s['namespace']:
+                    sa_role_names.append(y['roleRef']['name'])
+
+    for y in yamls:
+        # for an operator skip deployments, SA, and all RBAC related to the SA (unless we didn't create the ClusterRole)
+        if y['kind'] in ('Deployment', 'ServiceAccount'):
+            continue
+        if y['kind'] == 'Role' and y['metadata']['name'] in sa_role_names:
+            continue
+        if y['kind'] == 'ClusterRoleBinding' or y['kind'] == 'RoleBinding':
+            skip = False
+            for s in y['subjects']:
+                # if it's for our SA don't process it (is part of CSV)
+                if s['name'] == sa_name and "dedicated-admin" in y['roleRef']['name']:
+                    skip = True
+                    break
+            if skip:
+                continue
+
+        # it's something we want to have in the syncset
         if 'patch' in y:
             if not 'patches' in o['spec']:
                 o['spec']['patches'] = []
@@ -76,8 +98,8 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
 
     # Get the template data
-    template_data = get_yaml(os.path.join(arguments.template_dir, "template.yaml"))
-    selectorsyncset_data = get_yaml(os.path.join(arguments.template_dir, "selectorsyncset.yaml"))
+    template_data = get_yaml(os.path.join(arguments.template_dir, "00-osd-managed-cluster-validating-webhooks.selectorsyncset.yaml.tmpl"))
+    #selectorsyncset_data = get_yaml(os.path.join(arguments.template_dir, "selectorsyncset.yaml"))
 
     # The templates and script are shared across repos (copy & paste).
     # Set the REPO_NAME parameter.
@@ -88,17 +110,6 @@ if __name__ == '__main__':
     # for each subdir of yaml_directory append 'object' to template
     for (dirpath, dirnames, filenames) in os.walk(arguments.yaml_directory):
         if filenames:
-
-            sss_mode = "sync"
-            if "UPSERT/" in dirpath:
-                sss_mode = "upsert"
-
-            platform = ""
-            if "/gcp" in dirpath:
-                platform = "gcp"
-            if "/aws" in dirpath:
-                platform = "aws"
-
             sss_name = dirpath.replace('/','-')
             if sss_name == arguments.yaml_directory:
                 # files in the root dir, use repo-name for SSS name
@@ -106,11 +117,7 @@ if __name__ == '__main__':
             else:
                 # SSS name is based on dirpath which has the root path prefixed.. remove that prefix
                 sss_name = sss_name[(len(arguments.yaml_directory) + 1):]
-                if sss_name.startswith("UPSERT-"):
-                    sss_name = sss_name[7:]
-
-            process_yamls(sss_name, dirpath, selectorsyncset_data, platform=platform, sss_mode=sss_mode)
-
+            process_yamls(sss_name, dirpath, selectorsyncset_data)
 
     # write template file ordering by keys
     with open(arguments.destination,'w') as outfile:
