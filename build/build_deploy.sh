@@ -15,21 +15,20 @@ YAML_DIRECTORY=deploy
 SELECTOR_SYNC_SET_DESTINATION=templates/00-osd-managed-cluster-validating-webhooks.selectorsyncset.yaml.tmpl
 REPO_NAME=managed-cluster-validating-webhooks
 GIT_HASH=$(git rev-parse --short=7 HEAD)
-
-IMG="${BASE_IMG}"
+IMG="$QUAY_IMAGE":"$IMAGETAG" 
 IMAGETAG="${VERSION_MAJOR}.${VERSION_MINOR}-${GIT_HASH}"
 
 # build the image
-IMG="$QUAY_IMAGE":IMAGETAG="$IMAGETAG" make build-base
+make -t build-base $IMG -f ../build/Dockerfile
 
-GEN_SYNCSET=build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -y ${YAML_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}
+python generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -y ${YAML_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}
 
 # push the image, commented out only for local testing. to be removed prior to PR
 #skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-#    "docker-daemon:${IMG}" \
+#    "docker-daemon:${BASE_IMG}" \
 #    "docker://${QUAY_IMAGE}:latest"
 
 #skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-#    "docker-daemon:${IMG}" \
+#    "docker-daemon:${BASE_IMG}" \
 #    "docker://${QUAY_IMAGE}:${GIT_HASH}"
 
