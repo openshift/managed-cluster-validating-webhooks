@@ -19,7 +19,7 @@ def get_all_yaml_files(path):
     file_paths = []
     for r,d,f in os.walk(path):
         for file in f:
-            if file.endswith('.yml') or file.endswith('.yaml'):
+            if file.endswith('.tmpl') or file.endswith('.yaml'):
                 file_paths.append(os.path.join(r,file))
         # break, so we don't recurse
         break
