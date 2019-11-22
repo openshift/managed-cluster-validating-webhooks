@@ -22,8 +22,8 @@ rules:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: #SANAME#
-  namespace: #NAMESPACE#
+  name: "#SANAME#"
+  namespace: "#NAMESPACE#"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -35,5 +35,5 @@ roleRef:
   name: webhook-validation-cr
 subjects:
   - kind: ServiceAccount
-    name: #SANAME#
-    namespace: #NAMESPACE#
+    name: "#SANAME#"
+    namespace: "#NAMESPACE#"
