@@ -8,7 +8,9 @@ from webhook.request_helper import validate, responses
 bp = Blueprint("group-webhook", __name__)
 
 group_prefix = os.getenv("GROUP_VALIDATION_PREFIX", "osd-sre-")
-admin_group = os.getenv("GROUP_VALIDATION_ADMIN_GROUP", "osd-sre-admins")
+admin_group = os.getenv("GROUP_VALIDATION_ADMIN_GROUP", "osd-sre-admins,osd-sre-cluster-admins")
+
+admin_groups = admin_group.split(",")
 
 @bp.route('/group-validation', methods=['POST'])
 def handle_request():
@@ -39,7 +41,7 @@ def handle_request():
     if group_name.startswith(group_prefix):
       if debug:
         print("Performing action: {} in {} group".format(body_dict['operation'],group_name))
-      if admin_group in userinfo['groups']:
+      if len(set(userinfo['groups']) & set(admin_groups)) > 0:
         response_body = responses.response_allow(req=body_dict,msg="{} group {}".format(body_dict['operation'], group_name))
       else:
         deny_msg = "User not authorized to {} group {}".format(body_dict['operation'],group_name)

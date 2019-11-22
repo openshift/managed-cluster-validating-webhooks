@@ -10,9 +10,9 @@ Presently there is a single webhook, [group-validation](#group_validation), whic
 
 Configuration for this webhook is provided by environment variables:
 
-* `GROUP_VALIDATION_PREFIX` - Group prefix to apply the webhook, such as `osd-` to apply to `CREATE`, `UPDATE`, `DELETE` operations on groups starting with `osd-`.
-* `GROUP_VALIDATION_ADMIN_GROUP` - Admin group, which the requestor must be a member in order to have access granted.
-* `DEBUG_GROUP_VALIDATION` - Debug the webhook? Set to `True` to enable, all other values (including absent) disable.
+* `GROUP_VALIDATION_PREFIX` - Group prefix to apply the webhook, such as `osd-` to apply to `CREATE`, `UPDATE`, `DELETE` operations on groups starting with `osd-`. (default: `osd-sre-`)
+* `GROUP_VALIDATION_ADMIN_GROUP` - Admin groups, which the requestor must be a member in order to have access granted. This is comma-separated. (default: `osd-sre-admins,osd-sre-cluster-admins`)
+* `DEBUG_GROUP_VALIDATION` - Debug the webhook? Set to `True` to enable, all other values (including absent) disable. (default: False)
 
 ### Subscription Validation
 
