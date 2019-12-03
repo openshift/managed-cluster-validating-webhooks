@@ -20,7 +20,7 @@ IMG="$QUAY_IMAGE":"$IMAGETAG"
 
 # build the image and the selectorsyncset
 
-python generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}
+python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}
 
 IMG="$QUAY_IMAGE" IMAGETAG="$IMAGETAG" make build-base
 # push the image
