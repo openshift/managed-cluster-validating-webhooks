@@ -22,7 +22,7 @@ IMG="$QUAY_IMAGE":"$IMAGETAG"
 
 python generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}
 
-docker build -t $IMG -f Dockerfile ..
+IMG="$QUAY_IMAGE" IMAGETAG="$IMAGETAG" make build-base
 # push the image
 skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
     "docker-daemon:${BASE_IMG}" \
@@ -30,4 +30,3 @@ skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
 skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
     "docker-daemon:${BASE_IMG}" \
     "docker://${QUAY_IMAGE}:${IMAGETAG}"
-
