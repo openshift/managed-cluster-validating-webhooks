@@ -11,7 +11,7 @@ QUAY_IMAGE="quay.io/app-sre/${BASE_IMG}"
 VERSION_MAJOR=0
 VERSION_MINOR=1
 SELECTOR_SYNC_SET_TEMPLATE_DIR=../templates
-BUILD_DIRECTORY=../build
+BUILD_DIRECTORY=build
 SELECTOR_SYNC_SET_DESTINATION=../deploy/selectorsyncset.yaml
 REPO_NAME=managed-cluster-validating-webhooks
 GIT_HASH=$(git rev-parse --short=7 HEAD)
