@@ -2,29 +2,28 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: #SVCNAME#
-    deployment: #SVCNAME#
-  name: #SVCNAME#
-  namespace: #NAMESPACE#
+    app: "#SVCNAME#"
+    deployment: "#SVCNAME#"
+  name: "#SVCNAME#"
+  namespace: "#NAMESPACE#"
 spec:
   replicas: 3
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: #SVCNAME#
+        app: "#SVCNAME#"
     spec:
-      serviceAccountName: #SANAME#
+      serviceAccountName: "#SANAME#"
       initContainers:
-      - image: #IMG#:#IMAGETAG#
+      - image: "#IMG#:#IMAGETAG#"
         name: inject-cert
         command:
         - python
         - /app/init.py
         - -a
-        - #VWC_ANNOTATION#
+        - "#VWC_ANNOTATION#"
       containers:
-      - image: #IMG#:#IMAGETAG#
+      - image: "#IMG#:#IMAGETAG#"
         imagePullPolicy: Always
         env:
         - name: SUBSCRIPTION_VALIDATION_NAMESPACES
@@ -60,7 +59,7 @@ spec:
       volumes:
         - name: service-certs
           secret:
-            secretName: #CABUNDLECONFIGMAP#
+            secretName: "#CABUNDLECONFIGMAP#"
         - name: service-ca
           configMap:
-            name: #CABUNDLECONFIGMAP#
+            name: "#CABUNDLECONFIGMAP#"

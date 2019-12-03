@@ -6,12 +6,12 @@ metadata:
     # Typically  managed.openshift.io/inject-cabundle-from: namespace/configmap
     # The configmap must have the cert in PEM format in a key named service-ca.crt.
     # Each webhook in this object with a service clientConfig will have the bundle injected.
-    #VWC_ANNOTATION#: #NAMESPACE#/#CABUNDLECONFIGMAP#
+    "#VWC_ANNOTATION#": "#NAMESPACE#/#CABUNDLECONFIGMAP#"
 webhooks:
   - clientConfig:
       service:
-        namespace: #NAMESPACE#
-        name: #SVCNAME#
+        namespace: "#NAMESPACE#"
+        name: "#SVCNAME#"
         path: /group-validation
     failurePolicy:
       "Fail"
