@@ -25,8 +25,8 @@ docker run --rm -v `pwd -P`:`pwd -P` python:2.7.15 /bin/sh -c "cd `pwd`; pip ins
 IMG="$QUAY_IMAGE" IMAGETAG="$IMAGETAG" make build-base
 #push the image
 skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-    "docker-daemon:${BASE_IMG}" \
+    "docker-daemon:${BASE_IMG}:${IMAGETAG}" \
     "docker://${QUAY_IMAGE}:latest"
 skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-    "docker-daemon:${BASE_IMG}" \
+    "docker-daemon:${BASE_IMG}:${IMAGETAG}" \
     "docker://${QUAY_IMAGE}:${IMAGETAG}"
