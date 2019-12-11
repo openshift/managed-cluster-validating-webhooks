@@ -2,8 +2,6 @@
 
 A Flask app designed to act as a webhook admission controller for OpenShift.
 
-Presently there is a single webhook, [group-validation](#group_validation), which is provided via `/group-validation` endpoint.
-
 ## Webhooks
 
 ### Group Validation
