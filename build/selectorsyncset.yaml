@@ -1,0 +1,206 @@
+apiVersion: v1
+kind: Template
+parameters:
+- name: IMAGE_TAG
+  required: true
+- name: REPO_NAME
+  value: managed-cluster-validating-webhooks
+  required: true
+metadata:
+  name: selectorsyncset-template
+objects:
+- apiVersion: hive.openshift.io/v1alpha1
+  kind: SelectorSyncSet
+  metadata:
+    labels:
+      managed.openshift.io/gitHash: ${IMAGE_TAG}
+      managed.openshift.io/gitRepoName: ${REPO_NAME}
+      managed.openshift.io/osd: 'true'
+    name: managed-cluster-validating-webhooks
+  spec:
+    clusterDeploymentSelector:
+      matchLabels:
+        api.openshift.com/managed: 'true'
+    resourceApplyMode: sync
+    resources:
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: openshift-validation-webhook
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: 'true'
+        name: webhook-cert
+        namespace: openshift-validation-webhook
+      data: {}
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: webhook-validation-cr
+      rules:
+      - apiGroups:
+        - admissionregistration.k8s.io
+        resources:
+        - validatingwebhookconfigurations
+        verbs:
+        - list
+        - patch
+        - get
+      - apiGroups:
+        - ''
+        resources:
+        - configmaps
+        verbs:
+        - list
+        - get
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: webhook-validation
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: webhook-validation-cr
+      subjects:
+      - kind: ServiceAccount
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        annotations:
+          service.beta.openshift.io/serving-cert-secret-name: webhook-cert
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+      spec:
+        ports:
+        - name: https
+          port: 443
+          protocol: TCP
+          targetPort: 5000
+        selector:
+          app: validation-webhook
+        type: ClusterIP
+    - apiVersion: admissionregistration.k8s.io/v1beta1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        name: sre-group-validation
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+      webhooks:
+      - clientConfig:
+          service:
+            namespace: openshift-validation-webhook
+            name: validation-webhook
+            path: /group-validation
+        failurePolicy: Fail
+        name: group-validation.managed.openshift.io
+        rules:
+        - operations:
+          - UPDATE
+          - CREATE
+          - DELETE
+          apiGroups:
+          - user.openshift.io
+          apiVersions:
+          - '*'
+          resources:
+          - groups
+          scope: Cluster
+    - apiVersion: admissionregistration.k8s.io/v1beta1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        name: sre-subscription-validation
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+      webhooks:
+      - clientConfig:
+          service:
+            namespace: openshift-validation-webhook
+            name: validation-webhook
+            path: /subscription-validation
+        failurePolicy: Fail
+        name: subscription-validation.managed.openshift.io
+        rules:
+        - operations:
+          - UPDATE
+          - CREATE
+          apiGroups:
+          - operators.coreos.com
+          apiVersions:
+          - '*'
+          resources:
+          - subscriptions
+          scope: Namespaced
+    - apiVersion: extensions/v1beta1
+      kind: Deployment
+      metadata:
+        labels:
+          app: validation-webhook
+          deployment: validation-webhook
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+      spec:
+        replicas: 3
+        template:
+          metadata:
+            labels:
+              app: validation-webhook
+          spec:
+            serviceAccountName: validation-webhook
+            initContainers:
+            - image: quay.io/app-sre/managed-cluster-validating-webhooks:${IMAGE_TAG}
+              name: inject-cert
+              command:
+              - python
+              - /app/init.py
+              - -a
+              - managed.openshift.io/inject-cabundle-from
+            containers:
+            - image: quay.io/app-sre/managed-cluster-validating-webhooks:${IMAGE_TAG}
+              imagePullPolicy: Always
+              env:
+              - name: SUBSCRIPTION_VALIDATION_NAMESPACES
+                value: openshift-operators
+              - name: GROUP_VALIDATION_ADMIN_GROUP
+                value: osd-sre-admins,osd-sre-cluster-admins
+              - name: GROUP_VALIDATION_PREFIX
+                value: osd-sre-
+              command:
+              - gunicorn
+              - --config
+              - /app/gunicorn.py
+              - --ca-certs
+              - /service-ca/service-ca.crt
+              - --keyfile
+              - /service-certs/tls.key
+              - --certfile
+              - /service-certs/tls.crt
+              - --access-logfile
+              - '-'
+              - webhook:app
+              name: validation-webhook
+              ports:
+              - containerPort: 5000
+              volumeMounts:
+              - name: service-certs
+                mountPath: /service-certs
+                readOnly: true
+              - name: service-ca
+                mountPath: /service-ca
+                readOnly: true
+            restartPolicy: Always
+            volumes:
+            - name: service-certs
+              secret:
+                secretName: webhook-cert
+            - name: service-ca
+              configMap:
+                name: webhook-cert

@@ -15,7 +15,7 @@ spec:
     spec:
       serviceAccountName: "#SANAME#"
       initContainers:
-      - image: "#IMG#:#IMAGETAG#"
+      - image: "#IMG#:${IMAGE_TAG}"
         name: inject-cert
         command:
         - python
@@ -23,7 +23,7 @@ spec:
         - -a
         - "#VWC_ANNOTATION#"
       containers:
-      - image: "#IMG#:#IMAGETAG#"
+      - image: "#IMG#:${IMAGE_TAG}"
         imagePullPolicy: Always
         env:
         - name: SUBSCRIPTION_VALIDATION_NAMESPACES
