@@ -91,32 +91,6 @@ objects:
     - apiVersion: admissionregistration.k8s.io/v1beta1
       kind: ValidatingWebhookConfiguration
       metadata:
-        name: sre-group-validation
-        annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
-      webhooks:
-      - clientConfig:
-          service:
-            namespace: openshift-validation-webhook
-            name: validation-webhook
-            path: /group-validation
-        failurePolicy: Fail
-        name: group-validation.managed.openshift.io
-        rules:
-        - operations:
-          - UPDATE
-          - CREATE
-          - DELETE
-          apiGroups:
-          - user.openshift.io
-          apiVersions:
-          - '*'
-          resources:
-          - groups
-          scope: Cluster
-    - apiVersion: admissionregistration.k8s.io/v1beta1
-      kind: ValidatingWebhookConfiguration
-      metadata:
         name: sre-subscription-validation
         annotations:
           managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
