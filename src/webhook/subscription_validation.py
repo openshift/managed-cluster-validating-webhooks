@@ -7,7 +7,7 @@ from webhook.request_helper import validate, responses
 
 bp = Blueprint("subscription-webhook", __name__)
 
-valid_source_namespaces = os.getenv("SUBSCRIPTION_VALIDATION_NAMESPACES", "openshift-operators")
+valid_source_namespaces = os.getenv("SUBSCRIPTION_VALIDATION_NAMESPACES", "openshift-marketplace")
 
 valid_source_namespaces = valid_source_namespaces.split(",")
 
