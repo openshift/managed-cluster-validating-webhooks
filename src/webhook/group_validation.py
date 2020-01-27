@@ -2,10 +2,14 @@ from flask import request, Blueprint
 import sys, traceback
 import json
 import os
-
+from prometheus_client import Counter
 from webhook.request_helper import validate, responses
 
 bp = Blueprint("group-webhook", __name__)
+
+# define what we track, declare Counter, how many times this route is accessed
+TOTAL_GROUP = Counter('webhook_group_validation_total', 'The total number of group validation requests')
+DENIED_GROUP= Counter('webhook_group_validation_denied', 'The total number of group validation requests denied')
 
 group_prefix = os.getenv("GROUP_VALIDATION_PREFIX", "osd-sre-")
 admin_group = os.getenv("GROUP_VALIDATION_ADMIN_GROUP", "osd-sre-admins,osd-sre-cluster-admins")
@@ -14,6 +18,8 @@ admin_groups = admin_group.split(",")
 
 @bp.route('/group-validation', methods=['POST'])
 def handle_request():
+   # inc total group counter
+  TOTAL_GROUP.inc()
   debug = os.getenv("DEBUG_GROUP_VALIDATION", "False")
   debug = (debug == "True")
 
@@ -27,6 +33,8 @@ def handle_request():
     valid = False
 
   if not valid:
+    # inc denied group counter
+    DENIED_GROUP.inc()
     return responses.response_invalid()
 
   try:
