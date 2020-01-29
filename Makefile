@@ -16,7 +16,11 @@ all: build-base render
 
 .PHONY: build-base
 build-base: build/Dockerfile
-	docker build -t $(IMG):$(IMAGETAG) -f build/Dockerfile . 
+	podman build -t $(IMG):$(IMAGETAG) -f build/Dockerfile . 
+
+.PHONY: push-base
+push-base: build/Dockerfile
+	podman push $(IMG):$(IMAGETAG)
 
 # TODO: Change the render to allow for the permissions to have a list of all the webhook names
 # TODO: Pull that list of names from the yaml files?
