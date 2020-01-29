@@ -41,10 +41,10 @@ def handle_request():
     body_dict = request.json['request']
     group_name = body_dict['object']['metadata']['name']
     userinfo = body_dict['userInfo']
-    if userinfo['username'] == "kube:admin":
-      # kubeadmin can do anything
+    if userinfo['username'] in ("kube:admin", "system:admin"):
+      # kube/system admin can do anything
       if debug:
-        print("Performing action: {} in {} group for kube:admin".format(body_dict['operation'],group_name))
+        print("Performing action: {} in {} group for {}".format(body_dict['operation'],group_name,userinfo['username']))
       return responses.response_allow(req=body_dict)
     if group_name.startswith(group_prefix):
       if debug:
