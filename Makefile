@@ -9,7 +9,7 @@ IMAGETAG ?= latest
 CABUNDLECONFIGMAP ?= webhook-cert
 VWC_ANNOTATION ?= managed.openshift.io/inject-cabundle-from
 
-IMG ?= quay.io/lseelye/python3-webhookbase
+IMG ?= quay.io/cshereme/python3-webhookbase
 
 default: all
 all: build-base render
