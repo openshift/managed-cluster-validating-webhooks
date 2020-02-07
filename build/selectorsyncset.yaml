@@ -216,7 +216,7 @@ objects:
             - image: quay.io/app-sre/managed-cluster-validating-webhooks:${IMAGE_TAG}
               name: inject-cert
               command:
-              - python
+              - python3
               - /app/init.py
               - -a
               - managed.openshift.io/inject-cabundle-from
