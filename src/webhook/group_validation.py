@@ -39,7 +39,11 @@ def handle_request():
 
   try:
     body_dict = request.json['request']
-    group_name = body_dict['object']['metadata']['name']
+    # If trying to delete a group, must get group name from oldObject instead of object
+    if body_dict['object'] is None:
+      group_name = body_dict['oldObject']['metadata']['name']
+    else:
+      group_name = body_dict['object']['metadata']['name']
     userinfo = body_dict['userInfo']
     if userinfo['username'] in ("kube:admin", "system:admin"):
       # kube/system admin can do anything
