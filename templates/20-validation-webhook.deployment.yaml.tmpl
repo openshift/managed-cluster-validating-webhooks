@@ -8,6 +8,9 @@ metadata:
   namespace: "#NAMESPACE#"
 spec:
   replicas: 3
+  selector:
+    matchLabels:
+      app: "#SVCNAME#"
   template:
     metadata:
       labels:
