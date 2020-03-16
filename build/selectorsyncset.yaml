@@ -206,6 +206,9 @@ objects:
         namespace: openshift-validation-webhook
       spec:
         replicas: 3
+        selector:
+          matchLabels:
+            app: validation-webhook
         template:
           metadata:
             labels:

@@ -8,6 +8,9 @@ metadata:
   namespace: "#NAMESPACE#"
 spec:
   replicas: 3
+  selector:
+    matchLabels:
+      app: validation-webhook
   template:
     metadata:
       labels:
