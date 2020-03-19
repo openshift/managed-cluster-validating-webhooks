@@ -11,7 +11,7 @@ VWC_ANNOTATION ?= managed.openshift.io/inject-cabundle-from
 
 IMG ?= quay.io/cshereme/python3-webhookbase
 
-CONTAINER_ENGINE=$(shell which podman 2>/dev/null || which docker 2>/dev/null)
+CONTAINER_ENGINE?=docker
 
 default: all
 all: build-base render
