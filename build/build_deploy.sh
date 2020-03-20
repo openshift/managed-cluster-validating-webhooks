@@ -4,28 +4,6 @@
 
 set -exv
 
-CURRENT_DIR=$(dirname "$0")
+# build the image, the selectorsyncset, and push the imate
+QUAY_USER="app-sre" IMAGETAG="$IMAGETAG" make render build-sss build-base skopeo-push
 
-BASE_IMG="managed-cluster-validating-webhooks"
-QUAY_IMAGE="quay.io/app-sre/${BASE_IMG}"
-SELECTOR_SYNC_SET_TEMPLATE_DIR=deploy
-BUILD_DIRECTORY=build
-SELECTOR_SYNC_SET_DESTINATION=build/selectorsyncset.yaml
-REPO_NAME=managed-cluster-validating-webhooks
-GIT_HASH=$(git rev-parse --short=7 HEAD)
-IMAGETAG="${GIT_HASH}"
-IMG="$QUAY_IMAGE":"$IMAGETAG"
-
-# build the image and the selectorsyncset
-IMG="$QUAY_IMAGE" make render
-
-docker run --rm -v `pwd -P`:`pwd -P` python:2.7.15 /bin/sh -c "cd `pwd`; pip install oyaml; python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}"
-
-IMG="$QUAY_IMAGE" IMAGETAG="$IMAGETAG" make build-base
-#push the image
-skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-    "docker-daemon:${QUAY_IMAGE}:${IMAGETAG}" \
-    "docker://${QUAY_IMAGE}:latest"
-skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-    "docker-daemon:${QUAY_IMAGE}:${IMAGETAG}" \
-    "docker://${QUAY_IMAGE}:${IMAGETAG}"
