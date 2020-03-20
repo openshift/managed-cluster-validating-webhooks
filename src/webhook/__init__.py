@@ -12,5 +12,8 @@ app.register_blueprint(subscription_validation.bp)
 from webhook import namespace_validation
 app.register_blueprint(namespace_validation.bp)
 
+from webhook import regular_user_validation
+app.register_blueprint(regular_user_validation.bp)
+
 from webhook import metrics
 app.register_blueprint(metrics.bp)

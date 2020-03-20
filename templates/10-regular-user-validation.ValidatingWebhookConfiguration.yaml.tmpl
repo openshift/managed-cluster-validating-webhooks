@@ -1,0 +1,103 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata: 
+  name: sre-regular-user-validation
+  annotations:
+    # Typically  managed.openshift.io/inject-cabundle-from: namespace/configmap
+    # The configmap must have the cert in PEM format in a key named service-ca.crt.
+    # Each webhook in this object with a service clientConfig will have the bundle injected.
+    "#VWC_ANNOTATION#": "#NAMESPACE#/#CABUNDLECONFIGMAP#"
+webhooks:
+  - clientConfig:
+      service:
+        namespace: "#NAMESPACE#"
+        name: "#SVCNAME#"
+        path: /regular-user-validation
+    failurePolicy:
+      "Fail"
+    name: regular-user-validation.managed.openshift.io
+    rules: 
+      - operations:
+        - "*"
+        apiGroups: 
+        - "autoscaling.openshift.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "*/*"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - "config.openshift.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "clusterversions"
+        - "clusterversions/status"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - "cloudcredential.openshift.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "*/*"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - "machine.openshift.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "*/*"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - ""
+        apiVersions: 
+        - "*"
+        resources: 
+        - "nodes"
+        - "nodes/*"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - "admissionregistration.k8s.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "*/*"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - "cloudingress.managed.openshift.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "*/*"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - "veleros.managed.openshift.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "*/*"
+        scope: "*"
+      - operations:
+        - "*"
+        apiGroups: 
+        - "managed.openshift.io"
+        apiVersions: 
+        - "*"
+        resources: 
+        - "subjectpermissions"
+        - "subjectpermissions/*"
+        scope: "*"
