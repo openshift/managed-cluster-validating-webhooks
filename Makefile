@@ -10,7 +10,7 @@ GIT_HASH=$(shell git rev-parse --short=7 HEAD)
 IMAGETAG="${GIT_HASH}"
 CABUNDLECONFIGMAP ?= webhook-cert
 VWC_ANNOTATION ?= managed.openshift.io/inject-cabundle-from
-QUAY_USER=app-sre
+QUAY_USER ?= app-sre
 
 IMG ?= quay.io/${QUAY_USER}/${BASE_IMG}
 
