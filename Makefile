@@ -18,7 +18,7 @@ IMG ?= quay.io/${QUAY_USER}/${BASE_IMG}
 SELECTOR_SYNC_SET_TEMPLATE_DIR=deploy
 BUILD_DIRECTORY=build
 SELECTOR_SYNC_SET_DESTINATION=build/selectorsyncset.yaml
-REPO_NAME=managed-cluster-validating-webhooks
+REPO_NAME ?= managed-cluster-validating-webhooks
 
 CONTAINER_ENGINE?=docker
 
