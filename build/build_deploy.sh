@@ -5,5 +5,5 @@
 set -exv
 
 # build the image, the selectorsyncset, and push the imate
-QUAY_USER="app-sre" IMAGETAG="$IMAGETAG" make render build-sss build-base skopeo-push
+IMAGETAG="$IMAGETAG" make render build-sss build-base skopeo-push
 

@@ -10,9 +10,8 @@ GIT_HASH=$(shell git rev-parse --short=7 HEAD)
 IMAGETAG=${GIT_HASH}
 CABUNDLECONFIGMAP ?= webhook-cert
 VWC_ANNOTATION ?= managed.openshift.io/inject-cabundle-from
-QUAY_USER ?= app-sre
 
-IMG ?= quay.io/${QUAY_USER}/${BASE_IMG}
+IMG ?= quay.io/app-sre/${BASE_IMG}
 
 
 SELECTOR_SYNC_SET_TEMPLATE_DIR=deploy
@@ -40,6 +39,7 @@ push-base: build/Dockerfile
 
 .PHONY: skopeo-push
 skopeo-push:
+	# QUAY_USER and QUAY_TOKEN are supplied as env vars
 	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
 		"docker-daemon:${IMG}:${IMAGETAG}" \
 		"docker://${IMG}:latest"
