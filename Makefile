@@ -2,12 +2,12 @@ SHELL := /usr/bin/env bash
 
 TEMPLATEFILES := $(shell find ./templates -type f -name "*.yaml.tmpl")
 
-BASE_IMG="managed-cluster-validating-webhooks"
+BASE_IMG=managed-cluster-validating-webhooks
 NAMESPACE ?= openshift-validation-webhook
 SVCNAME ?= validation-webhook
 SANAME ?= validation-webhook
 GIT_HASH=$(shell git rev-parse --short=7 HEAD)
-IMAGETAG="${GIT_HASH}"
+IMAGETAG=${GIT_HASH}
 CABUNDLECONFIGMAP ?= webhook-cert
 VWC_ANNOTATION ?= managed.openshift.io/inject-cabundle-from
 QUAY_USER ?= app-sre
