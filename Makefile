@@ -38,16 +38,6 @@ build-base: build/Dockerfile
 push-base: build/Dockerfile
 	$(CONTAINER_ENGINE) push $(IMG):$(IMAGETAG)
 
-.PHONY: skopeo-push
-skopeo-push:
-	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${IMG}:${IMAGETAG}" \
-		"docker://${IMG}:latest"
-	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${IMG}:${IMAGETAG}" \
-		"docker://${IMG}:${IMAGETAG}"
-
-
 # TODO: Change the render to allow for the permissions to have a list of all the webhook names
 # TODO: Pull that list of names from the yaml files?
 render: $(TEMPLATEFILES) build/Dockerfile
