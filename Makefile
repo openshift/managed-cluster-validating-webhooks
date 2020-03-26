@@ -41,11 +41,11 @@ push-base: build/Dockerfile
 .PHONY: skopeo-push
 skopeo-push:
 	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${QUAY_IMAGE}:${IMAGETAG}" \
-		"docker://${QUAY_IMAGE}:latest"
+		"docker-daemon:${IMG}:${IMAGETAG}" \
+		"docker://${IMG}:latest"
 	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${QUAY_IMAGE}:${IMAGETAG}" \
-		"docker://${QUAY_IMAGE}:${IMAGETAG}"
+		"docker-daemon:${IMG}:${IMAGETAG}" \
+		"docker://${IMG}:${IMAGETAG}"
 
 
 # TODO: Change the render to allow for the permissions to have a list of all the webhook names
