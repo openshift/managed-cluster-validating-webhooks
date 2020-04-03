@@ -57,7 +57,4 @@ def handle_request():
 
 
 def is_request_allowed(username, groupname, admin_groupnames=[]):
-  if groupname not in admin_groupnames and (username == "system:unauthenticated" or (not username.startswith("kube:") and not username.startswith("system:"))):
-    return False
-  else:
-    return True
+  return not(groupname not in admin_groupnames and (username == "system:unauthenticated" or (not username.startswith("kube:") and not username.startswith("system:"))))
