@@ -24,13 +24,17 @@ CONTAINER_ENGINE?=docker
 default: all
 all: build-base build-sss
 
+.PHONY: test
+test:
+	python -m unittest discover src -vvv
+
 .PHONY: build-sss
 build-sss: render
 	${CONTAINER_ENGINE} run --rm -v `pwd -P`:`pwd -P` python:2.7.15 /bin/sh -c "cd `pwd`; pip install oyaml; python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}"
 
 
 .PHONY: build-base
-build-base: build/Dockerfile
+build-base: test build/Dockerfile
 	$(CONTAINER_ENGINE) build -t $(IMG):$(IMAGETAG) -f build/Dockerfile . 
 
 .PHONY: push-base
@@ -62,3 +66,13 @@ render: $(TEMPLATEFILES) build/Dockerfile
 			-e "s!\#VWC_ANNOTATION\#!$(VWC_ANNOTATION)!g" \
 		$$f > deploy/$$(basename $$f .tmpl) ;\
 	done
+
+.PHONY: requirements
+requirements:
+	if [ "$(pip list | grep pipreqs | wc -l)" != "0" ]; then \
+		rm -f requirements.txt; \
+		pipreqs ./; \
+	else \
+		echo "FAILURE please install pipreqs: pip install pipreqs"; \
+	fi
+

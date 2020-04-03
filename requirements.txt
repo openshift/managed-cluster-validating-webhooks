@@ -1,0 +1,4 @@
+oyaml==0.9
+prometheus_client==0.7.1
+kubernetes==10.1.0
+Flask==1.1.2
