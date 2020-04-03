@@ -13,7 +13,6 @@ VWC_ANNOTATION ?= managed.openshift.io/inject-cabundle-from
 
 IMG ?= quay.io/app-sre/${BASE_IMG}
 
-
 SELECTOR_SYNC_SET_TEMPLATE_DIR=deploy
 BUILD_DIRECTORY=build
 SELECTOR_SYNC_SET_DESTINATION=build/selectorsyncset.yaml
@@ -24,14 +23,22 @@ CONTAINER_ENGINE?=docker
 default: all
 all: build-base build-sss
 
+.PHONY: clean
+clean:
+	$(CONTAINER_ENGINE) rmi $(REPO_NAME):test || true
+	$(CONTAINER_ENGINE) rmi $(IMG):$(IMAGETAG) || true
+
+.PHONY: test-container
+test-container:
+	$(CONTAINER_ENGINE) build -t $(REPO_NAME):test -f build/Dockerfile.test .
+
 .PHONY: test
-test:
-	python -m unittest discover src -vvv
+test: test-container
+	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; python -m unittest discover src -vvv"
 
 .PHONY: build-sss
 build-sss: render
 	${CONTAINER_ENGINE} run --rm -v `pwd -P`:`pwd -P` python:2.7.15 /bin/sh -c "cd `pwd`; pip install oyaml; python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}"
-
 
 .PHONY: build-base
 build-base: test build/Dockerfile
@@ -51,7 +58,6 @@ skopeo-push:
 		"docker-daemon:${IMG}:${IMAGETAG}" \
 		"docker://${IMG}:${IMAGETAG}"
 
-
 # TODO: Change the render to allow for the permissions to have a list of all the webhook names
 # TODO: Pull that list of names from the yaml files?
 render: $(TEMPLATEFILES) build/Dockerfile
@@ -70,8 +76,9 @@ render: $(TEMPLATEFILES) build/Dockerfile
 .PHONY: requirements
 requirements:
 	if [ "$(pip list | grep pipreqs | wc -l)" != "0" ]; then \
-		rm -f requirements.txt; \
+		rm -f src/requirements.txt; \
 		pipreqs ./; \
+		mv requirements.txt src/; \
 	else \
 		echo "FAILURE please install pipreqs: pip install pipreqs"; \
 	fi
