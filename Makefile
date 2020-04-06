@@ -25,8 +25,7 @@ all: build-base build-sss
 
 .PHONY: clean
 clean:
-	$(CONTAINER_ENGINE) rmi $(REPO_NAME):test || true
-	$(CONTAINER_ENGINE) rmi $(IMG):$(IMAGETAG) || true
+	$(CONTAINER_ENGINE) rmi $(REPO_NAME):test $(IMG):$(IMAGETAG) || true
 
 .PHONY: test-container
 test-container:
@@ -82,4 +81,3 @@ requirements:
 	else \
 		echo "FAILURE please install pipreqs: pip install pipreqs"; \
 	fi
-
