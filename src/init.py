@@ -8,7 +8,6 @@ import argparse
 import copy
 import base64
 
-
 parser = argparse.ArgumentParser(description="Options to Program")
 parser.add_argument('-a', default="managed.openshift.io/inject-cabundle-from", dest='annotation_name', help='What is the annotation that has a reference to a namespace/configmap for the caBundle. The cert must be stored in pem format in a key called service-ca.crt')
 parsed = parser.parse_args()
@@ -16,6 +15,7 @@ parsed = parser.parse_args()
 config.load_incluster_config()
 admission_client = client.AdmissionregistrationV1beta1Api()
 cm_client = client.CoreV1Api()
+
 
 def get_cert_from_configmap(client, namespace, configmap_name, key="service-ca.crt"):
   try:
@@ -26,8 +26,10 @@ def get_cert_from_configmap(client, namespace, configmap_name, key="service-ca.c
     return None
   return None
 
+
 def encode_cert(cert):
   return base64.b64encode(cert.encode("UTF-8")).decode("UTF-8")
+
 
 def get_validating_webhook_configuration_objects_with_annotation(client, annotation):
   ret = []
@@ -35,6 +37,7 @@ def get_validating_webhook_configuration_objects_with_annotation(client, annotat
     if o.metadata.annotations is not None and annotation in o.metadata.annotations:
       ret.append(o)
   return ret
+
 
 for vwc in get_validating_webhook_configuration_objects_with_annotation(admission_client, parsed.annotation_name):
   ns, cm_name = vwc.metadata.annotations[parsed.annotation_name].split('/')
@@ -51,5 +54,5 @@ for vwc in get_validating_webhook_configuration_objects_with_annotation(admissio
   try:
     result = admission_client.patch_validating_webhook_configuration(name=new_vwc.metadata.name, body=new_vwc)
   except Exception as err:
-    print("ERROR: Couldn't save validatingwebhookconfiguration/{}: {}\n",new_vwc.metadata.name, err)
+    print("ERROR: Couldn't save validatingwebhookconfiguration/{}: {}\n", new_vwc.metadata.name, err)
     os.exit(1)

@@ -1,6 +1,5 @@
 import unittest
 import json
-import enum
 
 from webhook.regular_user_validation import is_request_allowed
 from webhook.regular_user_validation import get_response
@@ -8,6 +7,7 @@ from webhook.regular_user_validation import get_response
 ADMIN_GROUPS = [
     "osd-sre-admins"
 ]
+
 
 def create_request(kind, username, groupname):
     class FakeRequest(object):
@@ -37,6 +37,7 @@ def create_request(kind, username, groupname):
             return getattr(self, item)
 
     return FakeRequest()
+
 
 class TestRegularUserValidation(unittest.TestCase):
     def test_is_request_allowed_unauthenticated(self):
@@ -71,4 +72,3 @@ class TestRegularUserValidation(unittest.TestCase):
         
         response = json.loads(get_response(request, debug=False))
         self.assertFalse(response['response']['allowed'])
-        
