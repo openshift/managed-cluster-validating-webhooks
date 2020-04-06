@@ -19,11 +19,11 @@ def handle_request():
   debug = (debug == "True")
 
   if debug:
-    print("REQUEST BODY => {}".format(request['json']))
+    print("REQUEST BODY => {}".format(request.json))
 
   valid = True
   try:
-    valid = validate.validate_request_structure(request['json'])
+    valid = validate.validate_request_structure(request.json)
   except Exception:
     valid = False
 
@@ -37,7 +37,7 @@ def get_response(req, debug=False):
     print("REQUEST BODY => {}".format(req.json))
 
   try:
-    body_dict = req['json']['request']
+    body_dict = req.json['request']
     username = body_dict['userInfo']['username']
 
     if body_dict['object'] is None:

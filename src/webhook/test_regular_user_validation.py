@@ -1,5 +1,6 @@
 import unittest
 import json
+import enum
 
 from webhook.regular_user_validation import is_request_allowed
 from webhook.regular_user_validation import get_response
@@ -8,31 +9,34 @@ ADMIN_GROUPS = [
     "osd-sre-admins"
 ]
 
-def create_request(uid, kind, username, groupname):
-    request = {
-        "json": {
-            "request": {
-                "uid": "testuser",
-                "operation": "UPDATE",
-                "userInfo": {
-                    "username": username
-                },
-                "oldObject": {
-                    "metadata": {
-                        "name": groupname
-                    }
-                },
-                "object": {
-                    "kind": kind,
-                    "metadata": {
-                        "name": groupname
-                    }
-                },
+def create_request(kind, username, groupname):
+    class FakeRequest(object):
+        def __init__(self):
+            self.json = {
+                "request": {
+                    "uid": "testuser",
+                    "operation": "UPDATE",
+                    "userInfo": {
+                        "username": username
+                    },
+                    "oldObject": {
+                        "metadata": {
+                            "name": groupname
+                        }
+                    },
+                    "object": {
+                        "kind": kind,
+                        "metadata": {
+                            "name": groupname
+                        }
+                    },
+                }
             }
-        }
-    }
-    return request
 
+        def __getitem__(self, item):
+            return getattr(self, item)
+
+    return FakeRequest()
 
 class TestRegularUserValidation(unittest.TestCase):
     def test_is_request_allowed_unauthenticated(self):
@@ -51,19 +55,19 @@ class TestRegularUserValidation(unittest.TestCase):
         self.assertFalse(is_request_allowed("someuser", "some-group", ADMIN_GROUPS))
 
     def test_handle_request_allowed_system(self):
-        request = create_request("UPDATE", "Groups", "kube:admin", ADMIN_GROUPS[0])
+        request = create_request("Groups", "kube:admin", ADMIN_GROUPS[0])
         
         response = json.loads(get_response(request, debug=False))
         self.assertTrue(response['response']['allowed'])
 
     def test_handle_request_allowed_user(self):
-        request = create_request("UPDATE", "Groups", "some-sre-user", ADMIN_GROUPS[0])
+        request = create_request("Groups", "some-sre-user", ADMIN_GROUPS[0])
         
         response = json.loads(get_response(request, debug=False))
         self.assertTrue(response['response']['allowed'])
 
     def test_handle_request_denied(self):
-        request = create_request("UPDATE", "Groups", "someuser", "")
+        request = create_request("Groups", "someuser", "")
         
         response = json.loads(get_response(request, debug=False))
         self.assertFalse(response['response']['allowed'])
