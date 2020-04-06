@@ -45,10 +45,6 @@ def get_response(req, debug=False):
     else:
       group_name = body_dict['object']['metadata']['name']
 
-    # get the username and decide if it's a special user (SA, kube:admin, etc) or not.. 
-    # deny any request if it's not a special user:  kube:*, system:* except system:unauthenticated
-    # ALLOW any request if the group_name is in admin_groups
-    # reference: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#request
     if is_request_allowed(username, group_name, admin_groups):
       return responses.response_allow(req=body_dict)
     else:
