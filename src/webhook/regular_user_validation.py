@@ -62,4 +62,12 @@ def is_request_allowed(username, groupname, admin_groupnames=()):
 
     reference: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#request
     """
-  return not(groupname not in admin_groupnames and (username == "system:unauthenticated" or (not username.startswith("kube:") and not username.startswith("system:"))))
+  # Explicitly unauthenticated
+  if username == "system:unauthenticated":
+      return False
+  if groupname in admin_groupnames:
+      return True
+  if username.startswith("kube:") or username.startswith("system:"):
+      return True
+  # Deny anyone else
+  return False
