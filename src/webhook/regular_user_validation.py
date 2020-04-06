@@ -58,10 +58,10 @@ def get_response(req, debug=False):
     return responses.response_invalid()
 
 def is_request_allowed(username, groupname, admin_groupnames=()):
-    """Decide if it's a special user (SA, kube:admin, etc) or not.
+  """Decide if it's a special user (SA, kube:admin, etc) or not.
 
-    reference: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#request
-    """
+  reference: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#request
+  """
   # Explicitly unauthenticated
   if username == "system:unauthenticated":
       return False
