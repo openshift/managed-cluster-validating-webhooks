@@ -1,6 +1,5 @@
 import unittest
 import json
-import enum
 
 from webhook.regular_user_validation import is_request_allowed
 from webhook.regular_user_validation import get_response

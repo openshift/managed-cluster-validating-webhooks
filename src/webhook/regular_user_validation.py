@@ -1,6 +1,5 @@
-from flask import request, Blueprint, Response
+from flask import request, Blueprint
 import sys, traceback
-import json
 import os
 
 from webhook.request_helper import validate, responses
@@ -32,6 +31,7 @@ def handle_request():
   
   return get_response(request, debug)
 
+
 def get_response(req, debug=False):
   if debug:
     print("REQUEST BODY => {}".format(req.json))
@@ -49,9 +49,10 @@ def get_response(req, debug=False):
       return responses.response_deny(req=body_dict, msg="Regular user '{}' cannot {} kind '{}'.".format(username, operation, kind))
   except Exception:
     print("Exception:")
-    print("-"*60)
+    print("-" * 60)
     traceback.print_exc(file=sys.stdout)
     return responses.response_invalid()
+
 
 def is_request_allowed(username, groups, admin_groupnames=()):
   """Decide if it's a special user (SA, kube:admin, etc) or not.

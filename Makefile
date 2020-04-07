@@ -31,6 +31,17 @@ clean:
 test-container:
 	$(CONTAINER_ENGINE) build -t $(REPO_NAME):test -f build/Dockerfile.test .
 
+.PHONY: lint
+lint: test-container
+	# E111 indentation is not a multiple of four
+	# E121 continuation line under-indented for hanging indent
+	# E401 multiple imports on one line
+	# E402 module level import not at top of file
+	# E501 line too long (N > 79 characters)
+	# E722 do not use bare 'except'
+	# W293 blank line contains whitespace
+	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 --ignore E111,E121,E114,E401,E402,E501,E722,W293 src/"
+
 .PHONY: test
 test: test-container
 	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; python -m unittest discover src -vvv"
@@ -40,7 +51,7 @@ build-sss: render
 	${CONTAINER_ENGINE} run --rm -v `pwd -P`:`pwd -P` python:2.7.15 /bin/sh -c "cd `pwd`; pip install oyaml; python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}"
 
 .PHONY: build-base
-build-base: test build/Dockerfile
+build-base: lint test build/Dockerfile
 	$(CONTAINER_ENGINE) build -t $(IMG):$(IMAGETAG) -f build/Dockerfile . 
 
 .PHONY: push-base

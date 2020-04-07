@@ -1,11 +1,7 @@
-from flask import request, Blueprint, Response
+from flask import request, Blueprint
 import sys, traceback
-import json
 import os
-import prometheus_client
 from prometheus_client import Counter
-from prometheus_client.core import CollectorRegistry
-
 from webhook.request_helper import validate, responses
 
 bp = Blueprint("subscription-webhook", __name__)
@@ -16,6 +12,7 @@ DENIED_SUBSCRIPTION = Counter('webhook_subscription_validation_denied', 'The tot
 
 valid_source_namespaces = os.getenv("SUBSCRIPTION_VALIDATION_NAMESPACES", "openshift-marketplace")
 valid_source_namespaces = valid_source_namespaces.split(",")
+
 
 @bp.route('/subscription-validation', methods=['POST'])
 def handle_request():
@@ -50,6 +47,6 @@ def handle_request():
       return responses.response_allow(req=body_dict)
   except Exception:
     print("Exception:")
-    print("-"*60)
+    print("-" * 60)
     traceback.print_exc(file=sys.stdout)
     return responses.response_invalid()
