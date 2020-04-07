@@ -159,7 +159,7 @@ objects:
             namespace: openshift-validation-webhook
             name: validation-webhook
             path: /namespace-validation
-        failurePolicy: Fail
+        failurePolicy: Ignore
         name: namespace-validation.managed.openshift.io
         rules:
         - operations:
@@ -183,7 +183,7 @@ objects:
             namespace: openshift-validation-webhook
             name: validation-webhook
             path: /regular-user-validation
-        failurePolicy: Fail
+        failurePolicy: Ignore
         name: regular-user-validation.managed.openshift.io
         rules:
         - operations:
