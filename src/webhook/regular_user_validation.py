@@ -39,13 +39,9 @@ def get_response(req, debug=False):
   try:
     body_dict = req.json['request']
     username = body_dict['userInfo']['username']
+    groups = body_dict['userInfo']['groups']
 
-    if body_dict['object'] is None:
-      group_name = body_dict['oldObject']['metadata']['name']
-    else:
-      group_name = body_dict['object']['metadata']['name']
-
-    if is_request_allowed(username, group_name, admin_groups):
+    if is_request_allowed(username, groups, admin_groups):
       return responses.response_allow(req=body_dict)
     else:
       kind = body_dict['object']['kind']
@@ -58,17 +54,20 @@ def get_response(req, debug=False):
     return responses.response_invalid()
 
 
-def is_request_allowed(username, groupname, admin_groupnames=()):
+def is_request_allowed(username, groups, admin_groupnames=()):
   """Decide if it's a special user (SA, kube:admin, etc) or not.
 
   reference: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#request
   """
-  # Explicitly unauthenticated
+  # unauthenticated is DENY
   if username == "system:unauthenticated":
-      return False
-  if groupname in admin_groupnames:
-      return True
+    return False
+  # system users is ALLOW
   if username.startswith("kube:") or username.startswith("system:"):
+    return True
+  # SRE groups are ALLOW
+  for group in groups:
+    if group in admin_groupnames:
       return True
-  # Deny anyone else
+  # else DENY
   return False
