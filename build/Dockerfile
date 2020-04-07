@@ -9,6 +9,7 @@ WORKDIR /app
 
 # Copy requirements file and install dependencies
 COPY src/requirements.txt ./
+ENV PYTHONDONTWRITEBYTECODE="true"
 RUN pip3 install -r /app/requirements.txt --no-cache-dir
 
 # Copy rest of application
