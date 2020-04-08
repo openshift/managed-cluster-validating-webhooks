@@ -8,6 +8,7 @@ ADMIN_GROUPS = [
     "osd-sre-admins"
 ]
 
+
 def create_request(username, groups):
     class FakeRequest(object):
         def __init__(self):
@@ -56,6 +57,7 @@ class TestRegularUserValidation_Unauthenticated(unittest.TestCase):
 
     def test_manyGroups_sreGroup(self):
         self.runtests(["something-else", ADMIN_GROUPS[0]])
+
 
 class TestRegularUserValidation_kubeadmin(unittest.TestCase):
     username = "kube:admin"
