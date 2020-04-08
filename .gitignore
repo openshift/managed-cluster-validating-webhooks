@@ -1,2 +1,4 @@
 /deploy
 __pycache__
+/requirements.txt
+/test-requirements.txt

@@ -83,6 +83,10 @@ render: $(TEMPLATEFILES) build/Dockerfile
 		$$f > deploy/$$(basename $$f .tmpl) ;\
 	done
 
+# TODO: This is going to pin versions based on whatever system the
+#  target happens to be run on, which is not ideal. Should consider
+#  using the generated file as a starting point but curating real
+#  version requirements manually.
 .PHONY: requirements
 requirements:
 	if [ "$(pip list | grep pipreqs | wc -l)" != "0" ]; then \

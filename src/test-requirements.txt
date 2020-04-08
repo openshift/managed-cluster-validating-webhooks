@@ -1,0 +1,2 @@
+# Use this file for packages needed *only* by test targets.
+flake8>=2.5.5
