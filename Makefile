@@ -33,14 +33,7 @@ test-container:
 
 .PHONY: lint
 lint: test-container
-	# E111 indentation is not a multiple of four
-	# E121 continuation line under-indented for hanging indent
-	# E401 multiple imports on one line
-	# E402 module level import not at top of file
-	# E501 line too long (N > 79 characters)
-	# E722 do not use bare 'except'
-	# W293 blank line contains whitespace
-	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 --ignore E111,E121,E114,E401,E402,E501,E722,W293 src/"
+	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 src/ build/"
 
 .PHONY: test
 test: test-container

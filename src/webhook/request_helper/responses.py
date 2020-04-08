@@ -18,12 +18,14 @@ def response_base(req, allowed, msg=''):
 
 
 def response_allow(req, msg="Allowed resource for this cluster"):
-    print("[pid={}] Allowing admission {}: {}".format(os.getpid(), req['userInfo']['username'], msg))
+    print("[pid={}] Allowing admission {}: {}".format(
+        os.getpid(), req['userInfo']['username'], msg))
     return response_base(req=req, allowed=True, msg="Access granted")
 
 
 def response_deny(req, msg="Prohibited resource for this cluster"):
-    print("[pid={}] Denying admission {}: {}".format(os.getpid(), req['userInfo']['username'], msg))
+    print("[pid={}] Denying admission {}: {}".format(
+        os.getpid(), req['userInfo']['username'], msg))
     return response_base(req=req, allowed=False, msg=msg)
 
 

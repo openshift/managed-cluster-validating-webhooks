@@ -36,10 +36,11 @@ class TestRegularUserValidation_Unauthenticated(unittest.TestCase):
     username = "system:unauthenticated"
 
     def runtests(self, testGroups):
-        self.assertFalse(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
+        self.assertFalse(
+            is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
         self.assertFalse(response['response']['allowed'])
 
@@ -63,10 +64,11 @@ class TestRegularUserValidation_kubeadmin(unittest.TestCase):
     username = "kube:admin"
 
     def runtests(self, testGroups):
-        self.assertTrue(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
+        self.assertTrue(
+            is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
         self.assertTrue(response['response']['allowed'])
 
@@ -90,10 +92,11 @@ class TestRegularUserValidation_systemadmin(unittest.TestCase):
     username = "system:admin"
 
     def runtests(self, testGroups):
-        self.assertTrue(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
+        self.assertTrue(
+            is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
         self.assertTrue(response['response']['allowed'])
 
@@ -120,7 +123,8 @@ class TestRegularUserValidation_sreUser(unittest.TestCase):
     def runtests(self, testGroups):
         # for these tests, add the SRE group to every request
         testGroups.append(self.sreGroup)
-        self.assertTrue(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
+        self.assertTrue(
+            is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
         response = json.loads(get_response(request, debug=False))
@@ -146,7 +150,8 @@ class TestRegularUserValidation_nonSreGroup(unittest.TestCase):
     username = "someOtherUser"
 
     def runtests(self, testGroups):
-        self.assertFalse(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
+        self.assertFalse(
+            is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
         response = json.loads(get_response(request, debug=False))
