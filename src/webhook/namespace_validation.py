@@ -34,8 +34,12 @@ def handle_request():
     DENIED_NAMESPACE.inc()
     return responses.response_invalid()
   
+  return get_response(request, debug)
+
+
+def get_response(req, debug=False):
   try:
-    body_dict = request.json['request']
+    body_dict = req.json['request']
     requester_group_memberships = body_dict['userInfo']['groups']
     if "dedicated-admins" in requester_group_memberships:
       requested_ns = body_dict['namespace']
