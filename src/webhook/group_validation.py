@@ -81,8 +81,8 @@ def handle_request():
             print("Response body => {}".format(response_body))
         return response_body
     except Exception:
-        print("Exception when trying to access attributes. Request body: "
-              "{}".format(flask.request.json))
+        print("Exception when trying to access attributes. Request body: {}"
+              .format(flask.request.json))
         print("Backtrace:")
         print("-" * 60)
         traceback.print_exc(file=sys.stdout)

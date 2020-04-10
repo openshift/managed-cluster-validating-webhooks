@@ -65,8 +65,8 @@ def handle_request():
             if PRIV_NS_RE.match(requested_ns) is not None:
                 return responses.response_deny(
                     req=body_dict,
-                    msg="You cannot update the privileged namespace "
-                        "{}.".format(requested_ns))
+                    msg="You cannot update the privileged namespace {}."
+                        .format(requested_ns))
             else:
                 return responses.response_allow(req=body_dict)
         else:

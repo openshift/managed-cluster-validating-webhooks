@@ -41,12 +41,11 @@ def encode_cert(cert):
     return base64.b64encode(cert.encode("UTF-8")).decode("UTF-8")
 
 
-def get_validating_webhook_configuration_objects_with_annotation(client,
-                                                                 annotation):
+def get_validating_webhook_configuration_objects_with_annotation(
+                                                        client, annotation):
     ret = []
     for o in client.list_validating_webhook_configuration().items:
-        if (o.metadata.annotations is not None and
-                annotation in o.metadata.annotations):
+        if annotation in (o.metadata.annotations or ()):
             ret.append(o)
     return ret
 
@@ -56,25 +55,33 @@ for vwc in get_validating_webhook_configuration_objects_with_annotation(
     ns, cm_name = vwc.metadata.annotations[parsed.annotation_name].split('/')
     cert = get_cert_from_configmap(cm_client, ns, cm_name)
     if cert is None:
-        print("WARNING: Skipping validatingwebhookconfiguration/{}: Couldn't "
-              "find a cert from {}/{} ConfigMap. \n".format(
-                  vwc.metadata.name, ns, cm_name))
+        print("WARNING: Skipping validatingwebhookconfiguration/{vwcname}: "
+              "Couldn't find a cert from {namespace}/{cmname} ConfigMap.\n"
+              .format(
+                  vwcname=vwc.metadata.name,
+                  namespace=ns,
+                  cmname=cm_name))
         continue
     encoded_cert = encode_cert(cert)
     new_vwc = copy.deepcopy(vwc)
     for hook in new_vwc.webhooks:
-        if (hook.client_config.service is not None and
-                hook.client_config.ca_bundle is not encoded_cert):
+        if hook.client_config.service is None:
+            continue
+        if hook.client_config.ca_bundle is not encoded_cert:
             hook.client_config.ca_bundle = encoded_cert
-            print("validatingwebhookconfiguration/{}: Injecting caBundle from "
-                  "{}/{}, for hook name {}, to service/{}/{}\n".format(
-                      new_vwc.metadata.name, ns, cm_name, hook.name,
-                      hook.client_config.service.namespace,
-                      hook.client_config.service.name))
+            print("validatingwebhookconfiguration/{vwcname}: Injecting "
+                  "caBundle from {cmns}/{cmname}, for hook name {hookname}, "
+                  "to service/{hooksvcns}/{hooksvcname}\n".format(
+                      vwcname=new_vwc.metadata.name,
+                      cmns=ns, cmname=cm_name,
+                      hookname=hook.name,
+                      hooksvcns=hook.client_config.service.namespace,
+                      hooksvcname=hook.client_config.service.name))
     try:
         result = admission_client.patch_validating_webhook_configuration(
             name=new_vwc.metadata.name, body=new_vwc)
     except Exception as err:
-        print("ERROR: Couldn't save validatingwebhookconfiguration/{}: "
-              "{}\n".format(new_vwc.metadata.name, err))
+        print(
+            "ERROR: Couldn't save validatingwebhookconfiguration/{}: {}\n"
+            .format(new_vwc.metadata.name, err))
         os.exit(1)
