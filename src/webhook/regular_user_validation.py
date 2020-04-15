@@ -44,7 +44,10 @@ def get_response(req, debug=False):
     if is_request_allowed(username, groups, admin_groups):
       return responses.response_allow(req=body_dict)
     else:
-      kind = body_dict['object']['kind']
+      if body_dict['object'] is None:
+        kind = body_dict['oldObject']['kind']
+      else:
+        kind = body_dict['object']['kind']
       operation = body_dict['operation']
       return responses.response_deny(req=body_dict, msg="Regular user '{}' cannot {} kind '{}'.".format(username, operation, kind))
   except Exception:
