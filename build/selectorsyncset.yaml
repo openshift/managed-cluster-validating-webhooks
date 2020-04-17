@@ -150,6 +150,32 @@ objects:
     - apiVersion: admissionregistration.k8s.io/v1beta1
       kind: ValidatingWebhookConfiguration
       metadata:
+        name: sre-identity-validation
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+      webhooks:
+      - clientConfig:
+          service:
+            namespace: openshift-validation-webhook
+            name: validation-webhook
+            path: /identity-validation
+        failurePolicy: Fail
+        name: identity-validation.managed.openshift.io
+        rules:
+        - operations:
+          - UPDATE
+          - CREATE
+          - DELETE
+          apiGroups:
+          - user.openshift.io
+          apiVersions:
+          - '*'
+          resources:
+          - identities
+          scope: Cluster
+    - apiVersion: admissionregistration.k8s.io/v1beta1
+      kind: ValidatingWebhookConfiguration
+      metadata:
         name: sre-namespace-validation
         annotations:
           managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
@@ -295,6 +321,32 @@ objects:
           resources:
           - subscriptions
           scope: Namespaced
+    - apiVersion: admissionregistration.k8s.io/v1beta1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        name: sre-user-validation
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+      webhooks:
+      - clientConfig:
+          service:
+            namespace: openshift-validation-webhook
+            name: validation-webhook
+            path: /user-validation
+        failurePolicy: Fail
+        name: user-validation.managed.openshift.io
+        rules:
+        - operations:
+          - UPDATE
+          - CREATE
+          - DELETE
+          apiGroups:
+          - user.openshift.io
+          apiVersions:
+          - '*'
+          resources:
+          - users
+          scope: Cluster
     - apiVersion: apps/v1
       kind: Deployment
       metadata:
