@@ -16,3 +16,9 @@ app.register_blueprint(regular_user_validation.bp)
 
 from webhook import metrics
 app.register_blueprint(metrics.bp)
+
+from webhook import user_validation
+app.register_blueprint(user_validation.bp)
+
+from webhook import identity_validation
+app.register_blueprint(identity_validation.bp)
