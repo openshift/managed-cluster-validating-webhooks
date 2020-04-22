@@ -22,7 +22,7 @@ def create_request(username, groups, identityName, providerName):
                     "object": {
                         "kind": "Identity",
                         "metadata": {
-                            "name": "identityName"
+                            "name": identityName
                         },
                         "providerName": providerName
                     }
@@ -79,3 +79,9 @@ class TestIdentityValidation(unittest.TestCase):
         response = self.runtests(
             "customer@custom", "dedicated-admins", "OpenShift_SRE:test", "OpenShift_SRE")
         self.assertFalse(response['response']['allowed'])
+
+    # users in sre admin groups can update redhat user identity
+    def test_sre_update_custom_user(self):
+        response = self.runtests(
+            "test@redhat.com", ADMIN_GROUPS, "CUSTOM:test", "CUSTOM")
+        self.assertTrue(response['response']['allowed'])

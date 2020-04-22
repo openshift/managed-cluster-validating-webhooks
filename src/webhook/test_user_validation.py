@@ -77,3 +77,9 @@ class TestUserValidation(unittest.TestCase):
         response = self.runtests(
             "customer@custom", "dedicated-admins", "test@redhat.com")
         self.assertFalse(response['response']['allowed'])
+
+    # users in sre admin groups can update redhat user
+    def test_sre_update_custom_user(self):
+        response = self.runtests(
+            "test@redhat.com", ADMIN_GROUPS, "test@customdomain")
+        self.assertTrue(response['response']['allowed'])
