@@ -1,2 +1,4 @@
 /deploy
 __pycache__
+.coverage
+coverage.log

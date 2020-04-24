@@ -2,3 +2,6 @@ Flask==1.1.1
 gunicorn==19.9.0
 kubernetes==10.0.1
 prometheus_client==0.7.1
+coverage==5.1
+oyaml==0.9
+flake8==3.7.9
