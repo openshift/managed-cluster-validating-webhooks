@@ -22,7 +22,7 @@ do
             echo "SUCCESS: Test coverage at or above target ${COVERAGE_MINIMUM}% for '$FILE'"
         fi
     else
-        "FAILURE: Unable to find test results for '$FILE'"
+        echo "FAILURE: Unable to find test results for '$FILE'"
         COVERAGE_PASS="false"
     fi
 done
