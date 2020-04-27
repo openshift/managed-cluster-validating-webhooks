@@ -89,9 +89,6 @@ requirements:
 	if [ "$(pip list | grep pipreqs | wc -l)" != "0" ]; then \
 		rm -f src/requirements.txt; \
 		pipreqs ./; \
-		echo "coverage==5.1" >> requirements.txt; \
-		echo "oyaml==0.9" >> requirements.txt; \
-		echo "flake8==3.7.9" >> requirements.txt; \
 		mv requirements.txt src/; \
 	else \
 		echo "FAILURE please install pipreqs: pip install pipreqs"; \
