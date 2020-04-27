@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -e
+trap "rm -f coverage.log" EXIT
 
 COVERAGE_MINIMUM=20
 COVERAGE_PASS="true"
@@ -25,7 +26,6 @@ do
         COVERAGE_PASS="false"
     fi
 done
-rm -f coverage.log
 
 if [ "$COVERAGE_PASS" != "true" ]
 then
