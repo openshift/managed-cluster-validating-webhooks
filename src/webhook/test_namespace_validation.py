@@ -18,25 +18,22 @@ PRIVILEGED_NAMESPACES = (
     "sre-app-check",
     "redhat-user",
     "redhat-",
-    "redhat-WOW",
+    "redhat-wow",
 )
 
 NONPRIV_NAMESPACES = (
     "kubeadmin",
     "mykube-admin",
-    "Kube-Admin",
     "open-shift",
     "oopenshift",
     "ops-health-monitoring-foo",
     "the-ops-health-monitoring",
     "management-infra1",
     "mymanagement-infra",
-    "Default",
     "default-user",
     "adefault",
     "logger",
     "some-logging",
-    "sre-app-check$",
     "redhatuser",
 )
 
@@ -48,7 +45,8 @@ GROUP_LISTS = (
     # collisions among test cases.
     (),
     ("cluster-admins",),
-    ("system:dedicated-admins", "sre-admins"),
+    ("osd-sre-admins",),
+    ("layered-cs-sre-admins",),
 )
 
 
