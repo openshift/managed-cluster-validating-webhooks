@@ -25,7 +25,8 @@ all: build-base build-sss
 
 .PHONY: clean
 clean:
-	$(CONTAINER_ENGINE) rmi $(REPO_NAME):test $(IMG):$(IMAGETAG) || true
+	$(CONTAINER_ENGINE) rmi $(REPO_NAME):test $(IMG):$(IMAGETAG) 2>/dev/null || true
+	rm -f coverage.log
 
 .PHONY: test-container
 test-container:
@@ -44,11 +45,11 @@ lint: test-container
 
 .PHONY: test
 test: test-container
-	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; python -m unittest discover src -vvv"
+	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; ./hack/test.sh"
 
 .PHONY: build-sss
-build-sss: render
-	${CONTAINER_ENGINE} run --rm -v `pwd -P`:`pwd -P` python:2.7.15 /bin/sh -c "cd `pwd`; pip --no-cache-dir install oyaml; python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}"
+build-sss: render test-container
+	${CONTAINER_ENGINE} run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}"
 
 .PHONY: build-base
 build-base: lint test build/Dockerfile
