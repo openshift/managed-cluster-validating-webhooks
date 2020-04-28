@@ -55,10 +55,7 @@ def create_request(namespace, groups):
         json = {
             "request": {
                 "uid": "testuser",
-                "userInfo": {
-                    "username": "me",
-                    "groups": groups,
-                },
+                "userInfo": {"username": "me", "groups": groups,},
                 "namespace": namespace,
             }
         }
@@ -69,19 +66,18 @@ def create_request(namespace, groups):
 class TestNamespaceValidation(unittest.TestCase):
     def runtest(self, namespace, groups, expect):
         # Make test failures easier to identify
-        failmsg = "expect={}, namespace={}, groups={}".format(
-            expect, namespace, groups)
+        failmsg = "expect={}, namespace={}, groups={}".format(expect, namespace, groups)
         request = create_request(namespace, groups)
         response = namespace_validation.get_response(request)
-        response = json.loads(response)['response']
-        self.assertEqual(expect, response['allowed'], failmsg)
+        response = json.loads(response)["response"]
+        self.assertEqual(expect, response["allowed"], failmsg)
         # On DENY, validate the status message
         if not expect:
             self.assertEqual(
-                "You cannot update the privileged namespace {}.".format(
-                    namespace),
-                response['status']['message'],
-                failmsg)
+                "You cannot update the privileged namespace {}.".format(namespace),
+                response["status"]["message"],
+                failmsg,
+            )
 
     def test_deny(self):
         # In order to get DENYs, we must have *both* a privileged namespace
@@ -89,7 +85,7 @@ class TestNamespaceValidation(unittest.TestCase):
         for ns in PRIVILEGED_NAMESPACES:
             for gl in GROUP_LISTS:
                 # Always include dedicated-admins
-                groups = gl + ('dedicated-admins',)
+                groups = gl + ("dedicated-admins",)
                 self.runtest(ns, groups, False)
 
     def test_allow_group(self):
@@ -105,16 +101,16 @@ class TestNamespaceValidation(unittest.TestCase):
         for ns in NONPRIV_NAMESPACES:
             for gl in GROUP_LISTS:
                 self.runtest(ns, gl, True)
-                groups = gl + ('dedicated-admins',)
+                groups = gl + ("dedicated-admins",)
                 self.runtest(ns, groups, True)
 
     def test_invalid(self):
         # Validate the exception path
-        request = create_request('foo', [])
+        request = create_request("foo", [])
         # This will trigger a KeyError when get_response tries to access the
         # 'userInfo'
-        del request.json['request']['userInfo']
+        del request.json["request"]["userInfo"]
         response = namespace_validation.get_response(request)
         self.assertEqual(
-            "Invalid request",
-            json.loads(response)['response']['status']['message'])
+            "Invalid request", json.loads(response)["response"]["status"]["message"]
+        )

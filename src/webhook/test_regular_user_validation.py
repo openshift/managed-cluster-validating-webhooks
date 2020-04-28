@@ -4,9 +4,7 @@ import json
 from webhook.regular_user_validation import is_request_allowed
 from webhook.regular_user_validation import get_response
 
-ADMIN_GROUPS = [
-    "osd-sre-admins"
-]
+ADMIN_GROUPS = ["osd-sre-admins"]
 
 
 def create_request(username, groups):
@@ -16,13 +14,8 @@ def create_request(username, groups):
                 "request": {
                     "uid": "testuser",
                     "operation": "UPDATE",
-                    "userInfo": {
-                        "username": username,
-                        "groups": groups,
-                    },
-                    "object": {
-                        "kind": "TestResources",
-                    }
+                    "userInfo": {"username": username, "groups": groups,},
+                    "object": {"kind": "TestResources",},
                 }
             }
 
@@ -39,9 +32,9 @@ class TestRegularUserValidation_Unauthenticated(unittest.TestCase):
         self.assertFalse(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
-        self.assertFalse(response['response']['allowed'])
+        self.assertFalse(response["response"]["allowed"])
 
     def test_noGroup(self):
         self.runtests([])
@@ -66,9 +59,9 @@ class TestRegularUserValidation_kubeadmin(unittest.TestCase):
         self.assertTrue(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
-        self.assertTrue(response['response']['allowed'])
+        self.assertTrue(response["response"]["allowed"])
 
     def test_noGroup(self):
         self.runtests([])
@@ -93,9 +86,9 @@ class TestRegularUserValidation_systemadmin(unittest.TestCase):
         self.assertTrue(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
-        self.assertTrue(response['response']['allowed'])
+        self.assertTrue(response["response"]["allowed"])
 
     def test_noGroup(self):
         self.runtests([])
@@ -124,7 +117,7 @@ class TestRegularUserValidation_sreUser(unittest.TestCase):
 
         request = create_request(self.username, testGroups)
         response = json.loads(get_response(request, debug=False))
-        self.assertTrue(response['response']['allowed'])
+        self.assertTrue(response["response"]["allowed"])
 
     def test_noGroup(self):
         self.runtests([])
@@ -150,7 +143,7 @@ class TestRegularUserValidation_nonSreGroup(unittest.TestCase):
 
         request = create_request(self.username, testGroups)
         response = json.loads(get_response(request, debug=False))
-        self.assertFalse(response['response']['allowed'])
+        self.assertFalse(response["response"]["allowed"])
 
     def test_noGroup(self):
         self.runtests([])
