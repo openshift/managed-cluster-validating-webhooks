@@ -34,7 +34,7 @@ test-container:
 
 .PHONY: lint
 lint: test-container
-	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 --config src/flake8.ini src/"
+	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 --config src/flake8.ini ."
 
 .PHONY: test
 test: test-container

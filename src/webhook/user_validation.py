@@ -18,6 +18,7 @@ protected_user_suffix = "@redhat.com"
 admin_group = os.getenv("GROUP_VALIDATION_ADMIN_GROUP",
                         "osd-sre-admins,osd-sre-cluster-admins")
 admin_groups = admin_group.split(",")
+allowed_users = ("kube:admin", "system:admin", "system:serviceaccount:openshift-authentication:oauth-openshift")
 
 
 @bp.route('/user-validation', methods=['POST'])
@@ -53,7 +54,7 @@ def get_response(request, debug=False):
         else:
             user_name = body_dict['object']['metadata']['name']
         userinfo = body_dict['userInfo']
-        if userinfo['username'] in ("kube:admin", "system:admin", "system:serviceaccount:openshift-authentication:oauth-openshift"):
+        if userinfo['username'] in allowed_users:
             # kube/system admin, oauth service accounts can do anything
             if debug:
                 print("Performing action: {} on user {} by {}".format(

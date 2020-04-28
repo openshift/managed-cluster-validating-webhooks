@@ -39,7 +39,7 @@ class TestRegularUserValidation_Unauthenticated(unittest.TestCase):
         self.assertFalse(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
         self.assertFalse(response['response']['allowed'])
 
@@ -66,7 +66,7 @@ class TestRegularUserValidation_kubeadmin(unittest.TestCase):
         self.assertTrue(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
         self.assertTrue(response['response']['allowed'])
 
@@ -93,7 +93,7 @@ class TestRegularUserValidation_systemadmin(unittest.TestCase):
         self.assertTrue(is_request_allowed(self.username, testGroups, ADMIN_GROUPS))
 
         request = create_request(self.username, testGroups)
-        
+
         response = json.loads(get_response(request, debug=False))
         self.assertTrue(response['response']['allowed'])
 

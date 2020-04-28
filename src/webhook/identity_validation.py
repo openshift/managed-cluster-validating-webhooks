@@ -18,6 +18,7 @@ identity_provider = os.getenv("IDENTITY_PROVIDER", "OpenShift_SRE")
 admin_group = os.getenv("GROUP_VALIDATION_ADMIN_GROUP",
                         "osd-sre-admins,osd-sre-cluster-admins")
 admin_groups = admin_group.split(",")
+allowed_users = ("kube:admin", "system:admin", "system:serviceaccount:openshift-authentication:oauth-openshift")
 
 
 @bp.route('/identity-validation', methods=['POST'])
@@ -54,7 +55,7 @@ def get_response(request, debug=False):
             identity_name = body_dict['object']['metadata']['name']
             provider_name = body_dict['object']['providerName']
         userinfo = body_dict['userInfo']
-        if userinfo['username'] in ("kube:admin", "system:admin", "system:serviceaccount:openshift-authentication:oauth-openshift"):
+        if userinfo['username'] in allowed_users:
             # kube/system admin can do anything
             if debug:
                 print("Performing action: {} on identity {} by {}".format(
