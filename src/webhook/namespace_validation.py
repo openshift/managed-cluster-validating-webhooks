@@ -46,6 +46,7 @@ def get_response(req, debug=False):
       privileged_namespace_re = '(^kube-.*|^openshift.*|^ops-health-monitoring$|^management-infra$|^default$|^logging$|^sre-app-check$|^redhat-.*)'
       # match will return a match object if the namespace matches the regex, or None if the namespace doesn't match the regex
       if re.match(privileged_namespace_re, requested_ns) is not None:
+        DENIED_NAMESPACE.inc()
         return responses.response_deny(req=body_dict, msg="You cannot update the privileged namespace {}.".format(requested_ns))
       else:
         return responses.response_allow(req=body_dict)
