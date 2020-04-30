@@ -36,12 +36,16 @@ test-container:
 lint: test-container
 	# E111 indentation is not a multiple of four
 	# E121 continuation line under-indented for hanging indent
+	# E127 continuation line over-indented for visual indent
+	# E129 visually indented line with same indent as next logical line
 	# E401 multiple imports on one line
 	# E402 module level import not at top of file
 	# E501 line too long (N > 79 characters)
 	# E722 do not use bare 'except'
 	# W293 blank line contains whitespace
-	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 --ignore E111,E121,E114,E401,E402,E501,E722,W293 src/"
+	# W503 line break before binary operator
+	# W504 line break after binary operator
+	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 --ignore E111,E114,E127,E129,E401,E402,E501,E722,W293,W503,W504 src/"
 
 .PHONY: test
 test: test-container

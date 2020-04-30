@@ -40,18 +40,42 @@ def handle_request():
 def get_response(req, debug=False):
   try:
     body_dict = req.json['request']
-    requester_group_memberships = body_dict['userInfo']['groups']
-    if "dedicated-admins" in requester_group_memberships:
-      requested_ns = body_dict['namespace']
-      privileged_namespace_re = '(^kube-.*|^openshift.*|^ops-health-monitoring$|^management-infra$|^default$|^logging$|^sre-app-check$|^redhat-.*)'
-      # match will return a match object if the namespace matches the regex, or None if the namespace doesn't match the regex
-      if re.match(privileged_namespace_re, requested_ns) is not None:
+    userinfo = body_dict['userInfo']
+    requester_group_memberships = userinfo['groups']
+    privileged_namespace_re = '(^kube.*|^openshift.*|^default$|^redhat.*)'
+    requested_ns = body_dict['namespace']
+    cluster_admin_users = ["kube:admin", "system:admin"]
+
+    # check to see if requester is a serviceAccount in a privileged NS
+    # if so, SA can edit any namespace
+    # re.match will return a match object if the namespace matches the regex,
+    # or None if the string doesn't match the regex
+    privileged_serviceaccount_re = '^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*)'
+    for group in requester_group_memberships:
+      if re.match(privileged_serviceaccount_re, group) is not None:
+        return responses.response_allow(req=body_dict)
+      
+    # check to see if user in layered-sre-cluster-admins group
+    # if so, user can edit privileged namespaces matching '^redhat.*'
+    if (re.match('^redhat.*', requested_ns) is not None and
+        "layered-sre-cluster-admins" in requester_group_memberships):
+      return responses.response_allow(req=body_dict)
+
+    # check to see if the NS is privileged. if it is, we only want SRE,
+    # kube:admin, and system:admin editing it
+    if re.match(privileged_namespace_re, requested_ns) is not None:
+      if ("osd-sre-admins" in requester_group_memberships or
+          "osd-sre-cluster-admins" in requester_group_memberships or
+          userinfo['username'] in cluster_admin_users):
+        return responses.response_allow(req=body_dict)
+      else:
         DENIED_NAMESPACE.inc()
         return responses.response_deny(req=body_dict, msg="You cannot update the privileged namespace {}.".format(requested_ns))
-      else:
-        return responses.response_allow(req=body_dict)
-    else:
-      return responses.response_allow(req=body_dict)
+
+    # if we're here, the requested NS is not a privileged NS, and webhook can
+    # allow RBAC to handle whether user is permitted to edit NS or not
+    return responses.response_allow(req=body_dict)
+
   except Exception:
     print("Exception:")
     print("-" * 60)
