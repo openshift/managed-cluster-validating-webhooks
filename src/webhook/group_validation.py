@@ -37,6 +37,10 @@ def handle_request():
     DENIED_GROUP.inc()
     return responses.response_invalid()
 
+  return get_response(request, debug)
+
+
+def get_response(request, debug=False):
   try:
     body_dict = request.json['request']
     # If trying to delete a group, must get group name from oldObject instead of object
