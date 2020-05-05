@@ -382,8 +382,8 @@ objects:
                 value: openshift-marketplace
               - name: GROUP_VALIDATION_ADMIN_GROUP
                 value: osd-sre-admins,osd-sre-cluster-admins
-              - name: GROUP_VALIDATION_PREFIX
-                value: osd-sre-
+              - name: GROUP_VALIDATION_PROTECTED_GROUP_REGEX
+                value: (^osd-sre.*|^dedicated-admins$|^cluster-admins$|^layered-cs-sre-admins$)
               command:
               - gunicorn
               - --config
