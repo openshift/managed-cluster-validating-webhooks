@@ -6,6 +6,10 @@ def validate_request_structure(request_json):
 
   if 'kind' not in doc_keys:
     return False
+  
+  if 'userInfo' not in doc_keys:
+    return False
+
   if request_json['kind'] == "AdmissionReview":
     return True
   return False
