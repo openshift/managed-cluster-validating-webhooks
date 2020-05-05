@@ -81,7 +81,7 @@ def get_response(req, debug=False):
         deny_msg = "User not authorized to {} group {}".format(body_dict['operation'], group_name)
         response_body = responses.response_deny(req=body_dict, msg=deny_msg)
     else:
-      # was not a protected group, RBAC will handle this
+      # was not a protected group, so we can let it through
       response_body = responses.response_allow(req=body_dict)
     if debug:
       print("Response body => {}".format(response_body))
