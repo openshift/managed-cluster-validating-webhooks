@@ -32,7 +32,6 @@ class TestNamespaceValidation(unittest.TestCase):
 
     REDHAT_NAMESPACES = (
         "redhat-user",
-        "redhat-",
         "redhat-wow",
         "redhatuser",
     )
