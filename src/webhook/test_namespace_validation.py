@@ -24,7 +24,6 @@ class TestNamespaceValidation(unittest.TestCase):
     PRIVILEGED_NAMESPACES = (
         "kube-admin",
         "kube-foo",
-        "kube-",
         "openshift",
         "openshifter",
         "openshift-foo",
@@ -34,7 +33,6 @@ class TestNamespaceValidation(unittest.TestCase):
         "logging",
         "sre-app-check",
         "redhat-user",
-        "redhat-",
         "redhat-wow",
     )
 
