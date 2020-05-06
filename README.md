@@ -8,7 +8,7 @@ A Flask app designed to act as a webhook admission controller for OpenShift.
 
 Configuration for this webhook is provided by environment variables:
 
-* `GROUP_VALIDATION_PREFIX` - Group prefix to apply the webhook, such as `osd-` to apply to `CREATE`, `UPDATE`, `DELETE` operations on groups starting with `osd-`. (default: `osd-sre-`)
+* `GROUP_VALIDATION_PROTECTED_GROUP_REGEX` - Regular expression for protected group names, such as `osd-` to apply to `CREATE`, `UPDATE`, `DELETE` operations on groups starting with `osd-`. (default: `(^osd-sre.*|^dedicated-admins$|^cluster-admins$|^layered-cs-sre-admins$)`)
 * `GROUP_VALIDATION_ADMIN_GROUP` - Admin groups, which the requestor must be a member in order to have access granted. This is comma-separated. (default: `osd-sre-admins,osd-sre-cluster-admins`)
 * `DEBUG_GROUP_VALIDATION` - Debug the webhook? Set to `True` to enable, all other values (including absent) disable. (default: False)
 
