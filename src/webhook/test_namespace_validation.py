@@ -91,12 +91,18 @@ class TestNamespaceValidation(unittest.TestCase):
                 self.runtest(ns, groups, user, False)
                 groups = ('random-test-group',)
                 self.runtest(ns, groups, user, False)
+        for ns in self.REDHAT_NAMESPACES:
+            for user in self.NON_PRIVILEGED_USERS:
+                groups = ('dedicated-admins',)
+                self.runtest(ns, groups, user, False)
+                groups = ('random-test-group',)
+                self.runtest(ns, groups, user, False)
 
     def test_allow_group(self):
         # user in osd-sre-admins group can edit non-privileged NS
         # user in osd-sre-admins group can edit privileged NS
         for ns in self.PRIVILEGED_NAMESPACES + self.NONPRIV_NAMESPACES + self.REDHAT_NAMESPACES:
-            for user in self.PRIVILEGED_USERS:
+            for user in self.NON_PRIVILEGED_USERS:
                 groups = ('osd-sre-cluster-admins',)
                 self.runtest(ns, groups, user, True)
                 groups = ('osd-sre-admins',)
@@ -121,10 +127,11 @@ class TestNamespaceValidation(unittest.TestCase):
         # Nonprivileged namespaces always ALLOW, even if the group list
         # contains 'dedicated-admins'.
         for ns in self.NONPRIV_NAMESPACES:
-            for gl in self.GROUP_LISTS:
-                for user in self.NON_PRIVILEGED_USERS:
-                    groups = gl + ('dedicated-admins',)
-                    self.runtest(ns, groups, user, True)
+            for user in self.NON_PRIVILEGED_USERS:
+                groups = ('dedicated-admins',)
+                self.runtest(ns, groups, user, True)
+                groups = ('random-test-group',)
+                self.runtest(ns, groups, user, True)
 
     def test_invalid(self):
         # Validate the exception path
