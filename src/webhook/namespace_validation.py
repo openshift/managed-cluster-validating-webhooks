@@ -40,7 +40,12 @@ def handle_request():
 def get_response(req, debug=False):
   try:
     body_dict = req.json['request']
-    requester_group_memberships = body_dict['userInfo']['groups']
+    requester_group_memberships = []
+    if 'userInfo' in body_dict:
+      if 'groups' in body_dict['userInfo']:
+        requester_group_memberships = body_dict['userInfo']['groups']
+    else:
+      return responses.response_invalid()
     if "dedicated-admins" in requester_group_memberships:
       requested_ns = body_dict['namespace']
       privileged_namespace_re = '(^kube-.*|^openshift.*|^ops-health-monitoring$|^management-infra$|^default$|^logging$|^sre-app-check$|^redhat-.*)'
