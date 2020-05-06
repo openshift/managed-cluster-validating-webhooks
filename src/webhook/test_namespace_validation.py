@@ -63,15 +63,6 @@ class TestNamespaceValidation(unittest.TestCase):
         "test-user",
     )
 
-    GROUP_LISTS = (
-        # These are tuples so they're immutable, forcing the test case to
-        # duplicate in order to change them. Otherwise we have potential
-        # collisions among test cases.
-        (),
-        ("cluster-admins",),
-        ("osd-sre-admins",),
-        ("layered-cs-sre-admins",),
-    )
 
     def runtest(self, namespace, groups, userName, expect):
         # Make test failures easier to identify
@@ -102,7 +93,6 @@ class TestNamespaceValidation(unittest.TestCase):
                 self.runtest(ns, groups, user, False)
 
     def test_allow_group(self):
-        # user in dedicated-admins group can edit non-privileged NS
         # user in osd-sre-admins group can edit non-privileged NS
         # user in osd-sre-admins group can edit privileged NS
         for ns in self.PRIVILEGED_NAMESPACES + self.NONPRIV_NAMESPACES + self.REDHAT_NAMESPACES:
