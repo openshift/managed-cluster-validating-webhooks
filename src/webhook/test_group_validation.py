@@ -148,7 +148,7 @@ class TestGroupValidation(unittest.TestCase):
                 self.rundeletetest(user, (self.PRIVILEGED_GROUPS_1 + self.PRIVILEGED_GROUPS_2 + self.NON_PRIVILEGED_GROUPS), group, True)
 
     def test_non_priv_group(self):
-        # If the user is in PRIVILEGED_GROUP_2 and/or NON_PRIVILEGED_GROUPS, 
+        # If the user is in PRIVILEGED_GROUP_2 and/or NON_PRIVILEGED_GROUPS,
         # ALLOW if editGroup is also non-privileged
         for user in self.NON_PRIVILEGED_USERS:
             for group in self.NON_PRIVILEGED_GROUPS:
@@ -160,7 +160,7 @@ class TestGroupValidation(unittest.TestCase):
                 self.rundeletetest(user, self.PRIVILEGED_GROUPS_2 + self.NON_PRIVILEGED_GROUPS, group, True)
 
     def test_deny(self):
-        # In order to get DENY, user in PRIVILEGED_GROUPS_2 and/or 
+        # In order to get DENY, user in PRIVILEGED_GROUPS_2 and/or
         # NON_PRIVILEGED_GROUPS must be trying to edit/delete a group in
         # PRIVILEGED_GROUPS_1 or PRIVILEGED_GROUPS_2
         for user in self.NON_PRIVILEGED_USERS:
