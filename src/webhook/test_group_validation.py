@@ -1,10 +1,11 @@
 import unittest
 import json
+import os
 
 from webhook import group_validation
 
 
-def create_request(user, memberGroups, editGroup):
+def create_request(user, memberGroups, editGroup, operation="update"):
     class FakeRequest(object):
         json = {
             "request": {
@@ -18,7 +19,7 @@ def create_request(user, memberGroups, editGroup):
                         "name": editGroup,
                     },
                 },
-                "operation": "update",
+                "operation": operation,
             }
         }
 
@@ -118,6 +119,71 @@ class TestGroupValidation(unittest.TestCase):
                 "User not authorized to delete group {}".format(editGroup),
                 response['status']['message'],
                 failmsg)
+
+    def group_validation_response(self, *args, **kwargs):
+        resp_json = group_validation.get_response(*args, **kwargs)
+        return json.loads(resp_json)['response']
+
+    def test_exclusive_group(self):
+        """Test GROUP_VALIDATION_EXCLUSIVE_GROUP_PREFIXES config.
+
+        When enforced, this will allow users from group A to exclusively
+        apply Operations on group A by specifying group A's prefix.
+        
+        """
+        req = create_request(
+            "alice", 
+            ["layered-cs-sre-admins", "osd-sre-cluster-admins"], 
+            "layered-cs-sre-admins")
+        res = self.group_validation_response(
+            req,
+            exclusive_group_prefixes=["layered-"]
+        )
+        # Allow user as it is part of the admin and exclusive groups
+        self.assertEqual(True, res["allowed"]) 
+        req = create_request(
+            "alice", 
+            ["layered-cs-sre-admins",], 
+            "layered-cs-sre-admins")
+        res = self.group_validation_response(
+            req,
+            exclusive_group_prefixes=["layered-"]
+        )
+        # Disallow user as it is not an admin
+        self.assertEqual(False, res["allowed"]) 
+        req = create_request(
+            "alice", 
+            ["osd-sre-cluster-admins"], 
+            "layered-cs-sre-admins")
+        res = self.group_validation_response(
+            req,
+            exclusive_group_prefixes=["layered-"]
+        )
+        # Disallow user as it is not part of 
+        # the exclusive group even if it's admin
+        self.assertEqual(False, res["allowed"]) 
+        req = create_request(
+            "alice", 
+            ["group-we-dont-care"], 
+            "layered-cs-sre-admins")
+        res = self.group_validation_response(
+            req,
+            exclusive_group_prefixes=["layered-"]
+        )
+        # Disallow user as it is not part of 
+        # the exclusive group that is protected
+        self.assertEqual(False, res["allowed"]) 
+        self.assertEqual(False, res["allowed"]) 
+        req = create_request(
+            "alice", 
+            ["group-we-dont-care"], 
+            "group-we-dont-care")
+        res = self.group_validation_response(
+            req,
+            exclusive_group_prefixes=["non-pro"]
+        )
+        # Allow user as we don't care about the group and not protected  
+        self.assertEqual(True, res["allowed"]) 
 
     def test_priv_user(self):
         # If the username is kube:admin or system:admin, always ALLOW,
