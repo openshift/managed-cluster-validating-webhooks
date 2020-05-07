@@ -63,7 +63,6 @@ class TestNamespaceValidation(unittest.TestCase):
         "test-user",
     )
 
-
     def runtest(self, namespace, groups, userName, expect):
         # Make test failures easier to identify
         failmsg = "expect={}, namespace={}, groups={}, user={}".format(
