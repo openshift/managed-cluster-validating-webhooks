@@ -4,13 +4,13 @@ import json
 from webhook import namespace_validation
 
 
-def create_request(namespace, groups):
+def create_request(namespace, groups, userName):
     class FakeRequest(object):
         json = {
             "request": {
                 "uid": "testuser",
                 "userInfo": {
-                    "username": "me",
+                    "username": userName,
                     "groups": groups,
                 },
                 "namespace": namespace,
@@ -27,17 +27,17 @@ class TestNamespaceValidation(unittest.TestCase):
         "openshift",
         "openshifter",
         "openshift-foo",
-        "ops-health-monitoring",
-        "management-infra",
         "default",
-        "logging",
-        "sre-app-check",
+    )
+
+    REDHAT_NAMESPACES = (
         "redhat-user",
         "redhat-wow",
+        "redhatuser",
     )
 
     NONPRIV_NAMESPACES = (
-        "kubeadmin",
+        "kudeadmin",
         "mykube-admin",
         "open-shift",
         "oopenshift",
@@ -49,26 +49,26 @@ class TestNamespaceValidation(unittest.TestCase):
         "adefault",
         "logger",
         "some-logging",
-        "redhatuser",
     )
 
-    # None of these contain 'dedicated-admins', so will result in ALLOW unless
-    # it's added.
-    GROUP_LISTS = (
-        # These are tuples so they're immutable, forcing the test case to
-        # duplicate in order to change them. Otherwise we have potential
-        # collisions among test cases.
-        (),
-        ("cluster-admins",),
-        ("osd-sre-admins",),
-        ("layered-cs-sre-admins",),
+    PRIVILEGED_USERS = (
+        "kube:admin",
+        "system:admin",
     )
 
-    def runtest(self, namespace, groups, expect):
+    NON_PRIVILEGED_USERS = (
+        "random_user",
+        "employee",
+        "employee@redhat.com",
+        "test-user",
+    )
+
+
+    def runtest(self, namespace, groups, userName, expect):
         # Make test failures easier to identify
-        failmsg = "expect={}, namespace={}, groups={}".format(
-            expect, namespace, groups)
-        request = create_request(namespace, groups)
+        failmsg = "expect={}, namespace={}, groups={}, user={}".format(
+            expect, namespace, groups, userName)
+        request = create_request(namespace, groups, userName)
         response = namespace_validation.get_response(request)
         response = json.loads(response)['response']
         self.assertEqual(expect, response['allowed'], failmsg)
@@ -81,33 +81,61 @@ class TestNamespaceValidation(unittest.TestCase):
                 failmsg)
 
     def test_deny(self):
-        # In order to get DENYs, we must have *both* a privileged namespace
-        # *and* the 'dedicated-admins' group.
+        # layered-cs-sre-admins should not have access to any privledged namespaces except ones starting with 'redhat'
+        # dedicated-admins should not have access to any privledged namespaces
         for ns in self.PRIVILEGED_NAMESPACES:
-            for gl in self.GROUP_LISTS:
-                # Always include dedicated-admins
-                groups = gl + ('dedicated-admins',)
-                self.runtest(ns, groups, False)
+            for user in self.NON_PRIVILEGED_USERS:
+                groups = ('layered-cs-sre-admins',)
+                self.runtest(ns, groups, user, False)
+                groups = ('dedicated-admins',)
+                self.runtest(ns, groups, user, False)
+                groups = ('random-test-group',)
+                self.runtest(ns, groups, user, False)
+        for ns in self.REDHAT_NAMESPACES:
+            for user in self.NON_PRIVILEGED_USERS:
+                groups = ('dedicated-admins',)
+                self.runtest(ns, groups, user, False)
+                groups = ('random-test-group',)
+                self.runtest(ns, groups, user, False)
 
     def test_allow_group(self):
-        # If the group list doesn't contain 'dedicated-admins', always ALLOW,
-        # even if the namespace is privileged. (Really?)
-        for ns in self.PRIVILEGED_NAMESPACES + self.NONPRIV_NAMESPACES:
-            for gl in self.GROUP_LISTS:
-                self.runtest(ns, gl, True)
+        # user in osd-sre-admins group can edit non-privileged NS
+        # user in osd-sre-admins group can edit privileged NS
+        for ns in self.PRIVILEGED_NAMESPACES + self.NONPRIV_NAMESPACES + self.REDHAT_NAMESPACES:
+            for user in self.NON_PRIVILEGED_USERS:
+                groups = ('osd-sre-cluster-admins',)
+                self.runtest(ns, groups, user, True)
+                groups = ('osd-sre-admins',)
+                self.runtest(ns, groups, user, True)
+
+    def test_allow_layered_admins(self):
+        # user in layered-sre-cluster-admins group can edit non-privileged NS
+        for ns in self.NONPRIV_NAMESPACES + self.REDHAT_NAMESPACES:
+            for user in self.NON_PRIVILEGED_USERS:
+                groups = ('layered-sre-cluster-admins',)
+                self.runtest(ns, groups, user, True)
+
+    def test_priv_users(self):
+        # all privileged users (kube/system:admin) can edit any privileged or
+        # non-privileged NS
+        for user in self.PRIVILEGED_USERS:
+            for ns in self.PRIVILEGED_NAMESPACES + self.NONPRIV_NAMESPACES + self.REDHAT_NAMESPACES:
+                groups = ('random-test-group',)
+                self.runtest(ns, groups, user, True)
 
     def test_allow_ns(self):
         # Nonprivileged namespaces always ALLOW, even if the group list
         # contains 'dedicated-admins'.
         for ns in self.NONPRIV_NAMESPACES:
-            for gl in self.GROUP_LISTS:
-                self.runtest(ns, gl, True)
-                groups = gl + ('dedicated-admins',)
-                self.runtest(ns, groups, True)
+            for user in self.NON_PRIVILEGED_USERS:
+                groups = ('dedicated-admins',)
+                self.runtest(ns, groups, user, True)
+                groups = ('random-test-group',)
+                self.runtest(ns, groups, user, True)
 
     def test_invalid(self):
         # Validate the exception path
-        request = create_request('foo', [])
+        request = create_request('foo', [], [])
         # This will trigger a KeyError when get_response tries to access the
         # 'userInfo'
         del request.json['request']['userInfo']
