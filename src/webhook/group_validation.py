@@ -29,9 +29,13 @@ def handle_request():
   if debug:
     print("REQUEST BODY => {}".format(request.json))
 
+  return get_response(request, debug)
+
+
+def get_response(req, debug=False):
   valid = True
   try:
-    valid = validate.validate_request_structure(request.json)
+    valid = validate.validate_request_structure(req.json)
   except:
     valid = False
 
@@ -40,10 +44,6 @@ def handle_request():
     DENIED_GROUP.inc()
     return responses.response_invalid()
 
-  return get_response(request, debug)
-
-
-def get_response(req, debug=False):
   try:
     body_dict = req.json['request']
     # If trying to delete a group, must get group name from oldObject instead of object

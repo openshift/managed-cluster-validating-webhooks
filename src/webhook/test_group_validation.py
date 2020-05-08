@@ -7,6 +7,7 @@ from webhook import group_validation
 def create_request(user, memberGroups, editGroup):
     class FakeRequest(object):
         json = {
+            "kind": "AdmissionReview",
             "request": {
                 "uid": "testuser",
                 "userInfo": {
@@ -28,6 +29,7 @@ def create_request(user, memberGroups, editGroup):
 def create_delete_request(user, memberGroups, editGroup):
     class FakeRequest(object):
         json = {
+            "kind": "AdmissionReview",
             "request": {
                 "uid": "testuser",
                 "userInfo": {
