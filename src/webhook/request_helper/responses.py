@@ -2,7 +2,7 @@ import json
 import os
 
 
-def response_base(req, allowed, msg=''): 
+def response_base(req, allowed, msg=''):
     body = {
         'apiVersion': 'admission.k8s.io/v1beta1',
         'kind': 'AdmissionReview',
