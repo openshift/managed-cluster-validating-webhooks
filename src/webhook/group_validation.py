@@ -29,9 +29,13 @@ def handle_request():
   if debug:
     print("REQUEST BODY => {}".format(request.json))
 
+  return get_response(request, debug)
+
+
+def get_response(req, debug=False):
   valid = True
   try:
-    valid = validate.validate_request_structure(request.json)
+    valid = validate.validate_request_structure(req.json)
   except:
     valid = False
 
@@ -40,10 +44,6 @@ def handle_request():
     DENIED_GROUP.inc()
     return responses.response_invalid()
 
-  return get_response(request, debug)
-
-
-def get_response(req, debug=False):
   try:
     body_dict = req.json['request']
     # If trying to delete a group, must get group name from oldObject instead of object
@@ -62,6 +62,10 @@ def get_response(req, debug=False):
     user_name = None
     if 'username' in userinfo:
       user_name = userinfo['username']
+
+    if user_name is None:
+      DENIED_GROUP.inc()
+      return responses.response_invalid()
 
     if user_name in ("kube:admin", "system:admin"):
       # kube/system admin can do anything
@@ -91,4 +95,5 @@ def get_response(req, debug=False):
     print("Backtrace:")
     print("-" * 60)
     traceback.print_exc(file=sys.stdout)
+    DENIED_GROUP.inc()
     return responses.response_invalid()
