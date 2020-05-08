@@ -49,4 +49,5 @@ def handle_request():
     print("Exception:")
     print("-" * 60)
     traceback.print_exc(file=sys.stdout)
+    DENIED_SUBSCRIPTION.inc()
     return responses.response_invalid()

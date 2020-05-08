@@ -180,6 +180,7 @@ class TestGroupValidation(unittest.TestCase):
         # This will trigger a KeyError when get_response tries to access the
         # 'userInfo'
         del request.json['request']['userInfo']
+        print("nmalik: XXX")
         response = group_validation.get_response(request)
         self.assertEqual(
             "Invalid request",

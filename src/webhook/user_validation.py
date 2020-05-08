@@ -83,4 +83,5 @@ def get_response(request, debug=False):
         print("Backtrace:")
         print("-" * 60)
         traceback.print_exc(file=sys.stdout)
+        DENIED_USER.inc()
         return responses.response_invalid()

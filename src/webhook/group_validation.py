@@ -63,6 +63,10 @@ def get_response(req, debug=False):
     if 'username' in userinfo:
       user_name = userinfo['username']
 
+    if user_name is None:
+      DENIED_GROUP.inc()
+      return responses.response_invalid()
+
     if user_name in ("kube:admin", "system:admin"):
       # kube/system admin can do anything
       if debug:
@@ -91,4 +95,5 @@ def get_response(req, debug=False):
     print("Backtrace:")
     print("-" * 60)
     traceback.print_exc(file=sys.stdout)
+    DENIED_GROUP.inc()
     return responses.response_invalid()
