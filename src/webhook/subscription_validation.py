@@ -34,7 +34,11 @@ def handle_request():
     # inc denied subscription counter
     DENIED_SUBSCRIPTION.inc()
     return responses.response_invalid()
+
+  return get_response(request, debug)
+
   
+def get_response(request, debug=False):
   try:
     body_dict = request.json['request']
     requester_group_memberships = body_dict['userInfo']['groups']
