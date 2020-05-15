@@ -45,7 +45,7 @@ lint: test-container
 	# W293 blank line contains whitespace
 	# W503 line break before binary operator
 	# W504 line break after binary operator
-	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd`; flake8 --ignore E111,E114,E127,E129,E401,E402,E501,E722,W293,W503,W504 src/"
+	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd -P`; flake8 --ignore E111,E114,E127,E129,E401,E402,E501,E722,W293,W503,W504 src/"
 
 .PHONY: test
 test: test-container
