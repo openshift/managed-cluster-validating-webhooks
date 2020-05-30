@@ -1,0 +1,28 @@
+package helpers
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+
+	admissionapi "k8s.io/api/admission/v1beta1"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+)
+
+var log = logf.Log.WithName("response_helper")
+
+// SendResponse Send the AdmissionReview.
+func SendResponse(w io.Writer, resp admissionctl.Response) {
+
+	encoder := json.NewEncoder(w)
+	responseAdmissionReview := admissionapi.AdmissionReview{
+		Response: &resp.AdmissionResponse,
+	}
+	err := encoder.Encode(responseAdmissionReview)
+	// TODO (lisa): handle this in a non-recursive way (why would the second one succeed)?
+	if err != nil {
+		log.Error(err, "Failed to encode Response", "response", resp)
+		SendResponse(w, admissionctl.Errored(http.StatusInternalServerError, err))
+	}
+}

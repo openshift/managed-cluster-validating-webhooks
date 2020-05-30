@@ -1,6 +1,0 @@
-FROM python:3
-
-# Install modules
-ENV PYTHONDONTWRITEBYTECODE="true"
-COPY src/*requirements.txt ./
-RUN pip install -r requirements.txt -r test-requirements.txt --no-cache-dir

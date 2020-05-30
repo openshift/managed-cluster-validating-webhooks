@@ -1,146 +1,111 @@
 # Managed Cluster Validating Webhooks
 
-A Flask app designed to act as a webhook admission controller for OpenShift.
+A framework supporting validating webhooks for OpenShift.
 
-## Webhooks
+## Updating SelectorSyncSet Template
 
-### Group Validation
-
-Configuration for this webhook is provided by environment variables:
-
-* `GROUP_VALIDATION_PROTECTED_GROUP_REGEX` - Regular expression for protected group names, such as `osd-` to apply to `CREATE`, `UPDATE`, `DELETE` operations on groups starting with `osd-`. (default: `(^osd-.*|^dedicated-admins$|^cluster-admins$|^layered-cs-sre-admins$)`)
-* `GROUP_VALIDATION_ADMIN_GROUP` - Admin groups, which the requestor must be a member in order to have access granted. This is comma-separated. (default: `osd-sre-admins,osd-sre-cluster-admins`)
-* `DEBUG_GROUP_VALIDATION` - Debug the webhook? Set to `True` to enable, all other values (including absent) disable. (default: False)
-
-### Subscription Validation
-
-Restrict dedicated-admins to creating `Subscription` objects with `.spec.sourceNamespace` from a pre-approved list. The list is specified by environment variable:
-
-* `SUBSCRIPTION_VALIDATION_NAMESPACES` - Comma-separated list of namespaces for which dedicated-admins are allowed to use as `.spec.sourceNamespace` in `Subscription` objects. (default "openshift-operators")
-* `DEBUG_SUBSCRIPTION_VALIDATION` - Debug the hook (not currently used)
-
-## How it works
-
-In order for a validating webhook to talk to the code which is performing the validation (eg, the code in this repository), which is running in-cluster, Kubernetes needs to talk to it via a `Service` over HTTPS. This forces the Python Flask app to serve itself with a TLS certificate and the corresponding webhook configuration to specify the CA Bundle (`caBundle`) that matches up for those TLS certs.
-
-The TLS cert is provisioned by using the [openshift-ca-operator](https://github.com/openshift/service-ca-operator). Refer to its documentation for how TLS keys are requested and stored. See also: [02-webhook-cacert.configmap.yaml.tmpl](/templates/02-webhook-cacert.configmap.yaml.tmpl) and [05-group-validation-webhook.service.yaml.tmpl](/templates/05-group-validation-webhook.service.yaml.tmpl).
-
-Getting the TLS certificates is only part of the battle, as the operator does not inject them into the `ValidatingWebhookConfiguration`. To accomplish that, a small Python script has been written that is used as an `initContainer` in the Deployment of the webhook framework. The "injector" script, when run, will find all `ValidatingWebhookConfiguration` objects with an `managed.openshift.io/inject-cabundle-from` annotation. The annotation's value is in the format `namespace/configmap` from whence the CA Bundle can be found (as the key `service-ca.crt`). Thus an annotation `managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert` will have the "injector" script look in the `openshift-validation-webhook` `Namespace` for the `webhook-cert` `ConfigMap` to contain a `service-ca.crt` key and therein, a PEM encoded certificate. The certificate is base64-encoded and set as the `caBundle` for each webhook defined in the `ValidatingWebhookConfiguration`.
+Ensure the git branch is current and run `make syncset`. The updated Template will be  [build/selectorsyncset.yaml](build/selectorsyncset.yaml) by default.
 
 ## Development
 
+Each Webhook must register with, and therefor satisfy the interface specified in [pkg/webhooks/register.go](pkg/webhooks/register.go):
+
+
+```go
+// Webhook interface
+type Webhook interface {
+	// HandleRequest handles an incoming webhook
+	HandleRequest(http.ResponseWriter, *http.Request)
+	// GetURI returns the URI for the webhook
+	GetURI() string
+	// Validate will validate the incoming request
+	Validate(admissionctl.Request) bool
+	// Name is the name of the webhook
+	Name() string
+	// FailurePolicy is how the hook config should react if k8s can't access it
+	FailurePolicy() admissionregv1.FailurePolicyType
+	// MatchPolicy mirrors validatingwebhookconfiguration.webhooks[].matchPolicy.
+	// If it is important to the webhook, be sure to check subResource vs
+	// requestSubResource.
+	MatchPolicy() *admissionregv1.MatchPolicyType
+	// Rules is a slice of rules on which this hook should trigger
+	Rules() []admissionregv1.RuleWithOperations
+	// SideEffects are what side effects, if any, this hook has. Refer to
+	// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#side-effects
+	SideEffects() *admissionregv1.SideEffectClass
+	//TimeoutSeconds returns an int32 representing how long to wait for this hook to complete
+	TimeoutSeconds() int32
+}
+```
+
+The first four methods (`HandleRequest`, `GetURI`, `Validate` and `Name`) are involved with the process of handling the incoming JSON payload from the API server. `GetURI` and `Name` prepare the webserver to send to `HandleRequest` the payload and `Validate` ensures that the structure of the `AdmissionRequest` is appropriate, _not_ if the request should be permitted (this functionality is up to the webhook author to implement, and is not part of the interface).
+
+The remaining methods (and also including `GetURI` and `Name`) are involved with [rendering YAML](#updating-selectorsyncset-template).
+
 ### Adding New Webhooks
 
-In order to add new webhooks, create a new Python file in [src/webhook](src/webhook), following the pattern from [src/webhook/group_validation.py](src/webhook/group_validation.py). Add an entry to [src/webhook/__init__.py](src/webhook/__init__.py) in the pattern of the group validation webhook.
+Registering involves creating a file in [pkg/webhooks](pkg/webhooks) (eg [add_namespace_hook.go](pkg/webhooks/add_namespace_hook.go)) which calls the `Register` function exported from [register.go](pkg/webhooks/register.go):
 
-#### Register with the Flask application
+```go
+// pkg/webhooks/add_namespace_hook.go
 
-To register your webhook with the Flask app:
+package webhooks
 
-```python
-# src/webhook/__init__.py
-from flask import Flask
-from flask import request
+import (
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/namespace"
+)
 
-app = Flask(__name__,instance_relative_config=True)
-
-from webhook import group_validation
-app.register_blueprint(group_validation.bp)
-
-from webhook import your_hook
-app.register_blueprint(your_hook.bp)
+func init() {
+	Register(namespace.WebhookName, func() Webhook { return namespace.NewWebhook() })
+}
 ```
 
-#### Adding YAML Manifests
+The signature is `Register(string, WebhookFactory)`, where a `WebhookFactory` is `type WebhookFactory func() Webhook`.
 
-To add a new YAML Manifest:
+### Helper Utils
 
-Create a new file in [templates](/templates) directory with a `10-` prefix, ex `10-your-hook.ValidatingWebhookConfiguration.yaml.tmpl` with contents:
+The [utils package](pkg/webhooks/utils/utils.go) exists to handle the most common activities a webhook would need to do: Parsing the incoming HTTP JSON request and a string slice content checker (`SliceContains(string, []string) bool`) since it's a common task to see if a group or username is a member of some safelisted list. Additional helper functions are described in [Sending Responses](#sending-responses).
 
-```yaml
-apiVersion: admissionregistration.k8s.io/v1beta1
-kind: ValidatingWebhookConfiguration
-metadata: 
-  name: your-webhook-name-here
-  annotations:
-    # Typically  managed.openshift.io/inject-cabundle-from: namespace/configmap
-    # The configmap must have the cert in PEM format in a key named service-ca.crt.
-    # Each webhook in this object with a service clientConfig will have the bundle injected.
-    #VWC_ANNOTATION#: #NAMESPACE#/#CABUNDLECONFIGMAP#
-webhooks:
-  - clientConfig:
-      service:
-        namespace: #NAMESPACE#
-        name: #SVCNAME#
-        path: /your-webhook
-    failurePolicy:
-      # What to do if the hook itself fails (Ignore/Fail)
-    name: your-webhook.managed.openshift.io
-    rules:
-      - operations:
-          # operations list
-        apiGroups:
-          # apiGroups list
-        apiVersions:
-          # apiVersions list
-        resources:
-          # resources List
+It is strongly recommended to use the `ParseHTTPRequest` method. It handles various edge cases that could come up with the incoming HTTP request. Return signature for this function is `ParseHTTPRequest(r *http.Request) (admissionctl.Request, admissionctl.Response, error)`. Typically the `Request` is sufficient for processing; the `Response` is provided for completness sake and may go away in the future (See [Building a Response](#building-a-response)).
+
+### Building a Response
+
+To create a `Response` object (to reply to the incoming `AdmissionRequest`), one should use `sigs.k8s.io/controller-runtime/pkg/webhook/admission` (often imported as `admissionctl`), which provides several helper functions:
+
+* `Allowed(message string)`
+* `Denied(message string) Response`
+* `Errored(error int32, message string) Response`
+
+Use these functions once access has been determined, or in the event of some fundamental problem. A common use for `Errored` is when `Validate` fails. Refer to [Sending Responses](#sending-responses) for methods related to sending these `Response` objects back over the HTTP connection.
+
+### Sending Responses
+
+Once a [response is build](#building-a-response), it must be sent back to the HTTP client (typically from `HandleRequest` method). Using the [response helper](pkg/helpers/response.go) makes this quite easy with its `SendResponse(io.Writer, admissionctl.Response)` function.
+
+An example usage is:
+
+```go
+	// Is this a valid request?
+	if !s.Validate(request) {
+		responsehelper.SendResponse(w,
+			admissionctl.Errored(http.StatusBadRequest,
+				fmt.Errorf("Could not parse Namespace from request")))
+		return
+	}
 ```
 
-From here, `make render` will populate [deploy](/deploy) with YAML manifests that can be `oc apply` to the cluster in question. Note that new hooks require a restart of the Flask application.
+This combines two features: [building a response](#building-a-response) (`Errored`) and sending it with the `SendResponse` function. In this case, it is perhaps because the incoming `Request` is not valid, perhaps because an expected `Namespace` couldn't be found within the request.
 
-### Request Helpers
+### Writing Tests
 
-There are helper methods within the [src/webhook/request_helper](src/webhook/request_helper) to aid with:
+Unit tests are important to ensure that webhooks behave as expected, and to help with that process, there is a [testutils](pkg/testutils/testutils.go) helper package designed to unify several processes. The package exports:
 
-* [Incoming request validation](src/webhook/request_helper/validate.py)
-* [Formulating the response JSON body](src/webhook/request_helper/responses.py)
+* `CanCanNot`
+* `CreateFakeRequestJSON`
+* `CreateHTTPRequest`
+* `SendHTTPRequest`
 
-To use the request validation:
 
-```python
-# src/webhook/your_hook.py
-from flask import request, Blueprint
-import json
+The first function, `CanCanNot`, is very simple and designed to make test failure messages gramatically correct for. The three other functions are much more important to the testing process.
 
-from webhook.request_helper import validate, responses
-@bp.route('/your-webhook', methods=('GET','POST'))
-def handle_request():
-  valid = True
-  try:
-    valid = validate.validate_request_structure(request.json)
-  except:
-    # if anything goes wrong, it's not valid.
-    valid = False
-  if not valid:
-    return responses.response_invalid()
-  # ... normal hook flow
-```
-
-To use the response helpers:
-
-```python
-# src/webhook/your_hook.py
-from flask import request, Blueprint
-import json
-
-from webhook.request_helper import responses
-@bp.route('/your-webhook', methods=('GET','POST'))
-def handle_request():
-  # ...
-
-  # request is the object coming from the webhook
-  # request.json converts to JSON document, and the request key therein has the interesting data
-  request_body = request.json['request']
-
-  # Invalid request came in
-  return responses.response_invalid()
-
-  # Access granted:
-  return responses.response_allow(req=request_body)
-
-  # Access denied:
-  return responses.response_deny(req=response_body, msg="Reason to deny")
-  
-  # ...
-```
+The three helper functions are intended to provide for more integration style tests than true unit tests, as they assist in turning a specific set of test criteria a JSON representation and sending via `net/http/httptest` to the webhook's `HandleRequest`. When using `testutils.SendHTTPRequest`, the response is a `Response` object that can be used in the test suite to access the result of the webhook.
