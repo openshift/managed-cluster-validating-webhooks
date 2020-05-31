@@ -1,26 +1,40 @@
-import os
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from kubernetes.config.config_exception import ConfigException
 
-# Use KUBECONFIG from pod else consume from local ~/.kube/config
-try:
-    if 'KUBERNETES_PORT' in os.environ:
-        config.load_incluster_config()
+
+def kube_auth():
+    # Use ~/.kube/config for authentication if script run directly
+    if __name__ == "__main__":
+        try:
+            config.load_kube_config()
+            return True
+        except ConfigException as c:
+            print("ConfigException in load_kube_config() : %s\n" % c)
+            return False
+
+    # Use serviceaccount token to authenticate.
     else:
-        config.load_kube_config()
-except ConfigException as c:
-    print("Exception in loading cluster configuration : %s\n" % c)
+        try:
+            config.load_incluster_config()
+            return True
+        except ConfigException as c:
+            print("ConfigException in load_incluster_config() : %s\n" % c)
+            return False
 
 
 def get_upgradeconfig_cr():
-    custom_api = client.CustomObjectsApi()
-    try:
-        ugpradeconfig_resource = custom_api.list_cluster_custom_object(
-            'upgrade.managed.openshift.io', 'v1alpha1', 'upgradeconfigs')
-        if ugpradeconfig_resource is None:
+    if kube_auth():
+        custom_api = client.CustomObjectsApi()
+        try:
+            ugpradeconfig_resource = custom_api.list_cluster_custom_object(
+                'upgrade.managed.openshift.io', 'v1alpha1', 'upgradeconfigs')
+            return ugpradeconfig_resource
+        except ApiException as e:
+            print(
+                "Exception in fetching upgrade.managed.openshift.io/v1alpha1 resource: %s\n" % e)
             return None
-        return ugpradeconfig_resource
-    except ApiException as e:
-        print(
-            "Exception in fetching upgrade.managed.openshift.io/v1alpha1 resource: %s\n" % e)
+
+
+if __name__ == "__main__":
+    get_upgradeconfig_cr()
