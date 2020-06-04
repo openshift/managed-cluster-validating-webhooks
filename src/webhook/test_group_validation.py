@@ -76,6 +76,7 @@ class TestGroupValidation(unittest.TestCase):
         ("cluster-admins"),
         ("layered-cs-sre-admins"),
         ("osd-sre-test-group"),
+        ("osd-devaccess"),
     )
 
     NON_PRIVILEGED_USERS = (

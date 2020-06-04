@@ -16,7 +16,7 @@ admin_group = os.getenv("GROUP_VALIDATION_ADMIN_GROUP", "osd-sre-admins,osd-sre-
 admin_groups = admin_group.split(",")
 
 # groups that cannot be edited by non-admins
-protected_group_regex = os.getenv("GROUP_VALIDATION_PROTECTED_GROUP_REGEX", "(^osd-sre.*|^dedicated-admins$|^cluster-admins$|^layered-cs-sre-admins$)")
+protected_group_regex = os.getenv("GROUP_VALIDATION_PROTECTED_GROUP_REGEX", "(^osd-.*|^dedicated-admins$|^cluster-admins$|^layered-cs-sre-admins$)")
 
 
 @bp.route('/group-validation', methods=['POST'])
