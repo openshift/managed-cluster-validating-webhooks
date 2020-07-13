@@ -56,7 +56,7 @@ objects:
         verbs:
         - list
         - get
-    - apiVersion: v1
+    - apiVersion: rbac.authorization.k8s.io/v1
       kind: ClusterRoleBinding
       metadata:
         creationTimestamp: null
@@ -98,6 +98,100 @@ objects:
         type: ClusterIP
       status:
         loadBalancer: {}
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+        creationTimestamp: null
+        name: sre-group-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /group-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: group-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - user.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          - CREATE
+          - DELETE
+          resources:
+          - groups
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+        creationTimestamp: null
+        name: sre-identity-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /identity-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: identity-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - user.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          - CREATE
+          - DELETE
+          resources:
+          - identities
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+        creationTimestamp: null
+        name: sre-namespace-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /namespace-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: namespace-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          resources:
+          - namespaces
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
     - apiVersion: admissionregistration.k8s.io/v1
       kind: ValidatingWebhookConfiguration
       metadata:
@@ -192,100 +286,6 @@ objects:
           - DELETE
           resources:
           - users
-          scope: Cluster
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
-        creationTimestamp: null
-        name: sre-group-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1beta1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /group-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: group-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - user.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - UPDATE
-          - CREATE
-          - DELETE
-          resources:
-          - groups
-          scope: Cluster
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
-        creationTimestamp: null
-        name: sre-identity-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1beta1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /identity-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: identity-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - user.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - UPDATE
-          - CREATE
-          - DELETE
-          resources:
-          - identities
-          scope: Cluster
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
-        creationTimestamp: null
-        name: sre-namespace-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1beta1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /namespace-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: namespace-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - ""
-          apiVersions:
-          - '*'
-          operations:
-          - UPDATE
-          resources:
-          - namespaces
           scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
