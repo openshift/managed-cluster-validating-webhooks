@@ -1,0 +1,18 @@
+#!/bin/sh -e
+
+# This is documented here:
+# https://docs.openshift.com/container-platform/3.11/creating_images/guidelines.html#openshift-specific-guidelines
+
+if ! whoami &>/dev/null; then
+  if [ -w /etc/passwd ]; then
+    echo "${USER_NAME:-webhooks}:x:$(id -u):$(id -g):${USER_NAME:-webhooks} user:${HOME}:/sbin/nologin" >> /etc/passwd
+  fi
+fi
+app="${1}"
+if [[ -z $app ]]; then
+  echo "First parameter to entrypoint should be webhooks or injector"
+  exit 1
+fi
+
+shift
+exec /usr/local/bin/$app $@

@@ -1,3 +1,5 @@
-/deploy
-__pycache__
 .coverage
+/build/_output
+*.out
+/coverage.txt
+/.vscode

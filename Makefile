@@ -1,70 +1,91 @@
 SHELL := /usr/bin/env bash
 
-TEMPLATEFILES := $(shell find ./templates -type f -name "*.yaml.tmpl")
 
-BASE_IMG=managed-cluster-validating-webhooks
-NAMESPACE ?= openshift-validation-webhook
-SVCNAME ?= validation-webhook
-SANAME ?= validation-webhook
-GIT_HASH=$(shell git rev-parse --short=7 HEAD)
-IMAGETAG=${GIT_HASH}
-CABUNDLECONFIGMAP ?= webhook-cert
-VWC_ANNOTATION ?= managed.openshift.io/inject-cabundle-from
+GIT_HASH := $(shell git rev-parse --short=7 HEAD)
+IMAGETAG ?= ${GIT_HASH}
 
+BASE_IMG ?= managed-cluster-validating-webhooks
 IMG ?= quay.io/app-sre/${BASE_IMG}
 
-SELECTOR_SYNC_SET_TEMPLATE_DIR=deploy
-BUILD_DIRECTORY=build
+BINARY_FILE ?= build/_output/webhooks
+INJECTOR_BIN ?= build/_output/injector
+
+GO_SOURCES := $(find $(CURDIR) -type f -name "*.go" -print)
+EXTRA_DEPS := $(find $(CURDIR)/build -type f -print) Makefile
+GOOS ?= linux
+GOARCH ?= amd64
+GOENV=GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0
+GOBUILDFLAGS=-gcflags="all=-trimpath=$(GOPATH)" -asmflags="all=-trimpath=$(GOPATH)"
+
+# do not include this comma-separated list of hooks into the syncset
+SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
 SELECTOR_SYNC_SET_DESTINATION=build/selectorsyncset.yaml
-REPO_NAME ?= managed-cluster-validating-webhooks
 
 CONTAINER_ENGINE?=docker
+#eg, -v
+TESTOPTS ?=
 
 default: all
-all: lint test build-base build-sss
+
+all: test build-image build-sss
+
+.PHONY: test
+test: vet $(GO_SOURCES)
+	@go test $(TESTOPTS) $(shell go list -mod=readonly -e ./...)
+	@go run cmd/main.go -testhooks
 
 .PHONY: clean
 clean:
-	$(CONTAINER_ENGINE) rmi $(REPO_NAME):test $(IMG):$(IMAGETAG) 2>/dev/null || true
-	rm -f coverage.log
+	@rm -f $(BINARY_FILE) $(INJECTOR_BIN) coverage.txt
 
-.PHONY: test-container
-test-container:
-	$(CONTAINER_ENGINE) build -t $(REPO_NAME):test -f build/Dockerfile.test .
+.PHONY: serve
+serve:
+	@go run ./cmd/main.go -port 8888
 
-.PHONY: lint
-lint: test-container
-	# E111 indentation is not a multiple of four
-	# E121 continuation line under-indented for hanging indent
-	# E127 continuation line over-indented for visual indent
-	# E129 visually indented line with same indent as next logical line
-	# E401 multiple imports on one line
-	# E402 module level import not at top of file
-	# E501 line too long (N > 79 characters)
-	# E722 do not use bare 'except'
-	# W293 blank line contains whitespace
-	# W503 line break before binary operator
-	# W504 line break after binary operator
-	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd -P`; flake8 --ignore E111,E114,E127,E129,E401,E402,E501,E722,W293,W503,W504 src/"
+.PHONY: vet
+vet:
+	@gofmt -s -l $(shell go list -f '{{ .Dir }}' ./... ) | grep ".*\.go"; if [ "$$?" = "0" ]; then gofmt -s -d $(shell go list -f '{{ .Dir }}' ./... ); exit 1; fi
+	@go vet ./cmd/... ./pkg/...
 
-.PHONY: test
-test: test-container
-	$(CONTAINER_ENGINE) run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd -P`; ./hack/test.sh"
+.PHONY: build
+build: $(BINARY_FILE) $(INJECTOR_BIN)
 
-.PHONY: build-sss
-build-sss: render test-container
-	${CONTAINER_ENGINE} run --rm -v `pwd -P`:`pwd -P` $(REPO_NAME):test /bin/sh -c "cd `pwd -P`; python build/generate_syncset.py -t ${SELECTOR_SYNC_SET_TEMPLATE_DIR} -b ${BUILD_DIRECTORY} -d ${SELECTOR_SYNC_SET_DESTINATION} -r ${REPO_NAME}"
+$(BINARY_FILE): test $(GO_SOURCES)
+	mkdir -p $(shell dirname $(BINARY_FILE))
+	$(GOENV) go build $(GOBUILDFLAGS) -o $(BINARY_FILE) ./cmd
+
+$(INJECTOR_BIN): test $(GO_SOURCES)
+	mkdir -p $(shell dirname $(INJECTOR_BIN))
+	$(GOENV) go build $(GOBUILDFLAGS) -o $(INJECTOR_BIN) ./cmd/injector
 
 .PHONY: build-base
-build-base: lint test build/Dockerfile
-	$(CONTAINER_ENGINE) build -t $(IMG):$(IMAGETAG) -f build/Dockerfile . 
+build-base: build-image
+.PHONY: build-image
+build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
+	$(CONTAINER_ENGINE) build -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
+	$(CONTAINER_ENGINE) tag $(IMG):$(IMAGETAG) $(IMG):latest
 
-.PHONY: push-base
-push-base: build/Dockerfile
-	$(CONTAINER_ENGINE) push $(IMG):$(IMAGETAG)
+build-sss: syncset
+render: syncset
+.PHONY: syncset
+syncset: $(SELECTOR_SYNC_SET_DESTINATION)
+# \$${IMAGE_TAG} will put a literal ${IMAGE_TAG} in the output, which is
+# required for the Template parsing
+$(SELECTOR_SYNC_SET_DESTINATION): $(GO_SOURCES) $(EXTRA_DEPS) Makefile build/syncset.go
+	go run \
+		build/syncset.go \
+		-exclude $(SELECTOR_SYNC_SET_HOOK_EXCLUDES) \
+		-outfile $(SELECTOR_SYNC_SET_DESTINATION) \
+		-image "$(IMG):\$${IMAGE_TAG}"
 
+### Imported
 .PHONY: skopeo-push
 skopeo-push:
+	@if [[ -z $$QUAY_USER || -z $$QUAY_TOKEN ]]; then \
+		echo "You must set QUAY_USER and QUAY_TOKEN environment variables" ;\
+		echo "ex: make QUAY_USER=value QUAY_TOKEN=value $@" ;\
+		exit 1 ;\
+	fi
 	# QUAY_USER and QUAY_TOKEN are supplied as env vars
 	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
 		"docker-daemon:${IMG}:${IMAGETAG}" \
@@ -73,27 +94,11 @@ skopeo-push:
 		"docker-daemon:${IMG}:${IMAGETAG}" \
 		"docker://${IMG}:${IMAGETAG}"
 
-# TODO: Change the render to allow for the permissions to have a list of all the webhook names
-# TODO: Pull that list of names from the yaml files?
-render: $(TEMPLATEFILES) build/Dockerfile
-	for f in $(TEMPLATEFILES); do \
-		sed \
-			-e "s!\#NAMESPACE\#!$(NAMESPACE)!g" \
-			-e "s!\#SVCNAME\#!$(SVCNAME)!g" \
-			-e "s!\#SANAME\#!$(SANAME)!g" \
-			-e "s!\#IMAGETAG\#!$(IMAGETAG)!g" \
-			-e "s!\#IMG\#!$(IMG)!g" \
-			-e "s!\#CABUNDLECONFIGMAP\#!$(CABUNDLECONFIGMAP)!g" \
-			-e "s!\#VWC_ANNOTATION\#!$(VWC_ANNOTATION)!g" \
-		$$f > deploy/$$(basename $$f .tmpl) ;\
-	done
 
-.PHONY: requirements
-requirements:
-	if [ "$(pip list | grep pipreqs | wc -l)" != "0" ]; then \
-		rm -f src/requirements.txt; \
-		pipreqs ./; \
-		mv requirements.txt src/; \
-	else \
-		echo "FAILURE please install pipreqs: pip install pipreqs"; \
-	fi
+.PHONY: push-base
+push-base: build/Dockerfile
+	$(CONTAINER_ENGINE) push $(IMG):$(IMAGETAG)
+
+coverage: coverage.txt
+coverage.txt: vet $(GO_SOURCES)
+	@./hack/test.sh

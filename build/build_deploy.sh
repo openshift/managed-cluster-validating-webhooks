@@ -4,6 +4,5 @@
 
 set -exv
 
-# build the image, the selectorsyncset, and push the imate
-IMAGETAG="$IMAGETAG" make render build-sss build-base skopeo-push
-
+# build the image, the selectorsyncset, and push the image
+make -C $(dirname $0)/../ IMAGETAG="$IMAGETAG" syncset build-base skopeo-push
