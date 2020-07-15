@@ -19,7 +19,7 @@ import (
 
 const (
 	WebhookName                  string = "namespace-validation"
-	privilegedNamespace          string = `(^kube.*|^openshift.*|^default$|^redhat.*)`
+	privilegedNamespace          string = `(^kube.*|^openshift.*|^default$|^redhat.*|^com$|^io$|^in$)`
 	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*)`
 	layeredProductNamespace      string = `^redhat.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"

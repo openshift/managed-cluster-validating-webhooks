@@ -127,6 +127,33 @@ func TestDedicatedAdmins(t *testing.T) {
 			operation:       v1beta1.Update,
 			shouldBeAllowed: true,
 		},
+		{
+			// Should not be able to create an privileged namespace
+			testID:          "dedi-create-com-ns",
+			targetNamespace: "com",
+			username:        "test-user",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// Should not be able to create an privileged namespace
+			testID:          "dedi-create-io-ns",
+			targetNamespace: "io",
+			username:        "test-user",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// Should not be able to create an privileged namespace
+			testID:          "dedi-create-in-ns",
+			targetNamespace: "in",
+			username:        "test-user",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
 	}
 	runNamespaceTests(t, tests)
 }
@@ -179,6 +206,33 @@ func TestNormalUser(t *testing.T) {
 			operation:       v1beta1.Delete,
 			shouldBeAllowed: false,
 		},
+		{
+			// Should not be able to create an privileged namespace
+			testID:          "nonpriv-create-com-ns",
+			targetNamespace: "com",
+			username:        "test-user",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// Should not be able to create an privileged namespace
+			testID:          "nonpriv-create-io-ns",
+			targetNamespace: "io",
+			username:        "test-user",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// Should not be able to create an privileged namespace
+			testID:          "nonpriv-create-in-ns",
+			targetNamespace: "in",
+			username:        "test-user",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
 	}
 	runNamespaceTests(t, tests)
 }
@@ -214,6 +268,33 @@ func TestLayeredProducts(t *testing.T) {
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Create,
 			shouldBeAllowed: true,
+		},
+		{
+			// Layered admins can not make an privileged ns
+			testID:          "lp-create-com-ns",
+			targetNamespace: "com",
+			username:        "test-user",
+			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// Layered admins can not make an privileged ns
+			testID:          "lp-create-io-ns",
+			targetNamespace: "io",
+			username:        "test-user",
+			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// Layered admins can not make an privileged ns
+			testID:          "lp-create-in-ns",
+			targetNamespace: "in",
+			username:        "test-user",
+			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
 		},
 	}
 	runNamespaceTests(t, tests)
@@ -266,6 +347,33 @@ func TestAdminUser(t *testing.T) {
 			username:        "lisa",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// Admins should be able to create a privileged namespace
+			testID:          "admin-com-ns-test",
+			targetNamespace: "com",
+			username:        "kube:admin",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// Admins should be able to create a privileged namespace
+			testID:          "admin-com-io-test",
+			targetNamespace: "io",
+			username:        "kube:admin",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// Admins should be able to create a privileged namespace
+			testID:          "admin-in-ns-test",
+			targetNamespace: "in",
+			username:        "kube:admin",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
 			shouldBeAllowed: true,
 		},
 	}
