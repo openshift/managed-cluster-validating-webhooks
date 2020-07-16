@@ -81,6 +81,15 @@ func TestAdminUsers(t *testing.T) {
 			operation:       v1beta1.Update,
 			shouldBeAllowed: true,
 		},
+		{
+			// Admins should be able to do everything
+			testID:          "dedi-update-impersonator-ns",
+			groupName:       "osd-impersonators",
+			username:        "kube:admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
 	}
 	runGroupTests(t, tests)
 }
@@ -102,6 +111,15 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
 			shouldBeAllowed: true,
+		},
+		{
+			// Should not be able to update impersonator group
+			testID:          "dedi-update-impersonator-ns",
+			groupName:       "osd-impersonators",
+			username:        "dedi-admin",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: false,
 		},
 	}
 	runGroupTests(t, tests)
@@ -128,6 +146,14 @@ func TestSREAdminUsers(t *testing.T) {
 		{
 			testID:          "sre-admin-modify-dedicated-admins-group",
 			groupName:       "dedicated-admins",
+			username:        "osd-sre-admin",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "sre-admin-modify-impersonator-group",
+			groupName:       "osd-impersonators",
 			username:        "osd-sre-admin",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
@@ -170,6 +196,15 @@ func TestOSDDevAccess(t *testing.T) {
 			// Dedicated admin should not be able to edit osd-devaccess group
 			testID:          "osd-dedi-admin-cant-edit-osd-devaccess",
 			groupName:       "osd-devaccess",
+			username:        "dedi-admin",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			// Dedicated admin should not be able to edit osd-devaccess group
+			testID:          "osd-dedi-admin-cant-impersonator-osd-devaccess",
+			groupName:       "osd-impersonators",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
