@@ -33,12 +33,12 @@ func runUserTests(t *testing.T, tests []userTestSuites) {
 	gvk := metav1.GroupVersionKind{
 		Group:   "user.openshift.io",
 		Version: "v1",
-		Kind:    "Identity",
+		Kind:    "User",
 	}
 	gvr := metav1.GroupVersionResource{
 		Group:    "user.openshift.io",
 		Version:  "v1",
-		Resource: "identities",
+		Resource: "users",
 	}
 
 	for _, test := range tests {
