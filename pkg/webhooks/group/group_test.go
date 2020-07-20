@@ -27,6 +27,7 @@ type groupTestsuites struct {
 	groupName       string
 	username        string
 	userGroups      []string
+	oldObject       *runtime.RawExtension
 	operation       v1beta1.Operation
 	shouldBeAllowed bool
 }
@@ -50,7 +51,7 @@ func runGroupTests(t *testing.T, tests []groupTestsuites) {
 		hook := NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
 			test.testID,
-			gvk, gvr, test.operation, test.username, test.userGroups, obj)
+			gvk, gvr, test.operation, test.username, test.userGroups, &obj, test.oldObject)
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
