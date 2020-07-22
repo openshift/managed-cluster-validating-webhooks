@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 
 	templatev1 "github.com/openshift/api/template/v1"
@@ -426,8 +427,16 @@ func main() {
 	encoded = append(encoded, runtime.RawExtension{Object: createCACertConfigMap()})
 	encoded = append(encoded, runtime.RawExtension{Object: createService()})
 
+	// Collect all of our webhook names and prepare to sort them all so the
+	// resulting SelectorSyncSet is always sorted.
+	hookNames := make([]string, 0)
+	for name := range webhooks.Webhooks {
+		hookNames = append(hookNames, name)
+	}
+	sort.Strings(hookNames)
 	seen := make(map[string]bool)
-	for _, hook := range webhooks.Webhooks {
+	for _, hookName := range hookNames {
+		hook := webhooks.Webhooks[hookName]
 		if seen[hook().GetURI()] {
 			panic(fmt.Sprintf("Duplicate hook URI: %s", hook().GetURI()))
 		}
