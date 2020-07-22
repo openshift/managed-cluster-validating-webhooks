@@ -1,5 +1,14 @@
 package user
 
+// User creation logic:
+// Red Hat associates (eg User IDs ending in @redhat.com) have special rules
+// that must be followed:
+// * If a User is a member of at least one of the three protected groups, the
+// User creation object MUST be using the Red Hat SRE identity provider (idp),
+// (eg identity.DefaultIdentityProvider)
+// * If a User is a Red Hat associate (user ID ending @redhat.com), they MUST
+// NOT be using the Red Hat SRE idp.
+
 import (
 	"encoding/json"
 	"fmt"
@@ -8,6 +17,10 @@ import (
 	"sync"
 
 	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/userloader"
+
+	// Only need the DefaultIdentityProvider
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/identity"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -19,8 +32,14 @@ import (
 )
 
 const (
-	WebhookName         string = "user-validation"
-	protectedUserSuffix string = "@redhat.com"
+	WebhookName string = "user-validation"
+	// redhatAssociateUserIDSuffix is used to restrict the creation of users with this
+	// user ID suffix to membership in the redhatGroups (see below). Users
+	redhatAssociateUserIDSuffix string = "@redhat.com"
+	// Red Hat associates who are a member of at least one redhatGroups must use
+	// this IDP, and users who use this IDP must be a member of at least one
+	// redhatGroups.
+	redHatIDP string = identity.DefaultIdentityProvider
 )
 
 var (
@@ -35,7 +54,10 @@ var (
 	// adminGroups restrict who is authorized to create a User for a Red Hat associate
 	adminGroups = []string{"osd-sre-admins", "osd-sre-cluster-admins", "system:serviceaccounts:openshift-authentication"}
 	// kubeAdminUsernames are core Kubernetes users, not generally created by people
-	kubeAdminUsernames = []string{"kube:admin", "system:admin", "system:serviceaccount:openshift-authentication:oauth-openshift"}
+	// system:serviceaccount:openshift-authentication:oauth-openshift is omitted
+	// from this intentionally so that the service account must abide by the Red
+	// Hat associate check
+	kubeAdminUsernames = []string{"kube:admin", "system:admin"}
 
 	scope = admissionregv1.ClusterScope
 	rules = []admissionregv1.RuleWithOperations{
@@ -50,17 +72,21 @@ var (
 			},
 		},
 	}
-	log = logf.Log.WithName(WebhookName)
 )
 
 // UserWebhook validates a User (user.openshift.io) change
 type UserWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
+	// Users is a list of @redhat.com (aka redhatAssociateUserIDSuffix) user IDs which are
+	// allowed to have an account created. These are "fully qualified" to include
+	// user ID and @redhat.com, populated by the loadUsers method.
+	Users []string
 }
 
 type userRequest struct {
-	Metadata struct {
+	Identities []string `json:"identities"` // what idp is being used for the User?
+	Metadata   struct {
 		Name string `json:"name"`
 	} `json:"metadata"`
 }
@@ -96,6 +122,36 @@ func (s *UserWebhook) Validate(req admissionctl.Request) bool {
 	return valid
 }
 
+// isAuthorizedToEditRedHatUsers is a helper to consolidate logic. Returns true
+// if the user making the webhook request is able to make edits to @redhat.com
+// users.
+func isAuthorizedToEditRedHatUsers(hookRequest admissionctl.Request) bool {
+	for _, userGroup := range hookRequest.AdmissionRequest.UserInfo.Groups {
+		if utils.SliceContains(userGroup, adminGroups) {
+			return true
+		}
+	}
+	return false
+}
+
+// isProtectedRedHatAssociate will indicate whether or not the subject of the webhook
+// request is a Red Hat associate subject to additional protections (eg a member
+// of the redhatGroups)
+func (s *UserWebhook) isProtectedRedHatAssociate(userReq *userRequest) bool {
+	return utils.SliceContains(userReq.Metadata.Name, s.Users)
+}
+
+// isRedHatAssociate will indicate whether or not the subject of the webhook
+// request is ANY kind of Red Hat associate (eg, their user ID ends in the
+// redhatAssociateUserIDSuffix)
+func (s *UserWebhook) isRedHatAssociate(userReq *userRequest) bool {
+	return strings.HasSuffix(userReq.Metadata.Name, redhatAssociateUserIDSuffix)
+}
+
+func (s *UserWebhook) isUsingRedHatIDP(userReq *userRequest) bool {
+	return utils.SliceContains(redHatIDP, userReq.Identities)
+}
+
 func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 	var err error
@@ -119,21 +175,38 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 		return ret
 	}
 
-	// If it's a protected user kind, perform other checks to require requestors be a member of an admin group.
-	if strings.HasSuffix(userReq.Metadata.Name, protectedUserSuffix) {
-		for _, userGroup := range request.AdmissionRequest.UserInfo.Groups {
-			if utils.SliceContains(userGroup, adminGroups) {
-				ret = admissionctl.Allowed("Members of admin group are allowed")
+	// Red Hat associates follow special rules about who can make changes and who
+	// can have accounts
+	if s.isRedHatAssociate(userReq) {
+		if !isAuthorizedToEditRedHatUsers(request) {
+			ret = admissionctl.Denied("Not allowed to edit Red Hat Users")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+		if s.isUsingRedHatIDP(userReq) {
+			// Are they a member of redhatGroups? If so, good to go, otherwise not.
+			if s.isProtectedRedHatAssociate(userReq) {
+				ret = admissionctl.Allowed("Red Hat associate allowed to use SRE IDP")
 				ret.UID = request.AdmissionRequest.UID
 				return ret
 			}
+			// Denied
+			ret = admissionctl.Denied("Red Hat associate must be a member of redhatGroups to use SRE IDP")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
 		}
-		// not an admin group member, so denied
-		log.Info("Denying access", "request", request.AdmissionRequest)
-		ret = admissionctl.Denied("User not authorized")
+		if s.isProtectedRedHatAssociate(userReq) {
+			// Protected users must use SRE IDP
+			ret = admissionctl.Denied("Member of redhatGroups must use SRE IDP")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+		// Allowed
+		ret = admissionctl.Allowed("Red Hat associate allowed to use non-SRE IDP")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
+	// Non-Red Hat associate
 
 	ret = admissionctl.Allowed("Allowed by RBAC")
 	ret.UID = request.AdmissionRequest.UID
@@ -142,7 +215,6 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 
 // HandleRequest hndles the incoming HTTP request
 func (s *UserWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	request, _, err := utils.ParseHTTPRequest(r)
@@ -158,10 +230,49 @@ func (s *UserWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		responsehelper.SendResponse(w, resp)
 		return
 	}
+	// load users in groups to know who is allowed an account
+	// TODO (lisa): Cache this and/or periodically refresh the data
+	if err = s.loadUsers(); err != nil {
+		// This is a fatal error
+		log.Error(err, "Couldn't load any valid users! No @redhat.com associates may have an account!")
+		resp := admissionctl.Errored(http.StatusInternalServerError, err)
+		resp.UID = request.AdmissionRequest.UID
+		responsehelper.SendResponse(w, resp)
+		return
+	}
 	// should the request be authorized?
-
 	responsehelper.SendResponse(w, s.authorized(request))
+}
 
+func (s *UserWebhook) loadUsers() error {
+	// load users, but do it a bit indirectly because it may (does) require itself
+	// to be inside a Kubernetes cluster. When testing, we won't have that, and so
+	// we'll need to mock that behaviour out.
+	// We can plug in our own test-purpose user loader for that.
+	ul, err := userLoaderBuilder()
+	if err != nil {
+		fmt.Printf("Error loading users: %s\n", err.Error())
+		return err
+	}
+	userMap, err := ul.GetUsersFromGroups(redhatGroups...)
+	if err != nil {
+		return err
+	}
+	allUsers := make([]string, 0)
+	// unique users
+	hist := make(map[string]bool)
+	for groupName, members := range userMap {
+		log.Info(fmt.Sprintf("loadUsers: Group %s has members %s", groupName, members))
+		// dedup
+		for _, user := range members {
+			if !hist[user] {
+				allUsers = append(allUsers, user)
+				hist[user] = true
+			}
+		}
+	}
+	s.Users = allUsers
+	return nil
 }
 
 // NewWebhook creates a new webhook
@@ -169,8 +280,9 @@ func NewWebhook() *UserWebhook {
 	scheme := runtime.NewScheme()
 	v1beta1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
-
-	return &UserWebhook{
+	w := &UserWebhook{
 		s: *scheme,
 	}
+
+	return w
 }
