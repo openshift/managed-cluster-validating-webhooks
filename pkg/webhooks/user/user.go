@@ -52,7 +52,7 @@ var (
 	redhatGroups = []string{"osd-devaccess", "osd-sre-admins", "layered-cs-sre-admins"}
 
 	// adminGroups restrict who is authorized to create a User for a Red Hat associate
-	adminGroups = []string{"osd-sre-admins", "osd-sre-cluster-admins", "system:serviceaccount:openshift-authentication:oauth-openshift"}
+	adminGroups = []string{"osd-sre-admins", "osd-sre-cluster-admins", "system:serviceaccounts:openshift-authentication"}
 	// kubeAdminUsernames are core Kubernetes users, not generally created by people
 	// system:serviceaccount:openshift-authentication:oauth-openshift is omitted
 	// from this intentionally so that the service account must abide by the Red
