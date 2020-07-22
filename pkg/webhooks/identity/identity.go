@@ -18,7 +18,7 @@ import (
 
 const (
 	WebhookName             string = "identity-validation"
-	DefaultIdentityProvider string = "OpenShift_SRE"
+	defaultIdentityProvider string = "OpenShift_SRE"
 )
 
 var (
@@ -112,7 +112,7 @@ func (s *IdentityWebhook) authorized(request admissionctl.Request) admissionctl.
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if idReq.ProviderName == DefaultIdentityProvider {
+	if idReq.ProviderName == defaultIdentityProvider {
 		for _, group := range request.AdmissionRequest.UserInfo.Groups {
 			if utils.SliceContains(group, adminGroups) {
 				ret = admissionctl.Allowed("members of admin group may interact with default idp")

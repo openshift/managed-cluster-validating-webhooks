@@ -54,7 +54,7 @@ func CreateFakeRequestJSON(uid string,
 	gvk metav1.GroupVersionKind, gvr metav1.GroupVersionResource,
 	operation v1beta1.Operation,
 	username string, userGroups []string,
-	obj, oldObject *runtime.RawExtension) ([]byte, error) {
+	obj runtime.RawExtension) ([]byte, error) {
 
 	req := v1beta1.AdmissionReview{
 		Request: &v1beta1.AdmissionRequest{
@@ -70,17 +70,13 @@ func CreateFakeRequestJSON(uid string,
 	}
 	switch operation {
 	case v1beta1.Create:
-		req.Request.Object = *obj
+		req.Request.Object = obj
 	case v1beta1.Update:
 		// TODO (lisa): Update should have a different object for Object than for OldObject
-		req.Request.Object = *obj
-		if oldObject != nil {
-			req.Request.OldObject = *oldObject
-		} else {
-			req.Request.OldObject = *obj
-		}
+		req.Request.Object = obj
+		req.Request.OldObject = obj
 	case v1beta1.Delete:
-		req.Request.OldObject = *obj
+		req.Request.OldObject = obj
 	}
 	b, err := json.Marshal(req)
 	if err != nil {
@@ -95,8 +91,8 @@ func CreateHTTPRequest(uri, uid string,
 	gvk metav1.GroupVersionKind, gvr metav1.GroupVersionResource,
 	operation v1beta1.Operation,
 	username string, userGroups []string,
-	obj, oldObject *runtime.RawExtension) (*http.Request, error) {
-	req, err := CreateFakeRequestJSON(uid, gvk, gvr, operation, username, userGroups, obj, oldObject)
+	obj runtime.RawExtension) (*http.Request, error) {
+	req, err := CreateFakeRequestJSON(uid, gvk, gvr, operation, username, userGroups, obj)
 	if err != nil {
 		return nil, err
 	}
