@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/golang/mock v1.3.1
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/hive v1.0.4
 	k8s.io/api v0.18.2

@@ -27,7 +27,6 @@ type identityTestSuites struct {
 	providerName    string
 	username        string
 	userGroups      []string
-	oldObject       *runtime.RawExtension
 	operation       v1beta1.Operation
 	shouldBeAllowed bool
 }
@@ -52,7 +51,7 @@ func runIdentityTests(t *testing.T, tests []identityTestSuites) {
 		hook := NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
 			test.testID,
-			gvk, gvr, test.operation, test.username, test.userGroups, &obj, test.oldObject)
+			gvk, gvr, test.operation, test.username, test.userGroups, obj)
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
@@ -87,8 +86,8 @@ func TestThing(t *testing.T) {
 		},
 		{
 			testID:          "dedi-admin-create-default",
-			identityName:    fmt.Sprintf("%s:test", DefaultIdentityProvider),
-			providerName:    DefaultIdentityProvider,
+			identityName:    fmt.Sprintf("%s:test", defaultIdentityProvider),
+			providerName:    defaultIdentityProvider,
 			username:        "ded-admin",
 			userGroups:      []string{adminGroups[0], "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
@@ -107,8 +106,8 @@ func TestThing(t *testing.T) {
 		{
 			// service account can update sre idp
 			testID:          "sa-update-sre-provider",
-			identityName:    fmt.Sprintf("%s:test", DefaultIdentityProvider),
-			providerName:    DefaultIdentityProvider,
+			identityName:    fmt.Sprintf("%s:test", defaultIdentityProvider),
+			providerName:    defaultIdentityProvider,
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:serviceaccount:openshift-authentication:oauth-openshift", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
@@ -117,8 +116,8 @@ func TestThing(t *testing.T) {
 		{
 			// system:admin update sre idp
 			testID:          "system:admin-update-sre-provider",
-			identityName:    fmt.Sprintf("%s:test", DefaultIdentityProvider),
-			providerName:    DefaultIdentityProvider,
+			identityName:    fmt.Sprintf("%s:test", defaultIdentityProvider),
+			providerName:    defaultIdentityProvider,
 			username:        "system:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
@@ -127,8 +126,8 @@ func TestThing(t *testing.T) {
 		{
 			// deny dedicated-admins to sre idp
 			testID:          "deny-dedi-admin-update",
-			identityName:    fmt.Sprintf("%s:test", DefaultIdentityProvider),
-			providerName:    DefaultIdentityProvider,
+			identityName:    fmt.Sprintf("%s:test", defaultIdentityProvider),
+			providerName:    defaultIdentityProvider,
 			username:        "dedicaded-admin-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
