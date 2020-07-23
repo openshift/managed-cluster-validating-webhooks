@@ -75,14 +75,22 @@ func createClusterRole() *rbacv1.ClusterRole {
 			Name: "webhook-validation-cr",
 		},
 		Rules: []rbacv1.PolicyRule{
+			// (injector): Inject CA bundle
 			{
 				APIGroups: []string{"admissionregistration.k8s.io"},
 				Resources: []string{"validatingwebhookconfigurations"},
 				Verbs:     []string{"list", "patch", "get", "update"},
 			},
+			// (injector): Read CA bundle
 			{
 				APIGroups: []string{""},
 				Resources: []string{"configmaps"},
+				Verbs:     []string{"list", "get"},
+			},
+			// (user-validation): List Groups and read their member names
+			{
+				APIGroups: []string{"user.openshift.io"},
+				Resources: []string{"groups"},
 				Verbs:     []string{"list", "get"},
 			},
 		},
