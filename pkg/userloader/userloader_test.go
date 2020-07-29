@@ -47,7 +47,6 @@ func TestNoGroups(t *testing.T) {
 	if len(users) != 0 {
 		t.Fatalf("Expected no users back, but got %d", len(users))
 	}
-	t.Skip()
 }
 
 func TestGroupWithNoUsers(t *testing.T) {
@@ -67,7 +66,6 @@ func TestGroupWithNoUsers(t *testing.T) {
 	if len(users["test"]) != 0 {
 		t.Fatalf("Expected no users back, but got %d", len(users["test"]))
 	}
-	t.Skip()
 }
 
 func TestWithGroup(t *testing.T) {
@@ -101,20 +99,5 @@ func TestWith2Groups(t *testing.T) {
 	}
 	if len(users["test2"]) != 23 {
 		t.Fatalf("Expected to get back 23 users from test2 group, got %d", len(users["test2"]))
-	}
-}
-
-func TestWithGroupNoUsers(t *testing.T) {
-	group := createGroup("test", 0)
-	l := NewTestLoader([]runtime.Object{group})
-	users, err := l.GetUsersFromGroups("test")
-	if err != nil {
-		t.Fatalf("Error %s", err.Error())
-	}
-	if len(users) != 1 {
-		t.Fatalf("Expected to get back 1 group, got %d", len(users))
-	}
-	if len(users["test"]) != 0 {
-		t.Fatalf("Expected to get back 0 users from the group, got %d", len(users["test"]))
 	}
 }
