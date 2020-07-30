@@ -50,6 +50,7 @@ type regularuserTests struct {
 	targetGroup       string
 	username          string
 	userGroups        []string
+	oldObject         *runtime.RawExtension
 	operation         v1beta1.Operation
 	skip              bool // skip this particular test?
 	skipReason        string
@@ -92,7 +93,7 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
 			test.testID,
-			gvk, gvr, test.operation, test.username, test.userGroups, obj)
+			gvk, gvr, test.operation, test.username, test.userGroups, &obj, test.oldObject)
 		if err != nil {
 			t.Fatalf("%s Expected no error, got %s", test.testID, err.Error())
 		}
