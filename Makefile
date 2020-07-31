@@ -7,6 +7,9 @@ IMAGETAG ?= ${GIT_HASH}
 BASE_IMG ?= managed-cluster-validating-webhooks
 IMG ?= quay.io/app-sre/${BASE_IMG}
 
+# nb: registry.svc.ci.openshift.org/openshift/release:golang-1.14 doesn't work for this
+SYNCSET_GENERATOR_IMAGE := golang:1.14
+
 BINARY_FILE ?= build/_output/webhooks
 INJECTOR_BIN ?= build/_output/injector
 
@@ -14,14 +17,14 @@ GO_SOURCES := $(find $(CURDIR) -type f -name "*.go" -print)
 EXTRA_DEPS := $(find $(CURDIR)/build -type f -print) Makefile
 GOOS ?= linux
 GOARCH ?= amd64
-GOENV=GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0
-GOBUILDFLAGS=-gcflags="all=-trimpath=$(GOPATH)" -asmflags="all=-trimpath=$(GOPATH)"
+GOENV = GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0
+GOBUILDFLAGS = -gcflags="all=-trimpath=$(GOPATH)" -asmflags="all=-trimpath=$(GOPATH)"
 
 # do not include this comma-separated list of hooks into the syncset
 SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
-SELECTOR_SYNC_SET_DESTINATION=build/selectorsyncset.yaml
+SELECTOR_SYNC_SET_DESTINATION = build/selectorsyncset.yaml
 
-CONTAINER_ENGINE?=docker
+CONTAINER_ENGINE ?= docker
 #eg, -v
 TESTOPTS ?=
 
@@ -72,11 +75,16 @@ syncset: $(SELECTOR_SYNC_SET_DESTINATION)
 # \$${IMAGE_TAG} will put a literal ${IMAGE_TAG} in the output, which is
 # required for the Template parsing
 $(SELECTOR_SYNC_SET_DESTINATION): $(GO_SOURCES) $(EXTRA_DEPS) Makefile build/syncset.go
-	go run \
-		build/syncset.go \
-		-exclude $(SELECTOR_SYNC_SET_HOOK_EXCLUDES) \
-		-outfile $(SELECTOR_SYNC_SET_DESTINATION) \
-		-image "$(IMG):\$${IMAGE_TAG}"
+	$(CONTAINER_ENGINE) run \
+		-v $(CURDIR):$(CURDIR) \
+		-w $(CURDIR) \
+		--rm \
+		$(SYNCSET_GENERATOR_IMAGE) \
+			go run \
+				build/syncset.go \
+				-exclude $(SELECTOR_SYNC_SET_HOOK_EXCLUDES) \
+				-outfile $(@) \
+				-image "$(IMG):\$${IMAGE_TAG}"
 
 ### Imported
 .PHONY: skopeo-push
