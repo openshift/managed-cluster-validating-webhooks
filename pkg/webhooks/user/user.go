@@ -150,7 +150,7 @@ func (s *UserWebhook) isRedHatAssociate(userReq *userRequest) bool {
 
 func (s *UserWebhook) isUsingRedHatIDP(userReq *userRequest) bool {
 	for _, idp := range userReq.Identities {
-		if strings.HasPrefix(idp+ ":", redHatIDP) {
+		if strings.HasPrefix(idp+":", redHatIDP) {
 			return true
 		}
 	}
