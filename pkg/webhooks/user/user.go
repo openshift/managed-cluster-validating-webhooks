@@ -149,7 +149,12 @@ func (s *UserWebhook) isRedHatAssociate(userReq *userRequest) bool {
 }
 
 func (s *UserWebhook) isUsingRedHatIDP(userReq *userRequest) bool {
-	return utils.SliceContains(redHatIDP, userReq.Identities)
+	for _, idp := range userReq.Identities {
+		if strings.HasPrefix(idp, redHatIDP) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Response {

@@ -26,7 +26,7 @@ const testUserRaw string = `{
 }`
 
 // rename it here so it makes sense in this context
-const testRedHatIdentity string = redHatIDP
+const testRedHatIdentity string = redHatIDP + ":foo"
 const testOtherIdentity string = "otherIDP:testing_string"
 
 // testRedHatUsers is our list of allowed Red Hat users for our various groups.
