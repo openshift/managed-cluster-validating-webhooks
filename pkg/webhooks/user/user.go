@@ -175,6 +175,7 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 
 	// Admin kube admin users can do whatever they want
 	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, kubeAdminUsernames) {
+		log.Info("Admin users allowed", "subject", userReq.Metadata.Name)
 		ret = admissionctl.Allowed("Admin users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
@@ -192,6 +193,7 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 			return ret
 		}
 		if !isAuthorizedToEditRedHatUsers(request) {
+			log.Info("Not allowed work with Red Hat users", "subject", userReq.Metadata.Name, "requestor", request.AdmissionRequest.UserInfo.Username)
 			ret = admissionctl.Denied("Not allowed to edit Red Hat Users")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
@@ -200,28 +202,31 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 
 			// Are they a member of redhatGroups? If so, good to go, otherwise not.
 			if s.isProtectedRedHatAssociate(userReq) {
+				log.Info("Red Hat Associates allowed to use SRE IDP", "subject", userReq.Metadata.Name, "IDP", redHatIDP)
 				ret = admissionctl.Allowed("Red Hat associate allowed to use SRE IDP")
 				ret.UID = request.AdmissionRequest.UID
 				return ret
 			}
 			// Denied
+			log.Info("Red Hat associates must be a member of redhatGroups to use SRE IDP", "subject", userReq.Metadata.Name, "requestor", request.AdmissionRequest.UserInfo.Username)
 			ret = admissionctl.Denied("Red Hat associate must be a member of redhatGroups to use SRE IDP")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 		if s.isProtectedRedHatAssociate(userReq) {
 			// Protected users must use SRE IDP
+			log.Info("Red Hat SREs must use SRE IDP", "subject", userReq.Metadata.Name, "requestor", request.AdmissionRequest.UserInfo.Username, "userReq.Identities", userReq.Identities)
 			ret = admissionctl.Denied("Member of redhatGroups must use SRE IDP")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 		// Allowed
+		log.Info("Red Hat Associates may use non-SRE IDP", "subject", userReq.Metadata.Name)
 		ret = admissionctl.Allowed("Red Hat associate allowed to use non-SRE IDP")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 	// Non-Red Hat associate
-
 	ret = admissionctl.Allowed("Allowed by RBAC")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
@@ -265,8 +270,7 @@ func (s *UserWebhook) loadUsers() error {
 	allUsers := make([]string, 0)
 	// unique users
 	hist := make(map[string]bool)
-	for groupName, members := range userMap {
-		log.Info(fmt.Sprintf("loadUsers: Group %s has members %s", groupName, members))
+	for _, members := range userMap {
 		// dedup
 		for _, user := range members {
 			if !hist[user] {
