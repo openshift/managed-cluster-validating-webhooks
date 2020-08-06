@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// Raw JSON for a Namespace, used as runtime.RawExtension, and represented here
+// Raw JSON for a Group, used as runtime.RawExtension, and represented here
 // because sometimes we need it for OldObject as well as Object.
 const testGroupRaw string = `{
   "metadata": {
@@ -75,8 +75,17 @@ func TestAdminUsers(t *testing.T) {
 	tests := []groupTestsuites{
 		{
 			// Should be able to do everything
-			testID:          "dedi-create-nonpriv-ns",
+			testID:          "admin-create-priv-group",
 			groupName:       "osd-sre-admins",
+			username:        "kube:admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// Admins should be able to do everything
+			testID:          "admin-update-impersonator-group",
+			groupName:       "osd-impersonators",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
@@ -84,11 +93,11 @@ func TestAdminUsers(t *testing.T) {
 		},
 		{
 			// Admins should be able to do everything
-			testID:          "dedi-update-impersonator-ns",
+			testID:          "admin-delete-impersonator-group",
 			groupName:       "osd-impersonators",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       v1beta1.Delete,
 			shouldBeAllowed: true,
 		},
 	}
@@ -97,16 +106,26 @@ func TestAdminUsers(t *testing.T) {
 func TestDedicatedAdminUsers(t *testing.T) {
 	tests := []groupTestsuites{
 		{
-			// Should be able to do nothing
-			testID:          "dedi-create-nonpriv-ns",
+			// Should not be able to create priv group
+			testID:          "dedi-create-priv-group",
 			groupName:       "osd-sre-admins",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       v1beta1.Create,
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "dedi-create-nonpriv-ns",
+			// Should be able to create non-priv group
+			testID:          "dedi-create-nonpriv-group",
+			groupName:       "my-group",
+			username:        "dedi-admin",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// Should be able to update non-priv group
+			testID:          "dedi-update-nonpriv-group",
 			groupName:       "my-group",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -115,12 +134,30 @@ func TestDedicatedAdminUsers(t *testing.T) {
 		},
 		{
 			// Should not be able to update impersonator group
-			testID:          "dedi-update-impersonator-ns",
+			testID:          "dedi-update-impersonator-group",
 			groupName:       "osd-impersonators",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
 			shouldBeAllowed: false,
+		},
+		{
+			// Should not be able to delete priv group
+			testID:          "dedi-delete-priv-group",
+			groupName:       "osd-sre-admins",
+			username:        "dedi-admin",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			// Should be able to delete nonpriv group
+			testID:          "dedi-delete-nonpriv-group",
+			groupName:       "my-group",
+			username:        "dedi-admin",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Delete,
+			shouldBeAllowed: true,
 		},
 	}
 	runGroupTests(t, tests)
@@ -129,19 +166,19 @@ func TestSREAdminUsers(t *testing.T) {
 	tests := []groupTestsuites{
 		{
 			// Should be able to do everything
-			testID:          "dedi-create-nonpriv-ns",
+			testID:          "sre-create-priv-group",
 			groupName:       "osd-sre-admins",
-			username:        "kube:admin",
+			username:        "test-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       v1beta1.Create,
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "dedi-create-nonpriv-ns",
+			testID:          "sre-create-nonpriv-group",
 			groupName:       "my-group",
-			username:        "kube:admin",
+			username:        "test-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       v1beta1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -158,6 +195,22 @@ func TestSREAdminUsers(t *testing.T) {
 			username:        "osd-sre-admin",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "sre-delete-priv-group",
+			groupName:       "osd-sre-admins",
+			username:        "test-user",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "sre-delete-nonpriv-group",
+			groupName:       "my-group",
+			username:        "test-user",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Delete,
 			shouldBeAllowed: true,
 		},
 	}
@@ -197,15 +250,6 @@ func TestOSDDevAccess(t *testing.T) {
 			// Dedicated admin should not be able to edit osd-devaccess group
 			testID:          "osd-dedi-admin-cant-edit-osd-devaccess",
 			groupName:       "osd-devaccess",
-			username:        "dedi-admin",
-			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
-			shouldBeAllowed: false,
-		},
-		{
-			// Dedicated admin should not be able to edit osd-devaccess group
-			testID:          "osd-dedi-admin-cant-impersonator-osd-devaccess",
-			groupName:       "osd-impersonators",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
