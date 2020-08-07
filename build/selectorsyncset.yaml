@@ -219,12 +219,17 @@ objects:
         name: regular-user-validation.managed.openshift.io
         rules:
         - apiGroups:
+          # Deny ability to manage these OCP resources:
           - autoscaling.openshift.io
           - cloudcredential.openshift.io
           - machine.openshift.io
           - admissionregistration.k8s.io
+          # Deny ability to manage SRE resources:
+          # oc get --raw /apis | jq -r '.groups[] | select(.name | contains("managed")) | .name'
           - cloudingress.managed.openshift.io
-          - veleros.managed.openshift.io
+          - managed.openshift.io
+          - splunkforwarder.managed.openshift.io
+          - upgrade.managed.openshift.io
           apiVersions:
           - '*'
           operations:
