@@ -92,7 +92,12 @@ func (s *GroupWebhook) authorized(request admissionctl.Request) admissionctl.Res
 		return ret
 	}
 	group := &groupRequest{}
-	err := json.Unmarshal(request.Object.Raw, group)
+	var err error
+	if len(request.OldObject.Raw) > 0 {
+		err = json.Unmarshal(request.OldObject.Raw, group)
+	} else {
+		err = json.Unmarshal(request.Object.Raw, group)
+	}
 	if err != nil {
 		ret = admissionctl.Errored(http.StatusBadRequest, err)
 		ret.UID = request.AdmissionRequest.UID
