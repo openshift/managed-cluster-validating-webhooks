@@ -35,7 +35,11 @@ var (
 					"machine.openshift.io",
 					"admissionregistration.k8s.io",
 					"cloudingress.managed.openshift.io",
-					"veleros.managed.openshift.io",
+					// Deny ability to manage SRE resources
+					// oc get --raw /apis | jq -r '.groups[] | select(.name | contains("managed")) | .name'
+					"managed.openshift.io",
+					"splunkforwarder.managed.openshift.io",
+					"upgrade.managed.openshift.io",
 				},
 				APIVersions: []string{"*"},
 				Resources:   []string{"*/*"},
