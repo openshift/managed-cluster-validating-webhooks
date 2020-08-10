@@ -70,11 +70,11 @@ build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 
 build-sss: syncset
 render: syncset
-.PHONY: syncset
+.PHONY: syncset $(SELECTOR_SYNC_SET_DESTINATION)
 syncset: $(SELECTOR_SYNC_SET_DESTINATION)
 # \$${IMAGE_TAG} will put a literal ${IMAGE_TAG} in the output, which is
 # required for the Template parsing
-$(SELECTOR_SYNC_SET_DESTINATION): $(GO_SOURCES) $(EXTRA_DEPS) Makefile build/syncset.go
+$(SELECTOR_SYNC_SET_DESTINATION):
 	$(CONTAINER_ENGINE) run \
 		-v $(CURDIR):$(CURDIR) \
 		-w $(CURDIR) \
