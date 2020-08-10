@@ -16,7 +16,7 @@ import (
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// GroupWebhook validates a Namespace change
+// GroupWebhook validates a (user.openshift.io) Group change
 type GroupWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
