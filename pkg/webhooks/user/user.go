@@ -198,8 +198,15 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
+		// We should be allowed to delete if they're not a member of the protected
+		// group because that is a cleanup operation
+		if request.AdmissionRequest.Operation == v1beta1.Delete {
+			log.Info("Allowing a DELETE of a User", "userReq", userReq, "requestor", request.AdmissionRequest.UserInfo.Username)
+			ret = admissionctl.Allowed("Allowed to delete a user")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
 		if s.isUsingRedHatIDP(userReq) {
-
 			// Are they a member of redhatGroups? If so, good to go, otherwise not.
 			if s.isProtectedRedHatAssociate(userReq) {
 				log.Info("Red Hat Associates allowed to use SRE IDP", "subject", userReq.Metadata.Name, "IDP", redHatIDP)
@@ -207,7 +214,6 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 				ret.UID = request.AdmissionRequest.UID
 				return ret
 			}
-			// Denied
 			log.Info("Red Hat associates must be a member of redhatGroups to use SRE IDP", "subject", userReq.Metadata.Name, "requestor", request.AdmissionRequest.UserInfo.Username)
 			ret = admissionctl.Denied("Red Hat associate must be a member of redhatGroups to use SRE IDP")
 			ret.UID = request.AdmissionRequest.UID
