@@ -34,7 +34,7 @@ const testOtherIdentity string = "otherIDP:testing_string"
 var testRedHatUsers = map[string][]string{
 	"osd-devaccess":         {"no-reply+devaccess1@redhat.com", "no-reply+devaccess2@redhat.com"},
 	"osd-sre-admins":        {"no-reply+osdsreadmin1@redhat.com", "no-reply+osdsreadmin2@redhat.com"},
-	"layered-cs-sre-admins": {"no-reply+lcssre+1@redhat.com", "no-reply@redhat.com"},
+	"layered-cs-sre-admins": {"no-reply+lcssre+1@redhat.com", "no-reply@redhat.com", "should-use-otherIDP@redhat.com"},
 }
 
 // testUserLoader implements Loader
@@ -242,6 +242,28 @@ func TestAdminUsers(t *testing.T) {
 			operation:       v1beta1.Create,
 			shouldBeAllowed: false,
 		},
+		{
+			// Can we do cleanup: Using IDP, but shouldn't because they're not in a
+			// protected group
+			testID:          "wrong-user-using-sre-idp",
+			subjectUserName: "not-in-protected-group@redhat.com",
+			username:        "sre-username",
+			userGroups:      []string{"system:authenticated", "osd-sre-cluster-admins"},
+			identity:        redHatIDP,
+			operation:       v1beta1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// Can we do cleanup: Not using SRE IDP, but is in a protected group (and
+			// shouldn't be, because they're using a different IDP)
+			testID:          "wrong-user-using-sre-idp",
+			subjectUserName: "should-use-otherIDP@redhat.com",
+			username:        "sre-username",
+			userGroups:      []string{"system:authenticated", "osd-sre-cluster-admins"},
+			identity:        testOtherIdentity,
+			operation:       v1beta1.Delete,
+			shouldBeAllowed: true,
+		},
 	}
 	runUserTests(t, tests)
 }
@@ -267,6 +289,26 @@ func TestNonAdminUsers(t *testing.T) {
 			identity:        testOtherIdentity,
 			operation:       v1beta1.Delete,
 			shouldBeAllowed: true,
+		},
+		// dedicated admin can't delete privileged users (RH IDP)
+		{
+			testID:          "dedi-delete-priv",
+			subjectUserName: "no-reply@redhat.com",
+			username:        "dedicated-admin",
+			userGroups:      []string{"system:authenticated", "dedicated-admins"},
+			operation:       v1beta1.Delete,
+			identity:        testRedHatIdentity,
+			shouldBeAllowed: false,
+		},
+		// dedicated admin can't delete privileged users (other IDP)
+		{
+			testID:          "dedi-delete-redhat-using-other-idp",
+			subjectUserName: "no-reply@redhat.com",
+			username:        "dedicated-admin",
+			userGroups:      []string{"system:authenticated", "dedicated-admins"},
+			operation:       v1beta1.Delete,
+			identity:        testOtherIdentity,
+			shouldBeAllowed: false,
 		},
 	}
 	runUserTests(t, tests)
