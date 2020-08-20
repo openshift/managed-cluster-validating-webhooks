@@ -290,6 +290,26 @@ func TestNonAdminUsers(t *testing.T) {
 			operation:       v1beta1.Delete,
 			shouldBeAllowed: true,
 		},
+		// dedicated admin can't delete privileged users (RH IDP)
+		{
+			testID:          "dedi-delete-priv",
+			subjectUserName: "no-reply@redhat.com",
+			username:        "dedicated-admin",
+			userGroups:      []string{"system:authenticated", "dedicated-admins"},
+			operation:       v1beta1.Delete,
+			identity:        testRedHatIdentity,
+			shouldBeAllowed: false,
+		},
+		// dedicated admin can't delete privileged users (other IDP)
+		{
+			testID:          "dedi-delete-redhat-using-other-idp",
+			subjectUserName: "no-reply@redhat.com",
+			username:        "dedicated-admin",
+			userGroups:      []string{"system:authenticated", "dedicated-admins"},
+			operation:       v1beta1.Delete,
+			identity:        testOtherIdentity,
+			shouldBeAllowed: false,
+		},
 	}
 	runUserTests(t, tests)
 }
