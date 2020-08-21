@@ -32,7 +32,7 @@ func main() {
 	flag.Parse()
 	logf.SetLogger(logf.ZapLogger(true))
 	if !*testHooks {
-		log.Info("HTTP server running at", "listen", net.JoiNHostPort(*listenAddress, *listenPort))
+		log.Info("HTTP server running at", "listen", net.JoinHostPort(*listenAddress, *listenPort))
 	}
 	seen := make(map[string]bool)
 	for name, hook := range webhooks.Webhooks {
