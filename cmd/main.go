@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 
@@ -31,7 +32,7 @@ func main() {
 	flag.Parse()
 	logf.SetLogger(logf.ZapLogger(true))
 	if !*testHooks {
-		log.Info("HTTP server running at", "listen", fmt.Sprintf("%s:%s", *listenAddress, *listenPort))
+		log.Info("HTTP server running at", "listen", net.JoiNHostPort(*listenAddress, *listenPort))
 	}
 	seen := make(map[string]bool)
 	for name, hook := range webhooks.Webhooks {
@@ -50,7 +51,7 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr: fmt.Sprintf("%s:%s", *listenAddress, *listenPort),
+		Addr: net.JoinHostPort(*listenAddress, *listenPort),
 	}
 	if *useTLS {
 		cafile, err := ioutil.ReadFile(*caCert)
