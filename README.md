@@ -109,3 +109,11 @@ Unit tests are important to ensure that webhooks behave as expected, and to help
 The first function, `CanCanNot`, is very simple and designed to make test failure messages gramatically correct for. The three other functions are much more important to the testing process.
 
 The three helper functions are intended to provide for more integration style tests than true unit tests, as they assist in turning a specific set of test criteria a JSON representation and sending via `net/http/httptest` to the webhook's `HandleRequest`. When using `testutils.SendHTTPRequest`, the response is a `Response` object that can be used in the test suite to access the result of the webhook.
+
+### End to End Testing
+
+End to End testing is managed by the [osde2e repo](https://github.com/openshift/osde2e/)
+
+* [Validation Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/validation_webhook.go)
+* [Namespace Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/namespace_webhook.go)
+* [User Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/user_webhook.go)
