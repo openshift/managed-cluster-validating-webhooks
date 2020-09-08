@@ -117,3 +117,66 @@ End to End testing is managed by the [osde2e repo](https://github.com/openshift/
 * [Validation Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/validation_webhook.go)
 * [Namespace Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/namespace_webhook.go)
 * [User Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/user_webhook.go)
+
+## Disabling Webhooks
+
+List the webhooks (if you don't know them already):
+
+```shell
+# go run build/syncset.go -showhooks
+group-validation
+identity-validation
+namespace-validation
+regular-user-validation
+user-validation
+```
+
+At this point, we have:
+
+* group-validation
+* identity-validation
+* namespace-validation
+* regular-user-validation
+* user-validation
+
+In the [Makefile](/Makefile), the `SELECTOR_SYNC_SET_HOOK_EXCLUDES` variable is used to control which are excluded. By default, it is set to `debug-hook`, in case one should come to appear at some time in the future.
+
+Temporarily disable the `identity-validation` and `namespace-validation` hooks, set that same variable in the Makefile:
+
+```makefile
+SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook,identity-validation,namespace-validation
+```
+
+Then at the shell run:
+
+```shell
+# make syncset
+docker run \
+		-v /Users/youruser/git/github.com/openshift/managed-cluster-validating-webhooks:/Users/youruser/git/github.com/openshift/managed-cluster-validating-webhooks \
+		-w /Users/youruser/git/github.com/openshift/managed-cluster-validating-webhooks \
+		--rm \
+		golang:1.14 \
+			go run \
+				build/syncset.go \
+				-exclude identity-validation,namespace-validation \
+				-outfile build/selectorsyncset.yaml \
+				-image "quay.io/app-sre/managed-cluster-validating-webhooks:\${IMAGE_TAG}"
+# truncated ...
+```
+
+Commit the Makefile and resulting `build/selectorsyncset.yaml` and deploy it with the normal workflows.
+
+### Removing a Webhook
+
+To delete a webhook one must delete the associated files and re-run `make`. Rerunning `make` will rebuild the binary, container image, and `build/selectorsyncset.yaml` file. The files are the `add_` files as well as the entire package. To remove the Namespace webhook:
+
+```shell
+# rm -fr pkg/webhooks/add_namespace_hook.go pkg/webhooks/namespace
+pkg/webhooks/add_namespace_hook.go
+pkg/webhooks/namespace/namespace_test.go
+pkg/webhooks/namespace/namespace.go
+pkg/webhooks/namespace
+# make
+```
+
+Commit all changes and deploy as normal.
