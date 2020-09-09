@@ -205,6 +205,36 @@ objects:
         annotations:
           managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
         creationTimestamp: null
+        name: sre-pod-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /pod-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: pod-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - v1
+          apiVersions:
+          - '*'
+          operations:
+          - '*'
+          resources:
+          - pods
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 1
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+        creationTimestamp: null
         name: sre-regular-user-validation
       webhooks:
       - admissionReviewVersions:
