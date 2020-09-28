@@ -117,6 +117,7 @@ End to End testing is managed by the [osde2e repo](https://github.com/openshift/
 * [Validation Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/validation_webhook.go)
 * [Namespace Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/namespace_webhook.go)
 * [User Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/user_webhook.go)
+* [Identity Webhook](https://github.com/openshift/osde2e/blob/main/pkg/e2e/verify/identity_webhook.go)
 
 ## Disabling Webhooks
 
