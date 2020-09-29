@@ -24,7 +24,7 @@ GOBUILDFLAGS = -gcflags="all=-trimpath=$(GOPATH)" -asmflags="all=-trimpath=$(GOP
 SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
 SELECTOR_SYNC_SET_DESTINATION = build/selectorsyncset.yaml
 
-CONTAINER_ENGINE ?= docker
+CONTAINER_ENGINE ?= $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 #eg, -v
 TESTOPTS ?=
 
