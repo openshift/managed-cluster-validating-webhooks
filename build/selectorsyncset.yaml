@@ -272,6 +272,37 @@ objects:
         annotations:
           managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
         creationTimestamp: null
+        name: sre-subscription-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /subscription-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: subscription-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - operators.coreos.com
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          - CREATE
+          resources:
+          - subscriptions
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+        creationTimestamp: null
         name: sre-user-validation
       webhooks:
       - admissionReviewVersions:
