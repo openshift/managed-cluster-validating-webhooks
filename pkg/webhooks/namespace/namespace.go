@@ -38,7 +38,7 @@ var (
 	scope = admissionregv1.ClusterScope
 	rules = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{"UPDATE"},
+			Operations: []admissionregv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{""},
 				APIVersions: []string{"*"},
