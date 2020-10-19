@@ -151,7 +151,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 			return ret
 		}
 		log.Info("Non-admin access attempt to privileged namespace", "request", request.AdmissionRequest)
-		ret = admissionctl.Denied("Non-admin access attempt to privileged namespace")
+		ret = admissionctl.Denied(fmt.Sprintf("Prevented from creating or changing a potentially harmful Namespace. Customer namespaces should NOT match this regular expressions: %s", privilegedNamespace))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
