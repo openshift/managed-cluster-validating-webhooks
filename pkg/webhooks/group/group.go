@@ -36,15 +36,17 @@ type groupRequest struct {
 }
 
 const (
-	WebhookName     string = "group-validation"
-	protectedGroups string = `(^osd.*|^dedicated-admins$|^cluster-admins$|^layered-cs-sre-admins$)`
+	WebhookName               string = "group-validation"
+	protectedAdminGroups      string = `(^dedicated-admins$|^cluster-admins$)`
+	protectedManagementGroups string = `(^osd-sre-admins$|^osd-sre-cluster-admins$|^osd-devaccess$|^layered-cs-sre-admins$)`
 )
 
 var (
-	log               = logf.Log.WithName(WebhookName)
-	protectedGroupsRe = regexp.MustCompile(protectedGroups)
-	clusterAdminUsers = []string{"kube:admin", "system:admin"}
-	adminGroups       = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	log                         = logf.Log.WithName(WebhookName)
+	protectedAdminGroupsRe      = regexp.MustCompile(protectedAdminGroups)
+	protectedManagementGroupsRe = regexp.MustCompile(protectedManagementGroups)
+	clusterAdminUsers           = []string{"kube:admin", "system:admin"}
+	adminGroups                 = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 
 	scope = admissionregv1.ClusterScope
 	rules = []admissionregv1.RuleWithOperations{
@@ -104,8 +106,9 @@ func (s *GroupWebhook) authorized(request admissionctl.Request) admissionctl.Res
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if protectedGroupsRe.Match([]byte(group.Metadata.Name)) {
-		// protected group trying to be accessed, so let's check
+
+	if protectedAdminGroupsRe.Match([]byte(group.Metadata.Name)) {
+		// protected Admin group trying to be accessed, so let's check
 		for _, usersgroup := range request.AdmissionRequest.UserInfo.Groups {
 			// are they an admin?
 			if utils.SliceContains(usersgroup, adminGroups) {
@@ -114,11 +117,28 @@ func (s *GroupWebhook) authorized(request admissionctl.Request) admissionctl.Res
 				return ret
 			}
 		}
+
 		log.Info("Denying access", "request", request.AdmissionRequest)
-		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed groups. Customer user groups may NOT match this regular expression: %s", protectedGroups))
+		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed Admin groups. Customers should use https://cloud.redhat.com/openshift to manage groups that match this regular expression: %s", protectedAdminGroups))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
+
+	if protectedManagementGroupsRe.Match([]byte(group.Metadata.Name)) {
+		for _, usergroup := range request.AdmissionRequest.UserInfo.Groups {
+			if utils.SliceContains(usergroup, adminGroups) {
+				ret = admissionctl.Allowed("Admin may access protected group")
+				ret.UID = request.AdmissionRequest.UID
+				return ret
+			}
+		}
+
+		log.Info("Denying access", "request", request.AdmissionRequest)
+		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat Management groups. Customer user groups may NOT match this regular expression: %s", protectedManagementGroups))
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+
 	// it isn't protected, so let's not be bothered
 	ret = admissionctl.Allowed("RBAC allowed")
 	ret.UID = request.AdmissionRequest.UID
