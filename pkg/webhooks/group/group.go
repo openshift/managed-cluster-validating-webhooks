@@ -2,6 +2,7 @@ package group
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"sync"
@@ -114,7 +115,7 @@ func (s *GroupWebhook) authorized(request admissionctl.Request) admissionctl.Res
 			}
 		}
 		log.Info("Denying access", "request", request.AdmissionRequest)
-		ret = admissionctl.Denied("May not access protected group")
+		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed groups. Customer user groups may NOT match this regular expression: %s", protectedGroups))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}

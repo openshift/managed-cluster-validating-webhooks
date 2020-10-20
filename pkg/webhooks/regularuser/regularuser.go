@@ -148,7 +148,7 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 	}
 
 	log.Info("Denying access", "request", request.AdmissionRequest)
-	ret = admissionctl.Denied("Denied")
+	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }
