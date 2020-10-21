@@ -133,9 +133,18 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			// Should not be able to update impersonator group
+			// Should be able to update impersonator group
 			testID:          "dedi-update-impersonator-group",
 			groupName:       "osd-impersonators",
+			username:        "dedi-admin",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// Should not be able to update devaccess group
+			testID:          "dedi-update-impersonator-group",
+			groupName:       "osd-devaccess",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
