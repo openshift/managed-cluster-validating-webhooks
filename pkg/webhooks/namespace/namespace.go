@@ -19,7 +19,8 @@ import (
 
 const (
 	WebhookName                  string = "namespace-validation"
-	privilegedNamespace          string = `(^kube.*|^openshift.*|^default$|^redhat.*|^com$|^io$|^in$)`
+	privilegedNamespace          string = `(^kube.*|^openshift.*|^default$|^redhat.*)`
+	badNamespace                 string = `(^com$|^io$|^in$)`
 	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*)`
 	layeredProductNamespace      string = `^redhat.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
@@ -30,6 +31,7 @@ var (
 	sreAdminGroups    = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 
 	privilegedNamespaceRe       = regexp.MustCompile(privilegedNamespace)
+	badNamespaceRe              = regexp.MustCompile(badNamespace)
 	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
 	layeredProductNamespaceRe   = regexp.MustCompile(layeredProductNamespace)
 
@@ -150,8 +152,29 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
-		log.Info("Non-admin access attempt to privileged namespace", "request", request.AdmissionRequest)
-		ret = admissionctl.Denied(fmt.Sprintf("Prevented from creating or changing a potentially harmful Namespace. Customer namespaces should NOT match this regular expressions: %s", privilegedNamespace))
+		log.Info("Non-admin attempted to access a privileged namespace (eg matching this regex)", "regex", privilegedNamespace, "request", request.AdmissionRequest)
+		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed namespaces. Customer workloads should be placed in customer namespaces, and should not match this regular expression: %s", privilegedNamespace))
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+
+	if badNamespaceRe.Match([]byte(ns.GetName())) {
+		amISREAdmin := false
+		amIClusterAdmin := utils.SliceContains(request.UserInfo.Username, clusterAdminUsers)
+
+		for _, group := range sreAdminGroups {
+			if utils.SliceContains(group, request.UserInfo.Groups) {
+				amISREAdmin = true
+				break
+			}
+		}
+		if amIClusterAdmin || amISREAdmin {
+			ret = admissionctl.Allowed("Cluster and SRE admins may access")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+		log.Info("Non-admin attempted to access a potentially harmful namespace (eg matching this regex)", "regex", badNamespace, "request", request.AdmissionRequest)
+		ret = admissionctl.Denied(fmt.Sprintf("Prevented from creating a potentially harmful namespace. Customer namespaces should not match this regular expression, as this would impact DNS resolution: %s", badNamespace))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
