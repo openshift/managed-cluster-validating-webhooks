@@ -121,7 +121,7 @@ func (s *IdentityWebhook) authorized(request admissionctl.Request) admissionctl.
 			}
 		}
 		log.Info("Denying access", "request", request.AdmissionRequest)
-		ret = admissionctl.Denied("Prevented from accessing Red Hat managed identity provider. Please manage your identity provider through https://cloud.redhat.com/openshift")
+		ret = admissionctl.Denied("Prevented from modifying Red Hat's managed Identity. You may create/modify any Identity objects, except for 'OpenShift_SRE'.")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
