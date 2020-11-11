@@ -65,7 +65,7 @@ func (s *NodeLabelsWebhook) FailurePolicy() admissionregv1.FailurePolicyType {
 func (s *NodeLabelsWebhook) Rules() []admissionregv1.RuleWithOperations { return rules }
 
 // GetURI implements Webhook interface
-func (s *NodeLabelsWebhook) GetURI() string { return "/regularuser-validation" }
+func (s *NodeLabelsWebhook) GetURI() string { return "/nodelabels-validation" }
 
 // SideEffects implements Webhook interface
 func (s *NodeLabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
