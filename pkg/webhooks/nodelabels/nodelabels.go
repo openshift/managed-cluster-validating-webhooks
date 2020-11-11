@@ -121,36 +121,14 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 		}
 	}
 
-	// If a worker node is losing its worker label - fail
-	fail := false
+	// If a the node type label is being altered - fail
 	if val, ok := oldNode.Labels["type"]; ok {
-		if val == "worker" {
-			if val, ok := node.Labels["type"]; ok {
-				if val != "worker" {
-					fail = true
-				}
-			} else {
-				fail = true
-			}
-		}
-	}
-	if fail {
-		log.Info("Cannot overwrite worker node label")
-		ret.UID = request.AdmissionRequest.UID
-		ret = admissionctl.Denied("UnauthorizedAction")
-		return ret
-	}
-
-	// If a new node is given a master or infra label - fail
-	if val, ok := oldNode.Labels["type"]; ok {
-		if val != "master" && val != "infra" {
-			if val, ok := node.Labels["type"]; ok {
-				if val == "master" || val == "infra" {
-					log.Info("Cannot assign new node a master or infra label")
-					ret.UID = request.AdmissionRequest.UID
-					ret = admissionctl.Denied("UnauthorizedAction")
-					return ret
-				}
+		if newVal, ok := node.Labels["type"]; ok {
+			if val != newVal {
+				log.Info("Cannot overwrite node type label")
+				ret.UID = request.AdmissionRequest.UID
+				ret = admissionctl.Denied("UnauthorizedAction")
+				return ret
 			}
 		}
 	}
