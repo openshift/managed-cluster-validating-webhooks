@@ -16,14 +16,14 @@ import (
 
 const (
 	WebhookName    string = "subscription-validation"
-	LoggingSubName string = "cluster-logging"
-	ESSubName      string = "elasticsearch-operator"
-	BlockedChannel string = "4.5"
+	loggingSubName string = "cluster-logging"
+	esSubName      string = "elasticsearch-operator"
 )
 
 var (
 	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:kube-system:generic-garbage-collector"}
 	adminGroups     = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	blockedChannels = []string{"4.5", "4.6"}
 
 	log = logf.Log.WithName(WebhookName)
 
@@ -94,11 +94,11 @@ func (s *SubscriptionWebhook) Validate(req admissionctl.Request) bool {
 	return valid
 }
 
-// isLogging45Request is a helper to consolidate logic. Returns true
+// isBlockedLoggingRequest is a helper to consolidate logic. Returns true
 // if the request is for the cluster-logging or elasticsearch-operator
-// subscription on 4.5 channel
-func (s *SubscriptionWebhook) isLogging45Request(subscriptionReq *subscriptionRequest) bool {
-	if subscriptionReq.Spec.Channel == BlockedChannel && (subscriptionReq.Spec.Name == LoggingSubName || subscriptionReq.Spec.Name == ESSubName) {
+// subscription on 4.5 or 4.6 channels
+func (s *SubscriptionWebhook) isBlockedLoggingRequest(subscriptionReq *subscriptionRequest) bool {
+	if utils.SliceContains(subscriptionReq.Spec.Channel, blockedChannels) && (subscriptionReq.Spec.Name == loggingSubName || subscriptionReq.Spec.Name == esSubName) {
 		return true
 	}
 	return false
@@ -124,8 +124,8 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 	// can comment this out or remove after manual tests
 	log.Info("User is attempting to modify subscription", "username", request.AdmissionRequest.UserInfo.Username, "operation", request.Operation, "subscription name", subReq.Spec.Name, "channel", subReq.Spec.Channel)
 
-	// If this isn't a request to install or upgrade logging 4.5, let RBAC handle this
-	if !s.isLogging45Request(subReq) {
+	// If this isn't a request to install or upgrade logging 4.5 or 4.6, let RBAC handle this
+	if !s.isBlockedLoggingRequest(subReq) {
 		ret = admissionctl.Allowed("Base decisions for non-logging subscriptions on RBAC")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
@@ -133,22 +133,22 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 
 	// Admin users
 	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, privilegedUsers) {
-		ret = admissionctl.Allowed("Admin users are may install or upgrade logging 4.5 operator")
+		ret = admissionctl.Allowed("Admin users are may install or upgrade logging 4.5 or 4.6 operator")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 	// Users in admin groups
 	for _, group := range request.AdmissionRequest.UserInfo.Groups {
 		if utils.SliceContains(group, adminGroups) {
-			ret = admissionctl.Allowed("Members of admin group may install or upgrade logging 4.5 operator")
+			ret = admissionctl.Allowed("Members of admin group may install or upgrade logging 4.5 or 4.6 operator")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 	}
 
 	// if we're here, non-privileged user is attempting to CREATE or UPDATE logging
-	// operator at 4.5 - deny this
-	ret = admissionctl.Denied("Only Red Hat SREs can install or upgrade to the v4.5 logging operator at this time, as there are known issues with logging v4.5 which we are working to resolve.")
+	// operator at 4.5 or 4.6 - deny this
+	ret = admissionctl.Denied("Only Red Hat SREs can install or upgrade to the v4.5 or v4.6 logging operator at this time, as there are known issues with logging v4.5/v4.6 which we are working to resolve.")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }
