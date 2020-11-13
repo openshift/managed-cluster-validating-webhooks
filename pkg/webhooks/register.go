@@ -1,19 +1,19 @@
 package webhooks
 
 import (
-	"net/http"
-
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+type RegisteredWebhooks map[string]WebhookFactory
+
 // Webhooks are all registered webhooks mapping name to hook
-var Webhooks = map[string]WebhookFactory{}
+var Webhooks = RegisteredWebhooks{}
 
 // Webhook interface
 type Webhook interface {
-	// HandleRequest handles an incoming webhook
-	HandleRequest(http.ResponseWriter, *http.Request)
+	// Authorized will determine if the request is allowed
+	Authorized(request admissionctl.Request) admissionctl.Response
 	// GetURI returns the URI for the webhook
 	GetURI() string
 	// Validate will validate the incoming request

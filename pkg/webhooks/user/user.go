@@ -16,7 +16,6 @@ import (
 	"strings"
 	"sync"
 
-	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/userloader"
 
 	// Only need the DefaultIdentityProvider
@@ -157,6 +156,11 @@ func (s *UserWebhook) isUsingRedHatIDP(userReq *userRequest) bool {
 	return false
 }
 
+// Authorized implements Webhook interface
+func (s *UserWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	return s.authorized(request)
+}
+
 func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 	var err error
@@ -236,27 +240,6 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 	ret = admissionctl.Allowed("Allowed by RBAC")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
-}
-
-// HandleRequest hndles the incoming HTTP request
-func (s *UserWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	request, _, err := utils.ParseHTTPRequest(r)
-	if err != nil {
-		log.Error(err, "Error parsing HTTP Request Body")
-		responsehelper.SendResponse(w, admissionctl.Errored(http.StatusBadRequest, err))
-		return
-	}
-	// Is this a valid request?
-	if !s.Validate(request) {
-		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Could not parse Namespace from request"))
-		resp.UID = request.AdmissionRequest.UID
-		responsehelper.SendResponse(w, resp)
-		return
-	}
-	// should the request be authorized?
-	responsehelper.SendResponse(w, s.authorized(request))
 }
 
 func (s *UserWebhook) loadUsers() error {

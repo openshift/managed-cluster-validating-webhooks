@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -153,23 +152,9 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 	return ret
 }
 
-// HandleRequest hndles the incoming HTTP request
-func (s *SubscriptionWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	request, _, err := utils.ParseHTTPRequest(r)
-	if err != nil {
-		log.Error(err, "Error parsing HTTP Request Body")
-		responsehelper.SendResponse(w, admissionctl.Errored(http.StatusBadRequest, err))
-		return
-	}
-	// Is this a valid request?
-	if !s.Validate(request) {
-		responsehelper.SendResponse(w, admissionctl.Errored(http.StatusBadRequest, err))
-		return
-	}
-	// should the request be authorized?
-	responsehelper.SendResponse(w, s.authorized(request))
+// Authorized implements Webhook interface
+func (s *SubscriptionWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	return s.authorized(request)
 }
 
 // NewWebhook creates a new webhook
