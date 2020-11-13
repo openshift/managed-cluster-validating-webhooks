@@ -329,6 +329,78 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 	runRegularuserTests(t, tests)
 }
 
+func TestMustGathers(t *testing.T) {
+	tests := []regularuserTests{
+		{
+			testID:          "mg-unauth-user",
+			targetResource:  "mustgathers",
+			targetKind:      "MustGather",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "system:unauthenticated",
+			userGroups:      []string{"system:unauthenticated"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "mg-unpriv-user",
+			targetResource:  "mustgathers",
+			targetKind:      "MustGather",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "mg-sre-group",
+			targetResource:  "mustgathers",
+			targetKind:      "MustGather",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "mg-sre-cluster-group",
+			targetResource:  "mustgathers",
+			targetKind:      "MustGather",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "mg-cee-group",
+			targetResource:  "mustgathers",
+			targetKind:      "MustGather",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"osd-devaccess", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "mg-admin-user",
+			targetResource:  "mustgathers",
+			targetKind:      "MustGather",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "kube:admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+	}
+	runRegularuserTests(t, tests)
+}
+
 func TestName(t *testing.T) {
 	if NewWebhook().Name() == "" {
 		t.Fatalf("Empty hook name")

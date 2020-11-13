@@ -22,7 +22,9 @@ const (
 )
 
 var (
-	adminGroups = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	adminGroups           = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	ceeGroup       string = "osd-devaccess"
+	mustGatherKind string = "MustGather"
 
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
@@ -142,6 +144,12 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 	for _, userGroup := range request.UserInfo.Groups {
 		if utils.SliceContains(userGroup, adminGroups) {
 			ret = admissionctl.Allowed("Members of admin groups are allowed")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+
+		if (userGroup == ceeGroup) && (request.Kind.Kind == mustGatherKind) {
+			ret = admissionctl.Allowed("Members of CEE may manage MustGather CRs")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
