@@ -122,7 +122,7 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 	}
 
 	// can comment this out or remove after manual tests
-	log.Info("User is attempting to modify subscription", "username", request.AdmissionRequest.UserInfo.Username, "operation", request.Operation, "subscription name", subReq.Spec.Name, "channel", subReq.Spec.Channel)
+	// log.Info("User is attempting to modify subscription", "username", request.AdmissionRequest.UserInfo.Username, "operation", request.Operation, "subscription name", subReq.Spec.Name, "channel", subReq.Spec.Channel)
 
 	// If this isn't a request to install or upgrade logging 4.5 or 4.6, let RBAC handle this
 	if !s.isBlockedLoggingRequest(subReq) {
@@ -133,14 +133,14 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 
 	// Admin users
 	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, privilegedUsers) {
-		ret = admissionctl.Allowed("Admin users are may install or upgrade logging 4.5 or 4.6 operator")
+		ret = admissionctl.Allowed("Admin users may install or upgrade to logging 4.5 or 4.6 operator")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 	// Users in admin groups
 	for _, group := range request.AdmissionRequest.UserInfo.Groups {
 		if utils.SliceContains(group, adminGroups) {
-			ret = admissionctl.Allowed("Members of admin group may install or upgrade logging 4.5 or 4.6 operator")
+			ret = admissionctl.Allowed("Members of admin group may install or upgrade to logging 4.5 or 4.6 operator")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
