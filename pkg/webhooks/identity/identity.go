@@ -47,7 +47,7 @@ type identityRequest struct {
 	ProviderName string `json:"providerName"`
 }
 
-// IdentityWebhook validates a Identity change
+// IdentityWebhook validates an Identity change
 type IdentityWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
