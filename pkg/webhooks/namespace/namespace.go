@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"sync"
 
-	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -111,6 +110,11 @@ func (s *NamespaceWebhook) renderNamespace(req admissionctl.Request) (*corev1.Na
 	return namespace, nil
 }
 
+// Authorized implements Webhook interface
+func (s *NamespaceWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	return s.authorized(request)
+}
+
 // Is the request authorized?
 func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
@@ -182,31 +186,6 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 	ret = admissionctl.Allowed("RBAC allowed")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
-}
-
-// HandleRequest Decide if the incoming request is allowed
-// Based on https://github.com/openshift/managed-cluster-validating-webhooks/blob/ad1ecb38621c485b5832eea729244e3b5ef354cc/src/webhook/namespace_validation.py
-func (s *NamespaceWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	request, _, err := utils.ParseHTTPRequest(r)
-	if err != nil {
-		log.Error(err, "Error parsing HTTP Request Body")
-		responsehelper.SendResponse(w, admissionctl.Errored(http.StatusBadRequest, err))
-		return
-	}
-	// Is this a valid request?
-	if !s.Validate(request) {
-		responsehelper.SendResponse(w,
-			admissionctl.Errored(http.StatusBadRequest,
-				fmt.Errorf("Could not parse Namespace from request")))
-		return
-	}
-	// should the request be authorized?
-
-	responsehelper.SendResponse(w, s.authorized(request))
-
 }
 
 // NewWebhook creates a new webhook

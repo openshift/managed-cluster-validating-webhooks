@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,12 +18,8 @@ import (
 
 // Webhook interface
 type Webhook interface {
-	// HandleRequest handles an incoming webhook
-	HandleRequest(http.ResponseWriter, *http.Request)
-	// GetURI returns the URI for the webhook
-	GetURI() string
-	// Validate will validate the incoming request
-	Validate(admissionctl.Request) bool
+	// Authorized will determine if the request is allowed
+	Authorized(request admissionctl.Request) admissionctl.Response
 }
 
 // CanCanNot helper to make English a bit nicer
@@ -108,12 +106,16 @@ func CreateHTTPRequest(uri, uid string,
 
 // SendHTTPRequest will send the fake request to be handled by the Webhook
 func SendHTTPRequest(req *http.Request, s Webhook) (*v1beta1.AdmissionResponse, error) {
-
 	httpResponse := httptest.NewRecorder()
-	s.HandleRequest(httpResponse, req)
+	request, _, err := utils.ParseHTTPRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	resp := s.Authorized(request)
+	responsehelper.SendResponse(httpResponse, resp)
 	// at this popint, httpResponse should contain the data sent in response to the webhook query, which is the success/fail
 	ret := &v1beta1.AdmissionReview{}
-	err := json.Unmarshal(httpResponse.Body.Bytes(), ret)
+	err = json.Unmarshal(httpResponse.Body.Bytes(), ret)
 	if err != nil {
 		return nil, err
 	}

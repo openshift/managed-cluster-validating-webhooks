@@ -1,12 +1,9 @@
 package regularuser
 
 import (
-	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 
-	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -79,7 +76,7 @@ var (
 	log = logf.Log.WithName(WebhookName)
 )
 
-// NamespaceWebhook validates a Namespace change
+// RegularuserWebhook protects various objects from unauthorized manipulation
 type RegularuserWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
@@ -118,6 +115,11 @@ func (s *RegularuserWebhook) Validate(req admissionctl.Request) bool {
 	valid = valid && (req.UserInfo.Username != "")
 
 	return valid
+}
+
+// Authorized implements Webhook interface
+func (s *RegularuserWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	return s.authorized(request)
 }
 
 func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionctl.Response {
@@ -159,31 +161,6 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
-}
-
-// HandleRequest hndles the incoming HTTP request
-func (s *RegularuserWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	request, _, err := utils.ParseHTTPRequest(r)
-	if err != nil {
-		log.Error(err, "Error parsing HTTP Request Body")
-		responsehelper.SendResponse(w, admissionctl.Errored(http.StatusBadRequest, err))
-		return
-	}
-	// Is this a valid request?
-	if !s.Validate(request) {
-		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Could not parse Namespace from request"))
-		resp.UID = request.AdmissionRequest.UID
-		responsehelper.SendResponse(w, resp)
-
-		return
-	}
-	// should the request be authorized?
-
-	responsehelper.SendResponse(w, s.authorized(request))
-
 }
 
 // NewWebhook creates a new webhook
