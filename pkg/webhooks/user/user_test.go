@@ -35,7 +35,7 @@ var testRedHatUsers = map[string][]string{
 	"osd-devaccess":         {"no-reply+devaccess1@redhat.com", "no-reply+devaccess2@redhat.com"},
 	"osd-sre-admins":        {"no-reply+osdsreadmin1@redhat.com", "no-reply+osdsreadmin2@redhat.com"},
 	"layered-cs-sre-admins": {"no-reply+lcssre+1@redhat.com", "no-reply@redhat.com", "should-use-otherIDP@redhat.com"},
-	"rhoam-cs-sre-admins": {"no-reply+rcssre+1@redhat.com", "no-reply+rcssre+2@redhat.com", "should-use-otherIDP@redhat.com"},
+	"rhoam-cs-sre-admins":   {"no-reply+rcssre+1@redhat.com", "no-reply+rcssre+2@redhat.com", "should-use-otherIDP@redhat.com"},
 }
 
 // testUserLoader implements Loader
