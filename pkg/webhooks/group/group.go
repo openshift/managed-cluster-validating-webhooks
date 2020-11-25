@@ -37,7 +37,7 @@ type groupRequest struct {
 const (
 	WebhookName               string = "group-validation"
 	protectedAdminGroups      string = `(^dedicated-admins$|^cluster-admins$)`
-	protectedManagementGroups string = `(^osd-sre-admins$|^osd-sre-cluster-admins$|^osd-devaccess$|^layered-cs-sre-admins$)`
+	protectedManagementGroups string = `(^osd-sre-admins$|^osd-sre-cluster-admins$|^osd-devaccess$|^layered-cs-sre-admins$|^rhoam-cs-sre-admins$)`
 )
 
 var (

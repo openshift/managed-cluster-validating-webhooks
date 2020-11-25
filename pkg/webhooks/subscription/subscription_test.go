@@ -531,6 +531,159 @@ func TestLayeredAdmins(t *testing.T) {
 	runSubscriptionTests(t, tests)
 }
 
+func TestRHOAMAdmins(t *testing.T) {
+	// these are basically the same tests as the dedicated-admin tests
+	// and those that shouldBeAllowed will fail due to RBAC (but not due
+	// to this webhook)
+	tests := []subscriptionTestSuites{
+		{
+			testID:           "rhoam-can-install-ES-logging-44",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "elasticsearch-operator",
+			channel:          "4.4",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-can-install-cluster-logging-44",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "cluster-logging",
+			channel:          "4.4",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-can-install-other-45",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "random-cool-operator",
+			channel:          "4.5",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-can-install-other",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "other-cool-operator",
+			channel:          "4.4",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-cannot-install-cluster-logging-45",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "cluster-logging",
+			channel:          "4.5",
+			shouldBeAllowed:  false,
+		},
+		{
+			testID:           "rhoam-cannot-install-ES-logging-45",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "elasticsearch-operator",
+			channel:          "4.5",
+			shouldBeAllowed:  false,
+		},
+		{
+			testID:           "rhoam-cannot-install-cluster-logging-46",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "cluster-logging",
+			channel:          "4.6",
+			shouldBeAllowed:  false,
+		},
+		{
+			testID:           "rhoam-cannot-install-ES-logging-46",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Create,
+			subscriptionName: "elasticsearch-operator",
+			channel:          "4.6",
+			shouldBeAllowed:  false,
+		},
+		{
+			testID:           "rhoam-can-upgrade-ES-logging-44",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "elasticsearch-operator",
+			channel:          "4.4",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-can-upgrade-cluster-logging-44",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "cluster-logging",
+			channel:          "4.4",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-can-upgrade-other-45",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "random-cool-operator",
+			channel:          "4.5",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-can-upgrade-other",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "other-cool-operator",
+			channel:          "43.2",
+			shouldBeAllowed:  true,
+		},
+		{
+			testID:           "rhoam-cannot-upgrade-cluster-logging-45",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "cluster-logging",
+			channel:          "4.5",
+			shouldBeAllowed:  false,
+		},
+		{
+			testID:           "rhoam-cannot-upgrade-ES-logging-45",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "elasticsearch-operator",
+			channel:          "4.5",
+			shouldBeAllowed:  false,
+		},
+		{
+			testID:           "rhoam-cannot-upgrade-cluster-logging-46",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "cluster-logging",
+			channel:          "4.6",
+			shouldBeAllowed:  false,
+		},
+		{
+			testID:           "rhoam-cannot-upgrade-ES-logging-46",
+			username:         "testuser@redhat.com",
+			userGroups:       []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:        v1beta1.Update,
+			subscriptionName: "elasticsearch-operator",
+			channel:          "4.6",
+			shouldBeAllowed:  false,
+		},
+	}
+	runSubscriptionTests(t, tests)
+}
+
 func TestPrivilegedUsers(t *testing.T) {
 	tests := []subscriptionTestSuites{
 		{
