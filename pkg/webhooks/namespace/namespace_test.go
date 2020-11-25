@@ -297,6 +297,62 @@ func TestLayeredProducts(t *testing.T) {
 			operation:       v1beta1.Create,
 			shouldBeAllowed: false,
 		},
+		{
+			// RHOAM admins can manipulate in the rhoam ns, but not privileged ones
+			// note: ^redhat.* is a privileged ns, but rhoam admins have an exception in
+			// it (but not other privileged ns)
+			testID:          "rhoam-create-layered-ns",
+			targetNamespace: "redhat-layered-product",
+			username:        "test-user",
+			userGroups:      []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// RHOAM admins can't create a privileged ns
+			testID:          "rhoam-create-priv-ns",
+			targetNamespace: "openshift-test",
+			username:        "test-user",
+			userGroups:      []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// RHOAM admins can make an unprivileged ns
+			testID:          "rhoam-create-priv-ns",
+			targetNamespace: "my-ns",
+			username:        "test-user",
+			userGroups:      []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// RHOAM admins can not make an privileged ns
+			testID:          "rhoam-create-com-ns",
+			targetNamespace: "com",
+			username:        "test-user",
+			userGroups:      []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// RHOAM admins can not make an privileged ns
+			testID:          "rhoam-create-io-ns",
+			targetNamespace: "io",
+			username:        "test-user",
+			userGroups:      []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// RHOAM admins can not make an privileged ns
+			testID:          "rhoam-create-in-ns",
+			targetNamespace: "in",
+			username:        "test-user",
+			userGroups:      []string{"rhoam-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
 	}
 	runNamespaceTests(t, tests)
 }
