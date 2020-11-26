@@ -1,6 +1,7 @@
 package regularuser
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 
@@ -16,6 +17,7 @@ import (
 
 const (
 	WebhookName string = "regular-user-validation"
+	docString   string = `OSD customers may not manage any objects in the following APIgroups %s, nor may OSD customers alter the ClusterVersion, Node or SubjectPermission objects.`
 )
 
 var (
@@ -80,6 +82,25 @@ var (
 type RegularuserWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
+}
+
+func (s *RegularuserWebhook) Doc() string {
+	hist := make(map[string]bool)
+	for _, rule := range rules {
+		for _, group := range rule.APIGroups {
+			if group != "" {
+				// If there's an empty API group let's not include it because it would be confusing.
+				hist[group] = true
+			}
+		}
+	}
+	//dedup
+	allGroups := make([]string, 0)
+	for k := range hist {
+		allGroups = append(allGroups, k)
+	}
+
+	return fmt.Sprintf(docString, allGroups)
 }
 
 // TimeoutSeconds implements Webhook interface

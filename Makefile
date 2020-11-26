@@ -28,6 +28,10 @@ CONTAINER_ENGINE ?= $(shell command -v podman 2>/dev/null || command -v docker 2
 #eg, -v
 TESTOPTS ?=
 
+DOC_BINARY := hack/documentation/document.go
+# ex -hideRules
+DOCFLAGS ?= 
+
 default: all
 
 all: test build-image build-sss
@@ -110,3 +114,11 @@ push-base: build/Dockerfile
 coverage: coverage.txt
 coverage.txt: vet $(GO_SOURCES)
 	@./hack/test.sh
+
+.PHONY: docs
+docs:
+	@# Ensure that the output from the test is hidden so this can be
+	@# make docs > docs.json
+	@# To hide the rules: make DOCFLAGS=-hideRules docs
+	@$(MAKE test)
+	@go run $(DOC_BINARY) $(DOCFLAGS)

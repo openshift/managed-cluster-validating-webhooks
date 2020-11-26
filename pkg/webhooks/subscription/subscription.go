@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -17,6 +18,7 @@ const (
 	WebhookName    string = "subscription-validation"
 	loggingSubName string = "cluster-logging"
 	esSubName      string = "elasticsearch-operator"
+	docString      string = `OSD customers may not update change the %s subscription from the %s channel(s) because there are known issues with those channel(s) that are being worked on.`
 )
 
 var (
@@ -55,6 +57,10 @@ type subscriptionRequest struct {
 type SubscriptionWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
+}
+
+func (s *SubscriptionWebhook) Doc() string {
+	return fmt.Sprintf(docString, esSubName, blockedChannels)
 }
 
 // TimeoutSeconds implements Webhook interface

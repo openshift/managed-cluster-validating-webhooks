@@ -39,6 +39,7 @@ const (
 	// this IDP, and users who use this IDP must be a member of at least one
 	// redhatGroups.
 	redHatIDP string = identity.DefaultIdentityProvider
+	docString string = `OSD customers and Red Hat associates have certain restrictions around logging in to the cluster. Red Hat SREs who manage OpenShift Dedicated clusters must use the %s identity provider, and not any other, so that their identity can be assured; Red Hat OpenShift Dedicated SREs are members of at least one Red Hat managed group (%s). Other Red Hat associates who are not SREs may not use the %s identity provider to log into their clusters. OpenShift Dedicated customers may not use the %s identity provider, but may manage all users.`
 )
 
 var (
@@ -48,7 +49,7 @@ var (
 	// redhatGroups is a list of groups to which Red Hat associates must belong in
 	// order to have a User provisioned for them (typically by the
 	// openshift-authentication:oauth-openshift service account)
-	redhatGroups = []string{"osd-devaccess", "osd-sre-admins", "layered-cs-sre-admins", "rhoam-cs-sre-admins"}
+	redhatGroups = []string{"osd-devaccess", "osd-sre-admins", "layered-cs-sre-admins"}
 
 	// adminGroups restrict who is authorized to create a User for a Red Hat associate
 	adminGroups = []string{"osd-sre-admins", "osd-sre-cluster-admins", "system:serviceaccounts:openshift-authentication"}
@@ -88,6 +89,10 @@ type userRequest struct {
 	Metadata   struct {
 		Name string `json:"name"`
 	} `json:"metadata"`
+}
+
+func (s *UserWebhook) Doc() string {
+	return fmt.Sprintf(docString, redHatIDP, redhatGroups, redHatIDP, redHatIDP)
 }
 
 // TimeoutSeconds implements Webhook interface
