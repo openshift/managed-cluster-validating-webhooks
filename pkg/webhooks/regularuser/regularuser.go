@@ -17,7 +17,7 @@ import (
 
 const (
 	WebhookName string = "regular-user-validation"
-	docString   string = `OSD customers may not manage any objects in the following APIgroups %s, nor may OSD customers alter the ClusterVersion, Node or SubjectPermission objects.`
+	docString   string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the ClusterVersion, Node or SubjectPermission objects.`
 )
 
 var (

@@ -23,7 +23,7 @@ const (
 	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*)`
 	layeredProductNamespace      string = `^redhat.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
-	docString                    string = `OSD Customers may not modify privileged namespaces identified by this regular expression %s because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution.`
+	docString                    string = `Managed OpenShift Customers may not modify privileged namespaces identified by this regular expression %s because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution.`
 )
 
 var (

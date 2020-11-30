@@ -18,7 +18,7 @@ const (
 	WebhookName    string = "subscription-validation"
 	loggingSubName string = "cluster-logging"
 	esSubName      string = "elasticsearch-operator"
-	docString      string = `OSD customers may not update change the %s subscription from the %s channel(s) because there are known issues with those channel(s) that are being worked on.`
+	docString      string = `Managed OpenShift customers may not update change the %s subscription from the %s channel(s) because there are known issues with those channel(s) that are being worked on.`
 )
 
 var (

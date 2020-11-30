@@ -18,7 +18,7 @@ import (
 const (
 	WebhookName             string = "identity-validation"
 	DefaultIdentityProvider string = "OpenShift_SRE"
-	docString               string = `OSD customers may not modify Red Hat's managed Identities (prefixed and identified with %s).`
+	docString               string = `Managed OpenShift customers may not modify Red Hat's managed Identities (prefixed and identified with %s).`
 )
 
 var (

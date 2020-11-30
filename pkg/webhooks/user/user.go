@@ -39,7 +39,7 @@ const (
 	// this IDP, and users who use this IDP must be a member of at least one
 	// redhatGroups.
 	redHatIDP string = identity.DefaultIdentityProvider
-	docString string = `OSD customers and Red Hat associates have certain restrictions around logging in to the cluster. Red Hat SREs who manage OpenShift Dedicated clusters must use the %s identity provider, and not any other, so that their identity can be assured; Red Hat OpenShift Dedicated SREs are members of at least one Red Hat managed group (%s). Other Red Hat associates who are not SREs may not use the %s identity provider to log into their clusters. OpenShift Dedicated customers may not use the %s identity provider, but may manage all users.`
+	docString string = `Managed OpenShift customers and Red Hat associates have certain restrictions around logging in to the cluster. Red Hat SREs who manage managed clusters must use the %s identity provider, and not any other, so that their identity can be assured; Red Hat managed clusters SREs are members of at least one Red Hat managed group (%s). Other Red Hat associates who are not SREs may not use the %s identity provider to log into their clusters. Managed cluster customers may not use the %s identity provider, but may manage the users using other identity providers.`
 )
 
 var (

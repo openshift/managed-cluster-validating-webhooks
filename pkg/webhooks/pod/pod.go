@@ -18,7 +18,7 @@ const (
 	WebhookName           string = "pod-validation"
 	privilegedNamespace   string = `(^kube$|^kube-.*|^openshift$|^openshift-.*|^default$|^redhat-.*)`
 	unprivilegedNamespace string = `(openshift-logging|openshift-operators)`
-	docString             string = `OSD Customers may use tolerations on Pods that could cause those Pods to be scheduled on infra or master nodes.`
+	docString             string = `Managed OpenShift Customers may use tolerations on Pods that could cause those Pods to be scheduled on infra or master nodes.`
 )
 
 var (
