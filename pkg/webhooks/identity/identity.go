@@ -18,6 +18,7 @@ import (
 const (
 	WebhookName             string = "identity-validation"
 	DefaultIdentityProvider string = "OpenShift_SRE"
+	docString               string = `Managed OpenShift customers may not modify Red Hat's managed Identities (prefixed and identified with %s).`
 )
 
 var (
@@ -51,6 +52,10 @@ type identityRequest struct {
 type IdentityWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
+}
+
+func (s *IdentityWebhook) Doc() string {
+	return fmt.Sprintf(docString, DefaultIdentityProvider)
 }
 
 // TimeoutSeconds implements Webhook interface

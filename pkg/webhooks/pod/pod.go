@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
 	"sync"
@@ -17,6 +18,7 @@ const (
 	WebhookName           string = "pod-validation"
 	privilegedNamespace   string = `(^kube$|^kube-.*|^openshift$|^openshift-.*|^default$|^redhat-.*)`
 	unprivilegedNamespace string = `(openshift-logging|openshift-operators)`
+	docString             string = `Managed OpenShift Customers may use tolerations on Pods that could cause those Pods to be scheduled on infra or master nodes.`
 )
 
 var (
@@ -41,6 +43,10 @@ var (
 type PodWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
+}
+
+func (s *PodWebhook) Doc() string {
+	return fmt.Sprintf(docString)
 }
 
 // TimeoutSeconds implements Webhook interface
