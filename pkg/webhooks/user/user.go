@@ -39,6 +39,7 @@ const (
 	// this IDP, and users who use this IDP must be a member of at least one
 	// redhatGroups.
 	redHatIDP string = identity.DefaultIdentityProvider
+	docString string = `Managed OpenShift customers and Red Hat associates have certain restrictions around logging in to the cluster. Red Hat SREs who manage managed clusters must use the %s identity provider, and not any other, so that their identity can be assured; Red Hat managed clusters SREs are members of at least one Red Hat managed group (%s). Other Red Hat associates who are not SREs may not use the %s identity provider to log into their clusters. Managed cluster customers may not use the %s identity provider, but may manage the users using other identity providers.`
 )
 
 var (
@@ -88,6 +89,10 @@ type userRequest struct {
 	Metadata   struct {
 		Name string `json:"name"`
 	} `json:"metadata"`
+}
+
+func (s *UserWebhook) Doc() string {
+	return fmt.Sprintf(docString, redHatIDP, redhatGroups, redHatIDP, redHatIDP)
 }
 
 // TimeoutSeconds implements Webhook interface

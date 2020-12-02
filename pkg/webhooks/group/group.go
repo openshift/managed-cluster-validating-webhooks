@@ -38,6 +38,8 @@ const (
 	WebhookName               string = "group-validation"
 	protectedAdminGroups      string = `(^dedicated-admins$|^cluster-admins$)`
 	protectedManagementGroups string = `(^osd-sre-admins$|^osd-sre-cluster-admins$|^osd-devaccess$|^layered-cs-sre-admins$)`
+	ocmUrl                    string = "https://cloud.redhat.com/openshift"
+	docString                 string = `Managed OpenShift customers may not manage the Red Hat managed groups identified by the regular expression %s. Instead, customers should use %s to manage the customer-facing groups identified by this regular expression %s.`
 )
 
 var (
@@ -60,6 +62,10 @@ var (
 		},
 	}
 )
+
+func (s *GroupWebhook) Doc() string {
+	return fmt.Sprintf(docString, protectedManagementGroups, ocmUrl, protectedAdminGroups)
+}
 
 // TimeoutSeconds implements Webhook interface
 func (s *GroupWebhook) TimeoutSeconds() int32 { return 2 }
