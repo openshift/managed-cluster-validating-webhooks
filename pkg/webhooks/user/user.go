@@ -48,7 +48,7 @@ var (
 	// redhatGroups is a list of groups to which Red Hat associates must belong in
 	// order to have a User provisioned for them (typically by the
 	// openshift-authentication:oauth-openshift service account)
-	redhatGroups = []string{"osd-devaccess", "osd-sre-admins", "layered-cs-sre-admins", "rhoam-cs-sre-admins"}
+	redhatGroups = []string{"osd-devaccess", "osd-sre-admins", "layered-cs-sre-admins"}
 
 	// adminGroups restrict who is authorized to create a User for a Red Hat associate
 	adminGroups = []string{"osd-sre-admins", "osd-sre-cluster-admins", "system:serviceaccounts:openshift-authentication"}

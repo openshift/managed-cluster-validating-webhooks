@@ -17,17 +17,17 @@ import (
 )
 
 const (
-	WebhookName               string = "namespace-validation"
-	privilegedNamespace       string = `(^kube.*|^openshift.*|^default$|^redhat.*)`
-	badNamespace              string = `(^com$|^io$|^in$)`
-	privilegedServiceAccounts string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*)`
-	layeredProductNamespace   string = `^redhat.*`
+	WebhookName                  string = "namespace-validation"
+	privilegedNamespace          string = `(^kube.*|^openshift.*|^default$|^redhat.*)`
+	badNamespace                 string = `(^com$|^io$|^in$)`
+	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*)`
+	layeredProductNamespace      string = `^redhat.*`
+	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
 )
 
 var (
-	clusterAdminUsers             = []string{"kube:admin", "system:admin"}
-	sreAdminGroups                = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
-	layeredProductAdminGroupNames = []string{"layered-sre-cluster-admins", "rhoam-sre-cluster-admins"}
+	clusterAdminUsers = []string{"kube:admin", "system:admin"}
+	sreAdminGroups    = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 
 	privilegedNamespaceRe       = regexp.MustCompile(privilegedNamespace)
 	badNamespaceRe              = regexp.MustCompile(badNamespace)
@@ -134,13 +134,11 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 	}
 	// L58-L62
 	// This must be prior to privileged namespace check
-	for _, userGroup := range request.UserInfo.Groups {
-		if utils.SliceContains(userGroup, layeredProductAdminGroupNames) &&
-			layeredProductNamespaceRe.Match([]byte(ns.GetName())) {
-			ret = admissionctl.Allowed("Layered product admins may access")
-			ret.UID = request.AdmissionRequest.UID
-			return ret
-		}
+	if utils.SliceContains(layeredProductAdminGroupName, request.UserInfo.Groups) &&
+		layeredProductNamespaceRe.Match([]byte(ns.GetName())) {
+		ret = admissionctl.Allowed("Layered product admins may access")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 	// L64-73
 	if privilegedNamespaceRe.Match([]byte(ns.GetName())) {
