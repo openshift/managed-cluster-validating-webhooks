@@ -111,7 +111,7 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 		ret = admissionctl.Denied(errMsg)
 	}
 
-	println("TEST")
+	println("======TEST======")
 
 	// If a master or infra node is being changed - fail
 	if val, ok := oldNode.Labels["type"]; ok {
