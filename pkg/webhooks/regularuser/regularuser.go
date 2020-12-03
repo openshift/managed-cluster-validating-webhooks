@@ -55,15 +55,15 @@ var (
 				Scope:       &scope,
 			},
 		},
-		{
-			Operations: []admissionregv1.OperationType{"*"},
-			Rule: admissionregv1.Rule{
-				APIGroups:   []string{""},
-				APIVersions: []string{"*"},
-				Resources:   []string{"nodes", "nodes/*"},
-				Scope:       &scope,
-			},
-		},
+		// {
+		// 	Operations: []admissionregv1.OperationType{"*"},
+		// 	Rule: admissionregv1.Rule{
+		// 		APIGroups:   []string{""},
+		// 		APIVersions: []string{"*"},
+		// 		Resources:   []string{"nodes", "nodes/*"},
+		// 		Scope:       &scope,
+		// 	},
+		// },
 		{
 			Operations: []admissionregv1.OperationType{"*"},
 			Rule: admissionregv1.Rule{
