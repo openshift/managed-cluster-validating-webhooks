@@ -325,6 +325,15 @@ func TestServiceAccounts(t *testing.T) {
 			operation:       v1beta1.Delete,
 			shouldBeAllowed: true,
 		},
+		{
+			// osde2e-related things can create a ns for must-gather
+			testID:          "sa-create-ns-for-must-gather",
+			targetNamespace: "openshift-must-gather-qbjtf",
+			username:        "system:serviceaccount:osde2e-9a47q:cluster-admin", // This does *NOT* mean cluster-admin as in that ClusterRole
+			userGroups:      []string{"system:serviceaccounts:osde2e-9a47q", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
 	}
 	runNamespaceTests(t, tests)
 }
