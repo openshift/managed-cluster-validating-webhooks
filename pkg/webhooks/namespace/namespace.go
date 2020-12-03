@@ -20,7 +20,7 @@ const (
 	WebhookName                  string = "namespace-validation"
 	privilegedNamespace          string = `(^kube.*|^openshift.*|^default$|^redhat.*)`
 	badNamespace                 string = `(^com$|^io$|^in$)`
-	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*)`
+	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
 	layeredProductNamespace      string = `^redhat.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
 	docString                    string = `Managed OpenShift Customers may not modify privileged namespaces identified by this regular expression %s because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution.`
