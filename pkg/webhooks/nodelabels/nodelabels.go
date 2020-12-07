@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	adminGroups = []string{"dedicated-admin"}
+	adminGroups = []string{"dedicated-admins"}
 
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
