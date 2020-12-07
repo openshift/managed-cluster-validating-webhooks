@@ -5,7 +5,7 @@ GIT_HASH := $(shell git rev-parse --short=7 HEAD)
 IMAGETAG ?= ${GIT_HASH}
 
 BASE_IMG ?= managed-cluster-validating-webhooks
-IMG ?= quay.io/app-sre/${BASE_IMG}
+IMG ?= quay.io/alima/${BASE_IMG}
 
 # nb: registry.svc.ci.openshift.org/openshift/release:golang-1.14 doesn't work for this
 SYNCSET_GENERATOR_IMAGE := quay.io/app-sre/golang:1.14
@@ -24,7 +24,7 @@ GOBUILDFLAGS = -gcflags="all=-trimpath=$(GOPATH)" -asmflags="all=-trimpath=$(GOP
 SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
 SELECTOR_SYNC_SET_DESTINATION = build/selectorsyncset.yaml
 
-CONTAINER_ENGINE ?= $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
+CONTAINER_ENGINE ?= $(shell command -v docker 2>/dev/null || command -v podman 2>/dev/null)
 #eg, -v
 TESTOPTS ?=
 

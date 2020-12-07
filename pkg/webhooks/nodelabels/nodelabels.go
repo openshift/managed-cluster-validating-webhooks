@@ -22,8 +22,6 @@ const (
 )
 
 var (
-	adminGroups = []string{"dedicated-admins"}
-
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
 		{
@@ -36,7 +34,7 @@ var (
 			},
 		},
 	}
-	log = logf.Log.WithName(WebhookName)
+	log = logf.Log.WithName(WebhookName + " TEST TEST TEST")
 )
 
 // NamespaceWebhook validates a Namespace change
