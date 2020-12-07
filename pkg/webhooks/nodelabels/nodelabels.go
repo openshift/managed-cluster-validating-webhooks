@@ -27,11 +27,11 @@ var (
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{"UPDATE"},
+			Operations: []admissionregv1.OperationType{"*"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{""},
 				APIVersions: []string{"*"},
-				Resources:   []string{"nodes", "nodes/*"},
+				Resources:   []string{"*nodes*"},
 				Scope:       &scope,
 			},
 		},

@@ -207,6 +207,37 @@ objects:
         annotations:
           managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
         creationTimestamp: null
+        name: sre-node-labels-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /nodelabels-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: node-labels-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          resources:
+          - nodes
+          - nodes/*
+          scope: '*'
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+        creationTimestamp: null
         name: sre-pod-validation
       webhooks:
       - admissionReviewVersions:
@@ -398,7 +429,7 @@ objects:
               - -cacert
               - /service-ca/service-ca.crt
               - -tls
-              image: quay.io/app-sre/managed-cluster-validating-webhooks:${IMAGE_TAG}
+              image: quay.io/alima/managed-cluster-validating-webhooks:${IMAGE_TAG}
               imagePullPolicy: Always
               name: webhooks
               ports:
@@ -414,7 +445,7 @@ objects:
             initContainers:
             - command:
               - injector
-              image: quay.io/app-sre/managed-cluster-validating-webhooks:${IMAGE_TAG}
+              image: quay.io/alima/managed-cluster-validating-webhooks:${IMAGE_TAG}
               imagePullPolicy: Always
               name: inject-cert
               resources: {}
