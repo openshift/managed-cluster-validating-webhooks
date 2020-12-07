@@ -111,10 +111,10 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 		ret = admissionctl.Denied(errMsg)
 	}
 
-	println("======TEST======")
+	log.Info("test log")
 
 	// If a master or infra node is being changed - fail
-	if val, ok := oldNode.Labels["type"]; ok {
+	if val, ok := oldNode.Labels["node-role.kubernetes.io"]; ok {
 		if val == "infra" || val == "master" {
 			log.Info("Cannot edit master or infra nodes")
 			ret.UID = request.AdmissionRequest.UID
@@ -124,8 +124,8 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 	}
 
 	// If a the node type label is being altered - fail
-	if val, ok := oldNode.Labels["type"]; ok {
-		if newVal, ok := node.Labels["type"]; ok {
+	if val, ok := oldNode.Labels["node-role.kubernetes.io"]; ok {
+		if newVal, ok := node.Labels["node-role.kubernetes.io"]; ok {
 			if val != newVal {
 				log.Info("Cannot overwrite node type label")
 				ret.UID = request.AdmissionRequest.UID
