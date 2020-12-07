@@ -138,7 +138,9 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 	}
 
 	// Allow Access
-	ret = admissionctl.Allowed("New label does not infringe on node properties")
+	msg := "New label does not infringe on node properties"
+	log.Info(msg)
+	ret = admissionctl.Allowed(msg)
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }
