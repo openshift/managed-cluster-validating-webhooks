@@ -102,6 +102,7 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 		log.Error(err, errMsg)
 		ret.UID = request.AdmissionRequest.UID
 		ret = admissionctl.Denied(errMsg)
+		return ret
 	}
 	err = json.Unmarshal(request.OldObject.Raw, oldNode)
 	if err != nil {
@@ -109,6 +110,7 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 		log.Error(err, errMsg)
 		ret.UID = request.AdmissionRequest.UID
 		ret = admissionctl.Denied(errMsg)
+		return ret
 	}
 
 	log.Info("test log")
