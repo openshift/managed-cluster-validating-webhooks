@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	WebhookName string = "node-labels-validation"
+	WebhookName string = "nodelabels-validation"
 )
 
 var (
