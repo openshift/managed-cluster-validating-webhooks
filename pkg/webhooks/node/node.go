@@ -30,7 +30,7 @@ var (
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"*"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"node", "*node*", "node*"},
+				Resources:   []string{"nodes", "nodes/*"},
 				Scope:       &scope,
 			},
 		},
@@ -93,8 +93,25 @@ func (s *LabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
 
 // Validate is the incoming request even valid?
 func (s *LabelsWebhook) Validate(req admissionctl.Request) bool {
-	valid := false
-	return valid
+
+	// Check if incoming request is a node request
+	// Retrieve old and new node objects
+	node := &corev1.Node{}
+	oldNode := &corev1.Node{}
+
+	err := json.Unmarshal(req.Object.Raw, node)
+	if err != nil {
+		errMsg := "Failed to Unmarshal node object"
+		log.Error(err, errMsg)
+		return false
+	}
+	err = json.Unmarshal(req.OldObject.Raw, oldNode)
+	if err != nil {
+		errMsg := "Failed to Unmarshal old node object"
+		log.Error(err, errMsg)
+		return false
+	}
+	return true
 }
 
 func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Response {
@@ -175,13 +192,12 @@ func (s *LabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	// Is this a valid request?
 	if !s.Validate(request) {
-		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Could not parse Namespace from request"))
+		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Invalid request"))
 		resp.UID = request.AdmissionRequest.UID
 		responsehelper.SendResponse(w, resp)
 		return
 	}
 	// should the request be authorized?
-
 	responsehelper.SendResponse(w, s.authorized(request))
 
 }

@@ -207,7 +207,7 @@ objects:
         annotations:
           managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
         creationTimestamp: null
-        name: sre-node-labels-validation
+        name: sre-node-validation
       webhooks:
       - admissionReviewVersions:
         - v1beta1
@@ -215,23 +215,23 @@ objects:
           service:
             name: validation-webhook
             namespace: openshift-validation-webhook
-            path: /nodelabels-validation
+            path: /node-validation
         failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: node-labels-validation.managed.openshift.io
+        matchPolicy: Exact
+        name: node-validation.managed.openshift.io
         rules:
         - apiGroups:
-          - ""
+          - '*'
           apiVersions:
           - '*'
           operations:
-          - UPDATE
+          - '*'
           resources:
           - nodes
           - nodes/*
           scope: '*'
         sideEffects: None
-        timeoutSeconds: 2
+        timeoutSeconds: 1
     - apiVersion: admissionregistration.k8s.io/v1
       kind: ValidatingWebhookConfiguration
       metadata:
@@ -262,73 +262,6 @@ objects:
           scope: Namespaced
         sideEffects: None
         timeoutSeconds: 1
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
-        creationTimestamp: null
-        name: sre-regular-user-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1beta1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /regularuser-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: regular-user-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - autoscaling.openshift.io
-          - cloudcredential.openshift.io
-          - machine.openshift.io
-          - admissionregistration.k8s.io
-          - cloudingress.managed.openshift.io
-          - managed.openshift.io
-          - splunkforwarder.managed.openshift.io
-          - upgrade.managed.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - '*'
-          resources:
-          - '*/*'
-          scope: '*'
-        - apiGroups:
-          - config.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - '*'
-          resources:
-          - clusterversions
-          - clusterversions/status
-          scope: '*'
-        - apiGroups:
-          - ""
-          apiVersions:
-          - '*'
-          operations:
-          - '*'
-          resources:
-          - nodes
-          - nodes/*
-          scope: '*'
-        - apiGroups:
-          - managed.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - '*'
-          resources:
-          - subjectpermissions
-          - subjectpermissions/*
-          scope: '*'
-        sideEffects: None
-        timeoutSeconds: 2
     - apiVersion: admissionregistration.k8s.io/v1
       kind: ValidatingWebhookConfiguration
       metadata:
