@@ -27,7 +27,7 @@ var (
 		{
 			Operations: []admissionregv1.OperationType{"*"},
 			Rule: admissionregv1.Rule{
-				APIGroups:   []string{""},
+				APIGroups:   []string{"*"},
 				APIVersions: []string{"*"},
 				Resources:   []string{"*nodes*"},
 				Scope:       &scope,
