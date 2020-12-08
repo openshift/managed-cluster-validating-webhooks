@@ -1,4 +1,4 @@
-package nodelabels
+package node
 
 import (
 	"encoding/json"
@@ -18,18 +18,19 @@ import (
 )
 
 const (
-	WebhookName string = "nodelabels-validation"
+	// WebhookName name
+	WebhookName string = "node-validation"
 )
 
 var (
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{"*"},
+			Operations: []admissionregv1.OperationType{admissionregv1.Update},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"*"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"*nodes*"},
+				Resources:   []string{"nodes", "nodes/*"},
 				Scope:       &scope,
 			},
 		},
@@ -37,46 +38,46 @@ var (
 	log = logf.Log.WithName(WebhookName)
 )
 
-// NamespaceWebhook validates a Namespace change
-type NodeLabelsWebhook struct {
+// LabelsWebhook validates label changes on nodes
+type LabelsWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
 }
 
 // TimeoutSeconds implements Webhook interface
-func (s *NodeLabelsWebhook) TimeoutSeconds() int32 { return 2 }
+func (s *LabelsWebhook) TimeoutSeconds() int32 { return 1 }
 
 // MatchPolicy implements Webhook interface
-func (s *NodeLabelsWebhook) MatchPolicy() admissionregv1.MatchPolicyType {
-	return admissionregv1.Equivalent
+func (s *LabelsWebhook) MatchPolicy() admissionregv1.MatchPolicyType {
+	return admissionregv1.Exact // TODO: maybe issue lies here
 }
 
 // Name implements Webhook interface
-func (s *NodeLabelsWebhook) Name() string { return WebhookName }
+func (s *LabelsWebhook) Name() string { return WebhookName }
 
 // FailurePolicy implements Webhook interface
-func (s *NodeLabelsWebhook) FailurePolicy() admissionregv1.FailurePolicyType {
+func (s *LabelsWebhook) FailurePolicy() admissionregv1.FailurePolicyType {
 	return admissionregv1.Ignore
 }
 
 // Rules implements Webhook interface
-func (s *NodeLabelsWebhook) Rules() []admissionregv1.RuleWithOperations { return rules }
+func (s *LabelsWebhook) Rules() []admissionregv1.RuleWithOperations { return rules }
 
 // GetURI implements Webhook interface
-func (s *NodeLabelsWebhook) GetURI() string { return "/nodelabels-validation" }
+func (s *LabelsWebhook) GetURI() string { return "/" + WebhookName }
 
 // SideEffects implements Webhook interface
-func (s *NodeLabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
+func (s *LabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
 	return admissionregv1.SideEffectClassNone
 }
 
 // Validate is the incoming request even valid?
-func (s *NodeLabelsWebhook) Validate(req admissionctl.Request) bool {
+func (s *LabelsWebhook) Validate(req admissionctl.Request) bool {
 	valid := true
 	return valid
 }
 
-func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionctl.Response {
+func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
 	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
@@ -142,7 +143,7 @@ func (s *NodeLabelsWebhook) authorized(request admissionctl.Request) admissionct
 }
 
 // HandleRequest hndles the incoming HTTP request
-func (s *NodeLabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
+func (s *LabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -167,12 +168,12 @@ func (s *NodeLabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request
 }
 
 // NewWebhook creates a new webhook
-func NewWebhook() *NodeLabelsWebhook {
+func NewWebhook() *LabelsWebhook {
 	scheme := runtime.NewScheme()
 	v1beta1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
 
-	return &NodeLabelsWebhook{
+	return &LabelsWebhook{
 		s: *scheme,
 	}
 }
