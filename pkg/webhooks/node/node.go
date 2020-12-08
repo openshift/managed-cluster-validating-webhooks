@@ -30,7 +30,7 @@ var (
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"*"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"nodes", "nodes/*"},
+				Resources:   []string{"*node*"},
 				Scope:       &scope,
 			},
 		},
@@ -158,7 +158,6 @@ func (s *LabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Could not parse Namespace from request"))
 		resp.UID = request.AdmissionRequest.UID
 		responsehelper.SendResponse(w, resp)
-
 		return
 	}
 	// should the request be authorized?
