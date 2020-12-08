@@ -34,6 +34,26 @@ var (
 				Scope:       &scope,
 			},
 		},
+		// {
+		// 	Operations: []admissionregv1.OperationType{"*"},
+		// 	Rule: admissionregv1.Rule{
+		// 		APIGroups: []string{
+		// 			"autoscaling.openshift.io",
+		// 			"cloudcredential.openshift.io",
+		// 			"machine.openshift.io",
+		// 			"admissionregistration.k8s.io",
+		// 			"cloudingress.managed.openshift.io",
+		// 			// Deny ability to manage SRE resources
+		// 			// oc get --raw /apis | jq -r '.groups[] | select(.name | contains("managed")) | .name'
+		// 			"managed.openshift.io",
+		// 			"splunkforwarder.managed.openshift.io",
+		// 			"upgrade.managed.openshift.io",
+		// 		},
+		// 		APIVersions: []string{"*"},
+		// 		Resources:   []string{"*/*"},
+		// 		Scope:       &scope,
+		// 	},
+		// },
 	}
 	log = logf.Log.WithName(WebhookName)
 )
@@ -73,7 +93,7 @@ func (s *LabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
 
 // Validate is the incoming request even valid?
 func (s *LabelsWebhook) Validate(req admissionctl.Request) bool {
-	valid := true
+	valid := false
 	return valid
 }
 
