@@ -34,7 +34,7 @@ var (
 			},
 		},
 	}
-	log = logf.Log.WithName(WebhookName + " TEST TEST TEST")
+	log = logf.Log.WithName(WebhookName)
 )
 
 // NamespaceWebhook validates a Namespace change
@@ -73,8 +73,6 @@ func (s *NodeLabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
 // Validate is the incoming request even valid?
 func (s *NodeLabelsWebhook) Validate(req admissionctl.Request) bool {
 	valid := true
-	valid = valid && (req.UserInfo.Username != "")
-
 	return valid
 }
 
