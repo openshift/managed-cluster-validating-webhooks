@@ -20,6 +20,11 @@ import (
 const (
 	// WebhookName name
 	WebhookName string = "node-validation"
+
+	// Labels
+	masterLabel string = "node-role.kubernetes.io/master"
+	infraLabel  string = "node-role.kubernetes.io/infra"
+	workerLabel string = "node-role.kubernetes.io/worker"
 )
 
 var (
@@ -34,26 +39,6 @@ var (
 				Scope:       &scope,
 			},
 		},
-		// {
-		// 	Operations: []admissionregv1.OperationType{"*"},
-		// 	Rule: admissionregv1.Rule{
-		// 		APIGroups: []string{
-		// 			"autoscaling.openshift.io",
-		// 			"cloudcredential.openshift.io",
-		// 			"machine.openshift.io",
-		// 			"admissionregistration.k8s.io",
-		// 			"cloudingress.managed.openshift.io",
-		// 			// Deny ability to manage SRE resources
-		// 			// oc get --raw /apis | jq -r '.groups[] | select(.name | contains("managed")) | .name'
-		// 			"managed.openshift.io",
-		// 			"splunkforwarder.managed.openshift.io",
-		// 			"upgrade.managed.openshift.io",
-		// 		},
-		// 		APIVersions: []string{"*"},
-		// 		Resources:   []string{"*/*"},
-		// 		Scope:       &scope,
-		// 	},
-		// },
 	}
 	log = logf.Log.WithName(WebhookName)
 )
@@ -147,31 +132,29 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 		return ret
 	}
 
-	log.Info("test log")
+	// Check that the current user is a dedicated admin
+	for _, userGroup := range request.UserInfo.Groups {
+		if userGroup == "dedicated-admin" {
+			// Only edit worker nodes
+			if _, ok := oldNode.Labels[workerLabel]; ok {
 
-	// If a master or infra node is being changed - fail
-	if val, ok := oldNode.Labels["node-role.kubernetes.io"]; ok {
-		if val == "infra" || val == "master" {
-			log.Info("Cannot edit master or infra nodes")
-			ret.UID = request.AdmissionRequest.UID
-			ret = admissionctl.Denied("UnauthorizedAction")
-			return ret
-		}
-	}
-
-	// If a the node type label is being altered - fail
-	if val, ok := oldNode.Labels["node-role.kubernetes.io"]; ok {
-		if newVal, ok := node.Labels["node-role.kubernetes.io"]; ok {
-			if val != newVal {
-				log.Info("Cannot overwrite node type label")
-				ret.UID = request.AdmissionRequest.UID
-				ret = admissionctl.Denied("UnauthorizedAction")
-				return ret
+				// Do not allow changing node type
+				if _, ok := node.Labels[masterLabel]; ok {
+					log.Info("Cannot change node type")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
+				}
+				if _, ok := node.Labels[infraLabel]; ok {
+					log.Info("Cannot change node type")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
+				}
 			}
 		}
 	}
-
-	// Allow Access
+	// Allow Operation
 	msg := "New label does not infringe on node properties"
 	log.Info(msg)
 	ret = admissionctl.Allowed(msg)
