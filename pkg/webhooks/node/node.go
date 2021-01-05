@@ -28,8 +28,9 @@ const (
 )
 
 var (
-	scope = admissionregv1.AllScopes
-	rules = []admissionregv1.RuleWithOperations{
+	adminGroups = []string{"dedicated-admin"}
+	scope       = admissionregv1.AllScopes
+	rules       = []admissionregv1.RuleWithOperations{
 		{
 			Operations: []admissionregv1.OperationType{admissionregv1.OperationAll},
 			Rule: admissionregv1.Rule{
@@ -134,7 +135,7 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 
 	// Check that the current user is a dedicated admin
 	for _, userGroup := range request.UserInfo.Groups {
-		if userGroup == "dedicated-admin" {
+		if utils.SliceContains(userGroup, adminGroups) {
 			// Only edit worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; ok {
 
