@@ -137,17 +137,16 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 	for _, userGroup := range request.UserInfo.Groups {
 		if utils.SliceContains(userGroup, adminGroups) {
 			// Only edit worker nodes
+			if _, ok := oldNode.Labels[workerLabel]; !ok {
+				log.Info("Cannot edit non-worker node")
+				ret.UID = request.AdmissionRequest.UID
+				ret = admissionctl.Denied("UnauthorizedAction")
+				return ret
+			}
+			// Do not allow worker node type to change
 			if _, ok := oldNode.Labels[workerLabel]; ok {
-
-				// Do not allow changing node type
-				if _, ok := node.Labels[masterLabel]; ok {
-					log.Info("Cannot change node type")
-					ret.UID = request.AdmissionRequest.UID
-					ret = admissionctl.Denied("UnauthorizedAction")
-					return ret
-				}
-				if _, ok := node.Labels[infraLabel]; ok {
-					log.Info("Cannot change node type")
+				if _, ok := node.Labels[workerLabel]; !ok {
+					log.Info("Cannot change worker node type")
 					ret.UID = request.AdmissionRequest.UID
 					ret = admissionctl.Denied("UnauthorizedAction")
 					return ret
