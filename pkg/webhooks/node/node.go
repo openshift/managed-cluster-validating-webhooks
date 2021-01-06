@@ -154,8 +154,8 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 				}
 				if _, ok := node.Labels[infraLabel]; ok {
 					log.Info(request.UserInfo.Username)
-					log.Info(fmt.Sprintf("new:\n%v", node.Labels))
-					log.Info(fmt.Sprintf("old:\n%v", oldNode.Labels))
+					log.Info(fmt.Sprintf("new:\n%v", node))
+					log.Info(fmt.Sprintf("old:\n%v", oldNode))
 					log.Info("Cannot edit non-worker node")
 					ret.UID = request.AdmissionRequest.UID
 					ret = admissionctl.Denied("UnauthorizedAction")
