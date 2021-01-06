@@ -138,7 +138,6 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 		log.Info(request.UserInfo.Username)
 		log.Info(fmt.Sprintf("user info groups: %v", userGroup))
 		if contains(adminGroups, userGroup) {
-			log.Info("in sliceContains method")
 			// Only edit worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; !ok {
 				log.Info("Cannot edit non-worker node")
@@ -148,8 +147,22 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 			}
 			// Do not allow worker node type to change
 			if _, ok := oldNode.Labels[workerLabel]; ok {
+				if _, ok := node.Labels[masterLabel]; ok {
+					log.Info("Cannot change worker node to master")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
+				}
+				if _, ok := oldNode.Labels[infraLabel]; !ok {
+					if _, ok := node.Labels[infraLabel]; ok {
+						log.Info("Cannot add infra node label to non-infra node")
+						ret.UID = request.AdmissionRequest.UID
+						ret = admissionctl.Denied("UnauthorizedAction")
+						return ret
+					}
+				}
 				if _, ok := node.Labels[workerLabel]; !ok {
-					log.Info("Cannot change worker node type")
+					log.Info("Cannot remove worker node label from worker node")
 					ret.UID = request.AdmissionRequest.UID
 					ret = admissionctl.Denied("UnauthorizedAction")
 					return ret
