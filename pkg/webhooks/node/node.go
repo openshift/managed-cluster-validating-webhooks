@@ -135,6 +135,7 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 
 	// Check that the current user is a dedicated admin
 	for _, userGroup := range request.UserInfo.Groups {
+		log.Info(fmt.Sprintf("user info groups: %v", userGroup))
 		if utils.SliceContains(userGroup, adminGroups) {
 			// Only edit worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; !ok {
