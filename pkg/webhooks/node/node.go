@@ -153,13 +153,11 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 					ret = admissionctl.Denied("UnauthorizedAction")
 					return ret
 				}
-				if _, ok := oldNode.Labels[infraLabel]; !ok {
-					if _, ok := node.Labels[infraLabel]; ok {
-						log.Info("Cannot add infra node label to non-infra node")
-						ret.UID = request.AdmissionRequest.UID
-						ret = admissionctl.Denied("UnauthorizedAction")
-						return ret
-					}
+				if _, ok := oldNode.Labels[infraLabel]; ok {
+					log.Info("Cannot edit non-worker node")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
 				}
 				if _, ok := node.Labels[workerLabel]; !ok {
 					log.Info("Cannot remove worker node label from worker node")
