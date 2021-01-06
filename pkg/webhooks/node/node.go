@@ -135,10 +135,6 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 
 	// Check that the current user is a dedicated admin
 	for _, userGroup := range request.UserInfo.Groups {
-		log.Info(request.UserInfo.Username)
-		log.Info(fmt.Sprintf("user info groups: %v", userGroup))
-		log.Info(fmt.Sprintf("new:\n%v", node.Labels))
-		log.Info(fmt.Sprintf("old:\n%v", oldNode.Labels))
 
 		if contains(adminGroups, userGroup) {
 			// Only edit worker nodes
@@ -157,6 +153,9 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 					return ret
 				}
 				if _, ok := oldNode.Labels[infraLabel]; ok {
+					log.Info(request.UserInfo.Username)
+					log.Info(fmt.Sprintf("new:\n%v", node.Labels))
+					log.Info(fmt.Sprintf("old:\n%v", oldNode.Labels))
 					log.Info("Cannot edit non-worker node")
 					ret.UID = request.AdmissionRequest.UID
 					ret = admissionctl.Denied("UnauthorizedAction")
