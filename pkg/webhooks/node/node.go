@@ -137,7 +137,7 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 	for _, userGroup := range request.UserInfo.Groups {
 		log.Info(request.UserInfo.Username)
 		log.Info(fmt.Sprintf("user info groups: %v", userGroup))
-		if utils.SliceContains(userGroup, adminGroups) {
+		if contains(adminGroups, userGroup) {
 			log.Info("in sliceContains method")
 			// Only edit worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; !ok {
@@ -163,6 +163,15 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 	ret = admissionctl.Allowed(msg)
 	ret.UID = request.AdmissionRequest.UID
 	return ret
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 // HandleRequest hndles the incoming HTTP request
