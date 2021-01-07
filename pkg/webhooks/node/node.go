@@ -23,7 +23,7 @@ const (
 
 	// Labels
 	masterLabel string = "node-role.kubernetes.io/master"
-	infraLabel  string = "node-role.kubernetes.io/infra"
+	infraLabel  string = "node-role.kubernetes.io"
 	workerLabel string = "node-role.kubernetes.io/worker"
 )
 
@@ -137,36 +137,39 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 	for _, userGroup := range request.UserInfo.Groups {
 
 		if contains(adminGroups, userGroup) {
-			// Only edit worker nodes
+			// Fail on infra nodes
+			if val, ok := oldNode.Labels[infraLabel]; ok && val == "infra" {
+				log.Info(request.UserInfo.Username)
+				log.Info(fmt.Sprintf("new:\n%v", node.GetLabels()))
+				log.Info(fmt.Sprintf("old:\n%v", oldNode.GetLabels()))
+				log.Info("Cannot edit non-worker node")
+				ret.UID = request.AdmissionRequest.UID
+				ret = admissionctl.Denied("UnauthorizedAction")
+				return ret
+			}
+
+			// Fail on none worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; !ok {
 				log.Info("Cannot edit non-worker node")
 				ret.UID = request.AdmissionRequest.UID
 				ret = admissionctl.Denied("UnauthorizedAction")
 				return ret
 			}
+
 			// Do not allow worker node type to change
-			if _, ok := oldNode.Labels[workerLabel]; ok {
-				if _, ok := node.Labels[masterLabel]; ok {
-					log.Info("Cannot change worker node to master")
-					ret.UID = request.AdmissionRequest.UID
-					ret = admissionctl.Denied("UnauthorizedAction")
-					return ret
-				}
-				if _, ok := node.Labels[infraLabel]; ok {
-					log.Info(request.UserInfo.Username)
-					log.Info(fmt.Sprintf("new:\n%v", node))
-					log.Info(fmt.Sprintf("old:\n%v", oldNode))
-					log.Info("Cannot edit non-worker node")
-					ret.UID = request.AdmissionRequest.UID
-					ret = admissionctl.Denied("UnauthorizedAction")
-					return ret
-				}
-				if _, ok := node.Labels[workerLabel]; !ok {
-					log.Info("Cannot remove worker node label from worker node")
-					ret.UID = request.AdmissionRequest.UID
-					ret = admissionctl.Denied("UnauthorizedAction")
-					return ret
-				}
+			if _, ok := node.Labels[masterLabel]; ok {
+				log.Info("Cannot change worker node to master")
+				ret.UID = request.AdmissionRequest.UID
+				ret = admissionctl.Denied("UnauthorizedAction")
+				return ret
+			}
+
+			// Fail on removed worker node label
+			if _, ok := node.Labels[workerLabel]; !ok {
+				log.Info("Cannot remove worker node label from worker node")
+				ret.UID = request.AdmissionRequest.UID
+				ret = admissionctl.Denied("UnauthorizedAction")
+				return ret
 			}
 		}
 	}
