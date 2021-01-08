@@ -78,7 +78,7 @@ func (s *LabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
 }
 
 // Validate is the incoming request even valid?
-func (s *LabelsWebhook) Validate(req admissionctl.Request) bool {
+func (s *LabelsWebhook) Validate(req admissionctl.Request) (bool, corev1.Node, corev1.Node) {
 
 	// Check if incoming request is a node request
 	// Retrieve old and new node objects
@@ -89,18 +89,18 @@ func (s *LabelsWebhook) Validate(req admissionctl.Request) bool {
 	if err != nil {
 		errMsg := "Failed to Unmarshal node object"
 		log.Error(err, errMsg)
-		return false
+		return false, *node, *oldNode
 	}
 	err = json.Unmarshal(req.OldObject.Raw, oldNode)
 	if err != nil {
 		errMsg := "Failed to Unmarshal old node object"
 		log.Error(err, errMsg)
-		return false
+		return false, *node, *oldNode
 	}
-	return true
+	return true, *node, *oldNode
 }
 
-func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Response {
+func (s *LabelsWebhook) authorized(request admissionctl.Request, node corev1.Node, oldNode corev1.Node) admissionctl.Response {
 	var ret admissionctl.Response
 
 	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
@@ -112,40 +112,13 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 		return ret
 	}
 
-	// Retrieve old and new node objects
-	node := &corev1.Node{}
-	oldNode := &corev1.Node{}
-
-	err := json.Unmarshal(request.Object.Raw, node)
-	if err != nil {
-		errMsg := "Failed to Unmarshal node object"
-		log.Error(err, errMsg)
-		ret.UID = request.AdmissionRequest.UID
-		ret = admissionctl.Denied(errMsg)
-		return ret
-	}
-	err = json.Unmarshal(request.OldObject.Raw, oldNode)
-	if err != nil {
-		errMsg := "Failed to Unmarshal old node object"
-		log.Error(err, errMsg)
-		ret.UID = request.AdmissionRequest.UID
-		ret = admissionctl.Denied(errMsg)
-		return ret
-	}
-
 	// Check that the current user is a dedicated admin
 	for _, userGroup := range request.UserInfo.Groups {
 
 		if contains(adminGroups, userGroup) {
-			log.Info(fmt.Sprintf("resource: %v", request.Resource.String()))
-			log.Info(fmt.Sprintf("operation: %v", request.Operation))
-			// Fail on infra nodes
-			if val, ok := oldNode.Labels[infraLabel]; ok && val == "infra" {
-				log.Info("cannot edit non-worker node")
-				ret.UID = request.AdmissionRequest.UID
-				ret = admissionctl.Denied("UnauthorizedAction")
-				return ret
-			}
+			// Debug
+			log.Info(fmt.Sprintf("new: %v", node.Labels))
+			log.Info(fmt.Sprintf("old: %v", oldNode.Labels))
 
 			// Fail on none worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; !ok {
@@ -155,9 +128,25 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 				return ret
 			}
 
-			// Do not allow worker node type to change
+			// Fail on infra,worker nodes
+			if val, ok := oldNode.Labels[infraLabel]; ok && val == "infra" {
+				log.Info("cannot edit non-worker node")
+				ret.UID = request.AdmissionRequest.UID
+				ret = admissionctl.Denied("UnauthorizedAction")
+				return ret
+			}
+
+			// Do not allow worker node type to change to master
 			if _, ok := node.Labels[masterLabel]; ok {
 				log.Info("cannot change worker node to master")
+				ret.UID = request.AdmissionRequest.UID
+				ret = admissionctl.Denied("UnauthorizedAction")
+				return ret
+			}
+
+			// Do not allow worker node type to change to infra
+			if _, ok := node.Labels[infraLabel]; ok {
+				log.Info("cannot change worker node to infra")
 				ret.UID = request.AdmissionRequest.UID
 				ret = admissionctl.Denied("UnauthorizedAction")
 				return ret
@@ -200,15 +189,19 @@ func (s *LabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		responsehelper.SendResponse(w, admissionctl.Errored(http.StatusBadRequest, err))
 		return
 	}
+	// Store nodes
+	node := corev1.Node{}
+	oldNode := corev1.Node{}
 	// Is this a valid request?
-	if !s.Validate(request) {
+	if ok, node, oldNode := s.Validate(request); !ok {
 		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Invalid request"))
 		resp.UID = request.AdmissionRequest.UID
 		responsehelper.SendResponse(w, resp)
 		return
 	}
+
 	// should the request be authorized?
-	responsehelper.SendResponse(w, s.authorized(request))
+	responsehelper.SendResponse(w, s.authorized(request, node, oldNode))
 
 }
 
