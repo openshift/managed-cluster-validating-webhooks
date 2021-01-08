@@ -24,12 +24,12 @@ const (
 	layeredProductNamespace      string = `^redhat.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
 	docString                    string = `Managed OpenShift Customers may not modify privileged namespaces identified by this regular expression %s because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels %s.`
+	clusterAdminGroup            string = "cluster-admins"
 )
 
 var (
-	clusterAdminUsers = []string{"kube:admin", "system:admin"}
-	sreAdminGroups    = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
-
+	clusterAdminUsers           = []string{"kube:admin", "system:admin"}
+	sreAdminGroups              = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 	privilegedNamespaceRe       = regexp.MustCompile(privilegedNamespace)
 	badNamespaceRe              = regexp.MustCompile(badNamespace)
 	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
@@ -201,21 +201,11 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	// SREs can do a variety of operations and so it's useful to have this available.
-	amISREAdmin := false
-	for _, group := range sreAdminGroups {
-		if utils.SliceContains(group, request.UserInfo.Groups) {
-			amISREAdmin = true
-			break
-		}
-	}
 
 	// L64-73
 	if privilegedNamespaceRe.Match([]byte(ns.GetName())) {
 
-		amIClusterAdmin := utils.SliceContains(request.UserInfo.Username, clusterAdminUsers)
-
-		if amIClusterAdmin || amISREAdmin {
+		if amIAdmin(request) {
 			ret = admissionctl.Allowed("Cluster and SRE admins may access")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
@@ -226,16 +216,8 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		return ret
 	}
 	if badNamespaceRe.Match([]byte(ns.GetName())) {
-		amISREAdmin := false
-		amIClusterAdmin := utils.SliceContains(request.UserInfo.Username, clusterAdminUsers)
 
-		for _, group := range sreAdminGroups {
-			if utils.SliceContains(group, request.UserInfo.Groups) {
-				amISREAdmin = true
-				break
-			}
-		}
-		if amIClusterAdmin || amISREAdmin {
+		if amIAdmin(request) {
 			ret = admissionctl.Allowed("Cluster and SRE admins may access")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
@@ -247,7 +229,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 	}
 	// Check labels.
 	unauthorized, err := s.unauthorizedLabelChanges(request)
-	if !amISREAdmin && unauthorized {
+	if !amIAdmin(request) && unauthorized {
 		ret = admissionctl.Denied(fmt.Sprintf("Denied. Err %+v", err))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
@@ -332,4 +314,22 @@ func NewWebhook() *NamespaceWebhook {
 	return &NamespaceWebhook{
 		s: *scheme,
 	}
+}
+
+func amIAdmin(request admissionctl.Request) bool {
+	amISREAdmin := false
+	amIClusterAdmin := false
+
+	if utils.SliceContains(request.UserInfo.Username, clusterAdminUsers) || utils.SliceContains(clusterAdminGroup, request.UserInfo.Groups) {
+		amIClusterAdmin = true
+	}
+
+	for _, group := range sreAdminGroups {
+		if utils.SliceContains(group, request.UserInfo.Groups) {
+			amISREAdmin = true
+			break
+		}
+	}
+
+	return (amIClusterAdmin || amISREAdmin)
 }
