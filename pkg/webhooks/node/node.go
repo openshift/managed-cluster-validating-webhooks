@@ -78,7 +78,7 @@ func (s *LabelsWebhook) SideEffects() admissionregv1.SideEffectClass {
 }
 
 // Validate is the incoming request even valid?
-func (s *LabelsWebhook) Validate(req admissionctl.Request) (bool, corev1.Node, corev1.Node) {
+func (s *LabelsWebhook) Validate(req admissionctl.Request) bool {
 
 	// Check if incoming request is a node request
 	// Retrieve old and new node objects
@@ -89,18 +89,18 @@ func (s *LabelsWebhook) Validate(req admissionctl.Request) (bool, corev1.Node, c
 	if err != nil {
 		errMsg := "Failed to Unmarshal node object"
 		log.Error(err, errMsg)
-		return false, *node, *oldNode
+		return false
 	}
 	err = json.Unmarshal(req.OldObject.Raw, oldNode)
 	if err != nil {
 		errMsg := "Failed to Unmarshal old node object"
 		log.Error(err, errMsg)
-		return false, *node, *oldNode
+		return false
 	}
-	return true, *node, *oldNode
+	return true
 }
 
-func (s *LabelsWebhook) authorized(request admissionctl.Request, node corev1.Node, oldNode corev1.Node) admissionctl.Response {
+func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
 	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
@@ -115,10 +115,26 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request, node corev1.Nod
 	// Check that the current user is a dedicated admin
 	for _, userGroup := range request.UserInfo.Groups {
 
+		// Retrieve old and new node objects
+		node := &corev1.Node{}
+		oldNode := &corev1.Node{}
+
+		err := json.Unmarshal(request.Object.Raw, node)
+		if err != nil {
+			errMsg := "Failed to Unmarshal node object"
+			log.Error(err, errMsg)
+			ret = admissionctl.Denied("UnauthorizedAction")
+			return ret
+		}
+		err = json.Unmarshal(request.OldObject.Raw, oldNode)
+		if err != nil {
+			errMsg := "Failed to Unmarshal old node object"
+			log.Error(err, errMsg)
+			ret = admissionctl.Denied("UnauthorizedAction")
+			return ret
+		}
+
 		if contains(adminGroups, userGroup) {
-			// Debug
-			log.Info(fmt.Sprintf("new: %v", node.Labels))
-			log.Info(fmt.Sprintf("old: %v", oldNode.Labels))
 
 			// Fail on none worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; !ok {
@@ -190,16 +206,14 @@ func (s *LabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Is this a valid request?
-	ok, node, oldNode := s.Validate(request)
-	if !ok {
+	if !s.Validate(request) {
 		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Invalid request"))
 		resp.UID = request.AdmissionRequest.UID
 		responsehelper.SendResponse(w, resp)
 		return
 	}
-
 	// should the request be authorized?
-	responsehelper.SendResponse(w, s.authorized(request, node, oldNode))
+	responsehelper.SendResponse(w, s.authorized(request))
 
 }
 
