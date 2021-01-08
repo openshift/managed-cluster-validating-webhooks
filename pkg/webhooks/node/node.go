@@ -189,11 +189,9 @@ func (s *LabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		responsehelper.SendResponse(w, admissionctl.Errored(http.StatusBadRequest, err))
 		return
 	}
-	// Store nodes
-	node := corev1.Node{}
-	oldNode := corev1.Node{}
 	// Is this a valid request?
-	if ok, node, oldNode := s.Validate(request); !ok {
+	ok, node, oldNode := s.Validate(request)
+	if !ok {
 		resp := admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("Invalid request"))
 		resp.UID = request.AdmissionRequest.UID
 		responsehelper.SendResponse(w, resp)
