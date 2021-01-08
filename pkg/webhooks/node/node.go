@@ -32,7 +32,7 @@ var (
 	scope       = admissionregv1.AllScopes
 	rules       = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{admissionregv1.OperationAll},
+			Operations: []admissionregv1.OperationType{admissionregv1.Update, admissionregv1.Delete},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"*"},
 				APIVersions: []string{"*"},
@@ -137,12 +137,11 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 	for _, userGroup := range request.UserInfo.Groups {
 
 		if contains(adminGroups, userGroup) {
+			log.Info(fmt.Sprintf("resource: %v", request.Resource.String()))
+			log.Info(fmt.Sprintf("operation: %v", request.Operation))
 			// Fail on infra nodes
 			if val, ok := oldNode.Labels[infraLabel]; ok && val == "infra" {
-				log.Info(request.UserInfo.Username)
-				log.Info(fmt.Sprintf("new:\n%v", node.GetLabels()))
-				log.Info(fmt.Sprintf("old:\n%v", oldNode.GetLabels()))
-				log.Info("Cannot edit non-worker node")
+				log.Info("cannot edit non-worker node")
 				ret.UID = request.AdmissionRequest.UID
 				ret = admissionctl.Denied("UnauthorizedAction")
 				return ret
@@ -150,7 +149,7 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 
 			// Fail on none worker nodes
 			if _, ok := oldNode.Labels[workerLabel]; !ok {
-				log.Info("Cannot edit non-worker node")
+				log.Info("cannot edit non-worker node")
 				ret.UID = request.AdmissionRequest.UID
 				ret = admissionctl.Denied("UnauthorizedAction")
 				return ret
@@ -158,7 +157,7 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 
 			// Do not allow worker node type to change
 			if _, ok := node.Labels[masterLabel]; ok {
-				log.Info("Cannot change worker node to master")
+				log.Info("cannot change worker node to master")
 				ret.UID = request.AdmissionRequest.UID
 				ret = admissionctl.Denied("UnauthorizedAction")
 				return ret
@@ -166,7 +165,7 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 
 			// Fail on removed worker node label
 			if _, ok := node.Labels[workerLabel]; !ok {
-				log.Info("Cannot remove worker node label from worker node")
+				log.Info("cannot remove worker node label from worker node")
 				ret.UID = request.AdmissionRequest.UID
 				ret = admissionctl.Denied("UnauthorizedAction")
 				return ret
@@ -190,7 +189,7 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-// HandleRequest hndles the incoming HTTP request
+// HandleRequest handles the incoming HTTP request
 func (s *LabelsWebhook) HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 	s.mu.Lock()
