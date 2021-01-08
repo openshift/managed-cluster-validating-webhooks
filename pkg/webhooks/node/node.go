@@ -134,6 +134,9 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 			return ret
 		}
 
+		log.Info(fmt.Sprintf("new: %v", node.Labels))
+		log.Info(fmt.Sprintf("old: %v", oldNode.Labels))
+
 		if contains(adminGroups, userGroup) {
 
 			// Fail on none worker nodes
