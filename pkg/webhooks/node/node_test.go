@@ -1,4 +1,4 @@
-// package node
+package node
 
 // import (
 // 	"encoding/json"
