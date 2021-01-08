@@ -134,47 +134,44 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 			return ret
 		}
 
-		log.Info(fmt.Sprintf("request: %s", request.UserInfo.Username))
-		log.Info(fmt.Sprintf("new: %v", node.Labels))
-		log.Info(fmt.Sprintf("old: %v", oldNode.Labels))
-
 		if contains(adminGroups, userGroup) {
 
 			// Fail on none worker nodes
-			if _, ok := oldNode.Labels[workerLabel]; !ok {
-				log.Info("cannot edit non-worker node")
-				ret.UID = request.AdmissionRequest.UID
-				ret = admissionctl.Denied("UnauthorizedAction")
-				return ret
-			}
+			if _, ok := oldNode.Labels[workerLabel]; ok {
 
-			// Fail on infra,worker nodes
-			if val, ok := oldNode.Labels[infraLabel]; ok && val == "infra" {
-				log.Info("cannot edit non-worker node")
-				ret.UID = request.AdmissionRequest.UID
-				ret = admissionctl.Denied("UnauthorizedAction")
-				return ret
-			}
+				// Fail on infra,worker nodes
+				if val, ok := oldNode.Labels[infraLabel]; ok && val == "infra" {
+					log.Info("cannot edit non-worker node")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
+				}
 
-			// Do not allow worker node type to change to master
-			if _, ok := node.Labels[masterLabel]; ok {
-				log.Info("cannot change worker node to master")
-				ret.UID = request.AdmissionRequest.UID
-				ret = admissionctl.Denied("UnauthorizedAction")
-				return ret
-			}
+				// Do not allow worker node type to change to master
+				if _, ok := node.Labels[masterLabel]; ok {
+					log.Info("cannot change worker node to master")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
+				}
 
-			// Do not allow worker node type to change to infra
-			if _, ok := node.Labels[infraLabel]; ok {
-				log.Info("cannot change worker node to infra")
-				ret.UID = request.AdmissionRequest.UID
-				ret = admissionctl.Denied("UnauthorizedAction")
-				return ret
-			}
+				// Do not allow worker node type to change to infra
+				if _, ok := node.Labels[infraLabel]; ok {
+					log.Info("cannot change worker node to infra")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
+				}
 
-			// Fail on removed worker node label
-			if _, ok := node.Labels[workerLabel]; !ok {
-				log.Info("cannot remove worker node label from worker node")
+				// Fail on removed worker node label
+				if _, ok := node.Labels[workerLabel]; !ok {
+					log.Info("cannot remove worker node label from worker node")
+					ret.UID = request.AdmissionRequest.UID
+					ret = admissionctl.Denied("UnauthorizedAction")
+					return ret
+				}
+			} else {
+				log.Info("cannot edit non-worker nodes")
 				ret.UID = request.AdmissionRequest.UID
 				ret = admissionctl.Denied("UnauthorizedAction")
 				return ret
