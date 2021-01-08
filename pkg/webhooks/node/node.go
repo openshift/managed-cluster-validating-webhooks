@@ -134,6 +134,7 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 			return ret
 		}
 
+		log.Info(fmt.Sprintf("request: %s", request.UserInfo.Username))
 		log.Info(fmt.Sprintf("new: %v", node.Labels))
 		log.Info(fmt.Sprintf("old: %v", oldNode.Labels))
 
