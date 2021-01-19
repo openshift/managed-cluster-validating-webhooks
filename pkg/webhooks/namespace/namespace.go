@@ -113,7 +113,7 @@ func (s *NamespaceWebhook) renderNamespace(req admissionctl.Request) (*corev1.Na
 
 // Is the request authorized?
 func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl.Response {
-	log.Info("Request: ", request)
+	log.Info("Request log", "request", request)
 	var ret admissionctl.Response
 	ns, err := s.renderNamespace(request)
 	if err != nil {
