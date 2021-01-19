@@ -382,7 +382,7 @@ objects:
               - -cacert
               - /service-ca/service-ca.crt
               - -tls
-              image: quay.io/lseelye/managed-cluster-validating-webhooks:${IMAGE_TAG}
+              image: quay.io/app-sre/managed-cluster-validating-webhooks:${IMAGE_TAG}
               imagePullPolicy: Always
               name: webhooks
               ports:
