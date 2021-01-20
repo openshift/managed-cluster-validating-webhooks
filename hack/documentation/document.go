@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -20,6 +21,7 @@ var (
 type docuhook struct {
 	Name                string                              `json:"webhookName"`
 	Rules               []admissionregv1.RuleWithOperations `json:"rules,omitempty"`
+	ObjectSelector      *metav1.LabelSelector               `json:"webhookObjectSelector,omitempty"`
 	DocumentationString string                              `json:"documentString"`
 }
 
@@ -39,6 +41,7 @@ func WriteDocs() {
 		dochooks[i].DocumentationString = realHook.Doc()
 		if !*hideRules {
 			dochooks[i].Rules = realHook.Rules()
+			dochooks[i].ObjectSelector = realHook.ObjectSelector()
 		}
 	}
 

@@ -9,6 +9,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -44,6 +45,9 @@ type PodWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
 }
+
+// ObjectSelector implements Webhook interface
+func (s *PodWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 
 func (s *PodWebhook) Doc() string {
 	return fmt.Sprintf(docString)

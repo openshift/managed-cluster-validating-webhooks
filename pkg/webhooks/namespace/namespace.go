@@ -10,6 +10,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -63,6 +64,9 @@ type NamespaceWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
 }
+
+// ObjectSelector implements Webhook interface
+func (s *NamespaceWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 
 func (s *NamespaceWebhook) Doc() string {
 	return fmt.Sprintf(docString, privilegedNamespace, badNamespace, protectedLabels)
