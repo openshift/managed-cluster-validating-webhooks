@@ -102,7 +102,6 @@ func (s *LabelsWebhook) Validate(req admissionctl.Request) bool {
 
 func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
-	log.Info("Request log", "request", request, "UserInfo", request.UserInfo)
 
 	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
 		// This could highlight a significant problem with RBAC since an
@@ -134,6 +133,8 @@ func (s *LabelsWebhook) authorized(request admissionctl.Request) admissionctl.Re
 			ret = admissionctl.Denied("UnauthorizedAction")
 			return ret
 		}
+
+		log.Info("Request log", "oldNode.Labels", oldNode.Labels, "node.Labels", node.Labels, "username", request.UserInfo.Username)
 
 		if contains(adminGroups, userGroup) {
 
