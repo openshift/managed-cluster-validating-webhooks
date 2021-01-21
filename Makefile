@@ -80,7 +80,7 @@ syncset: $(SELECTOR_SYNC_SET_DESTINATION)
 # required for the Template parsing
 $(SELECTOR_SYNC_SET_DESTINATION):
 	$(CONTAINER_ENGINE) run \
-		-v $(CURDIR):$(CURDIR) \
+		-v $(CURDIR):$(CURDIR):z \
 		-w $(CURDIR) \
 		--rm \
 		$(SYNCSET_GENERATOR_IMAGE) \
