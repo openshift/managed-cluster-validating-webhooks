@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -28,6 +29,10 @@ type Webhook interface {
 	MatchPolicy() admissionregv1.MatchPolicyType
 	// Rules is a slice of rules on which this hook should trigger
 	Rules() []admissionregv1.RuleWithOperations
+	// ObjectSelector uses a *metav1.LabelSelector to augment the webhook's
+	// Rules() to match only on incoming requests which match the specific
+	// LabelSelector.
+	ObjectSelector() *metav1.LabelSelector
 	// SideEffects are what side effects, if any, this hook has. Refer to
 	// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#side-effects
 	SideEffects() admissionregv1.SideEffectClass

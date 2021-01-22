@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -58,6 +59,9 @@ type SubscriptionWebhook struct {
 	mu sync.Mutex
 	s  runtime.Scheme
 }
+
+// ObjectSelector implements Webhook interface
+func (s *SubscriptionWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 
 func (s *SubscriptionWebhook) Doc() string {
 	return fmt.Sprintf(docString, esSubName, blockedChannels)

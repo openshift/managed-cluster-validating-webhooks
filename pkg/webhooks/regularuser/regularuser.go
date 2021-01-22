@@ -9,6 +9,7 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -103,6 +104,9 @@ func (s *RegularuserWebhook) Doc() string {
 	return fmt.Sprintf(docString, allGroups)
 }
 
+// ObjectSelector implements Webhook interface
+func (s *RegularuserWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
+
 // TimeoutSeconds implements Webhook interface
 func (s *RegularuserWebhook) TimeoutSeconds() int32 { return 2 }
 
@@ -145,6 +149,7 @@ func (s *RegularuserWebhook) Authorized(request admissionctl.Request) admissionc
 
 func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
+	log.Info("Request Object", "request", request)
 
 	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
 		// This could highlight a significant problem with RBAC since an
