@@ -75,18 +75,6 @@ func createClusterRole() *rbacv1.ClusterRole {
 			Name: "webhook-validation-cr",
 		},
 		Rules: []rbacv1.PolicyRule{
-			// (injector): Inject CA bundle
-			{
-				APIGroups: []string{"admissionregistration.k8s.io"},
-				Resources: []string{"validatingwebhookconfigurations"},
-				Verbs:     []string{"list", "patch", "get", "update"},
-			},
-			// (injector): Read CA bundle
-			{
-				APIGroups: []string{""},
-				Resources: []string{"configmaps"},
-				Verbs:     []string{"list", "get"},
-			},
 			// (user-validation): List Groups and read their member names
 			{
 				APIGroups: []string{"user.openshift.io"},
@@ -141,6 +129,10 @@ func createCACertConfigMap() *corev1.ConfigMap {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
+				// service.beta.openshift.io/inject-cabundle annotation informs
+				// service-ca-operator to insert a CA cert bundle in this ConfigMap,
+				// later mounted by the Pod for secure communications from Kubernetes
+				// API server.
 				"service.beta.openshift.io/inject-cabundle": "true",
 			},
 			Name:      "webhook-cert",
@@ -237,18 +229,6 @@ func createDaemonSet() *appsv1.DaemonSet {
 							},
 						},
 					},
-					// TODO(lseelye): Needed until Until 4.4 when openshift-ca-operator
-					// supports ValidatingWebhookConfigurations
-					InitContainers: []corev1.Container{
-						{
-							ImagePullPolicy: corev1.PullAlways,
-							Image:           *image,
-							Name:            "inject-cert",
-							Command: []string{
-								"injector",
-							},
-						},
-					},
 					Containers: []corev1.Container{
 						{
 							ImagePullPolicy: corev1.PullAlways,
@@ -294,6 +274,9 @@ func createService() *corev1.Service {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
+				// service-ca-operator annotation to correlate the Secret (containing
+				// private cert infomation) back to the Service for which it was
+				// created.
 				"service.beta.openshift.io/serving-cert-secret-name": *secretName,
 			},
 			Labels: map[string]string{
@@ -339,12 +322,11 @@ func createValidatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.
 			Name: fmt.Sprintf("sre-%s", hook.Name()),
 
 			Annotations: map[string]string{
-				"managed.openshift.io/inject-cabundle-from": fmt.Sprintf("%s/webhook-cert", *namespace),
-				// TODO(lseelye): Leave out until Until 4.4 when openshift-ca-operator
-				// supports ValidatingWebhookConfigurations, so as to not fight against
-				// that operator once 4.4 lands.
-				//	// For openshift/service-ca-operator
-				//	"service.beta.openshift.io/inject-cabundle": "true",
+				// service.beta.openshift.io/inject-cabundle annotation will instruct
+				// service-ca-operator to install a CA cert in the
+				// ValidatingWebhookConfiguration object, which is required for
+				// Kubernetes to communicate securely to the Service.
+				"service.beta.openshift.io/inject-cabundle": "true",
 			},
 		},
 		Webhooks: []admissionregv1.ValidatingWebhook{

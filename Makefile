@@ -11,7 +11,6 @@ IMG ?= quay.io/app-sre/${BASE_IMG}
 SYNCSET_GENERATOR_IMAGE := quay.io/app-sre/golang:1.14
 
 BINARY_FILE ?= build/_output/webhooks
-INJECTOR_BIN ?= build/_output/injector
 
 GO_SOURCES := $(find $(CURDIR) -type f -name "*.go" -print)
 EXTRA_DEPS := $(find $(CURDIR)/build -type f -print) Makefile
@@ -43,7 +42,7 @@ test: vet $(GO_SOURCES)
 
 .PHONY: clean
 clean:
-	@rm -f $(BINARY_FILE) $(INJECTOR_BIN) coverage.txt
+	@rm -f $(BINARY_FILE) coverage.txt
 
 .PHONY: serve
 serve:
@@ -55,15 +54,11 @@ vet:
 	@go vet ./cmd/... ./pkg/...
 
 .PHONY: build
-build: $(BINARY_FILE) $(INJECTOR_BIN)
+build: $(BINARY_FILE)
 
 $(BINARY_FILE): test $(GO_SOURCES)
 	mkdir -p $(shell dirname $(BINARY_FILE))
 	$(GOENV) go build $(GOBUILDFLAGS) -o $(BINARY_FILE) ./cmd
-
-$(INJECTOR_BIN): test $(GO_SOURCES)
-	mkdir -p $(shell dirname $(INJECTOR_BIN))
-	$(GOENV) go build $(GOBUILDFLAGS) -o $(INJECTOR_BIN) ./cmd/injector
 
 .PHONY: build-base
 build-base: build-image

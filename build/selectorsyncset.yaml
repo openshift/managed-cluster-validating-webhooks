@@ -41,22 +41,6 @@ objects:
         name: webhook-validation-cr
       rules:
       - apiGroups:
-        - admissionregistration.k8s.io
-        resources:
-        - validatingwebhookconfigurations
-        verbs:
-        - list
-        - patch
-        - get
-        - update
-      - apiGroups:
-        - ""
-        resources:
-        - configmaps
-        verbs:
-        - list
-        - get
-      - apiGroups:
         - user.openshift.io
         resources:
         - groups
@@ -109,7 +93,7 @@ objects:
       kind: ValidatingWebhookConfiguration
       metadata:
         annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+          service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
         name: sre-group-validation
       webhooks:
@@ -141,7 +125,7 @@ objects:
       kind: ValidatingWebhookConfiguration
       metadata:
         annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+          service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
         name: sre-identity-validation
       webhooks:
@@ -173,7 +157,7 @@ objects:
       kind: ValidatingWebhookConfiguration
       metadata:
         annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+          service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
         name: sre-namespace-validation
       webhooks:
@@ -205,7 +189,7 @@ objects:
       kind: ValidatingWebhookConfiguration
       metadata:
         annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+          service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
         name: sre-pod-validation
       webhooks:
@@ -235,7 +219,7 @@ objects:
       kind: ValidatingWebhookConfiguration
       metadata:
         annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+          service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
         name: sre-regular-user-validation
       webhooks:
@@ -302,7 +286,7 @@ objects:
       kind: ValidatingWebhookConfiguration
       metadata:
         annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+          service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
         name: sre-subscription-validation
       webhooks:
@@ -333,7 +317,7 @@ objects:
       kind: ValidatingWebhookConfiguration
       metadata:
         annotations:
-          managed.openshift.io/inject-cabundle-from: openshift-validation-webhook/webhook-cert
+          service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
         name: sre-user-validation
       webhooks:
@@ -411,13 +395,6 @@ objects:
               - mountPath: /service-ca
                 name: service-ca
                 readOnly: true
-            initContainers:
-            - command:
-              - injector
-              image: quay.io/app-sre/managed-cluster-validating-webhooks:${IMAGE_TAG}
-              imagePullPolicy: Always
-              name: inject-cert
-              resources: {}
             restartPolicy: Always
             serviceAccountName: validation-webhook
             tolerations:

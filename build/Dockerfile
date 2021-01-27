@@ -11,7 +11,6 @@ LABEL io.openshift.managed.name="managed-cluster-validating-webhooks" \
   io.openshift.managed.description="Validating Webhooks for Openshift Dedicated"
 
 COPY --from=builder /workdir/build/_output/webhooks /usr/local/bin/
-COPY --from=builder /workdir/build/_output/injector /usr/local/bin/
 
 ADD build/bin/* /usr/local/bin/
 
