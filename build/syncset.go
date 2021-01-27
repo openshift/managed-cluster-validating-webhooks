@@ -129,6 +129,10 @@ func createCACertConfigMap() *corev1.ConfigMap {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
+				// service.beta.openshift.io/inject-cabundle annotation informs
+				// service-ca-operator to insert a CA cert bundle in this ConfigMap,
+				// later mounted by the Pod for secure communications from Kubernetes
+				// API server.
 				"service.beta.openshift.io/inject-cabundle": "true",
 			},
 			Name:      "webhook-cert",
@@ -270,6 +274,9 @@ func createService() *corev1.Service {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
+				// service-ca-operator annotation to correlate the Secret (containing
+				// private cert infomation) back to the Service for which it was
+				// created.
 				"service.beta.openshift.io/serving-cert-secret-name": *secretName,
 			},
 			Labels: map[string]string{
@@ -315,6 +322,10 @@ func createValidatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.
 			Name: fmt.Sprintf("sre-%s", hook.Name()),
 
 			Annotations: map[string]string{
+				// service.beta.openshift.io/inject-cabundle annotation will instruct
+				// service-ca-operator to install a CA cert in the
+				// ValidatingWebhookConfiguration object, which is required for
+				// Kubernetes to communicate securely to the Service.
 				"service.beta.openshift.io/inject-cabundle": "true",
 			},
 		},
