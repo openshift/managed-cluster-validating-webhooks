@@ -149,7 +149,6 @@ func (s *RegularuserWebhook) Authorized(request admissionctl.Request) admissionc
 
 func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
-	log.Info("Request Object", "request", request)
 
 	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
 		// This could highlight a significant problem with RBAC since an
