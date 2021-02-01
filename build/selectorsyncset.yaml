@@ -127,6 +127,40 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
+        name: sre-hiveownership-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /hiveownership-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: hiveownership-validation.managed.openshift.io
+        objectSelector:
+          matchLabels:
+            hive.openshift.io/managed: "true"
+        rules:
+        - apiGroups:
+          - quota.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          - DELETE
+          resources:
+          - ClusterResourceQuota
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
         name: sre-identity-validation
       webhooks:
       - admissionReviewVersions:

@@ -1,0 +1,135 @@
+package hiveownership
+
+import (
+	"fmt"
+	"sync"
+
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	"k8s.io/api/apps/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+)
+
+// const
+const (
+	WebhookName string = "hiveownership-validation"
+	docString   string = `Managed OpenShift customers may not edit certain managed resources. A managed resource has a "hive.openshift.io/managed": "true" label.`
+)
+
+// HiveOwnershipWebhook denies requests
+// if it made by a customer to manage hive-labeled resources
+type HiveOwnershipWebhook struct {
+	mu sync.Mutex
+	s  runtime.Scheme
+}
+
+var (
+	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:kube-system:generic-garbage-collector"}
+	adminGroups     = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+
+	log = logf.Log.WithName(WebhookName)
+
+	scope = admissionregv1.ClusterScope
+	rules = []admissionregv1.RuleWithOperations{
+		{
+			Operations: []admissionregv1.OperationType{"UPDATE", "DELETE"},
+			Rule: admissionregv1.Rule{
+				APIGroups:   []string{"quota.openshift.io"},
+				APIVersions: []string{"*"},
+				Resources:   []string{"ClusterResourceQuota"},
+				Scope:       &scope,
+			},
+		},
+	}
+)
+
+// TimeoutSeconds implements Webhook interface
+func (s *HiveOwnershipWebhook) TimeoutSeconds() int32 { return 2 }
+
+// MatchPolicy implements Webhook interface
+func (s *HiveOwnershipWebhook) MatchPolicy() admissionregv1.MatchPolicyType {
+	return admissionregv1.Equivalent
+}
+
+// Name implements Webhook interface
+func (s *HiveOwnershipWebhook) Name() string { return WebhookName }
+
+// FailurePolicy implements Webhook interface
+func (s *HiveOwnershipWebhook) FailurePolicy() admissionregv1.FailurePolicyType {
+	return admissionregv1.Ignore
+}
+
+// Rules implements Webhook interface
+func (s *HiveOwnershipWebhook) Rules() []admissionregv1.RuleWithOperations { return rules }
+
+// GetURI implements Webhook interface
+func (s *HiveOwnershipWebhook) GetURI() string { return "/" + WebhookName }
+
+// SideEffects implements Webhook interface
+func (s *HiveOwnershipWebhook) SideEffects() admissionregv1.SideEffectClass {
+	return admissionregv1.SideEffectClassNone
+}
+
+// Validate is the incoming request even valid?
+func (s *HiveOwnershipWebhook) Validate(req admissionctl.Request) bool {
+	valid := true
+	valid = valid && (req.UserInfo.Username != "")
+
+	return valid
+}
+
+// Doc documents the hook
+func (s *HiveOwnershipWebhook) Doc() string {
+	return docString
+}
+
+// ObjectSelector intercepts based on having the label
+// .metadata.labels["hive.openshift.io/managed"] == "true"
+func (s *HiveOwnershipWebhook) ObjectSelector() *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"hive.openshift.io/managed": "true",
+		},
+	}
+}
+
+func (s *HiveOwnershipWebhook) authorized(request admissionctl.Request) admissionctl.Response {
+	var ret admissionctl.Response
+
+	// Admin users
+	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, privilegedUsers) {
+		ret = admissionctl.Allowed("Admin users may edit managed resources")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+	// Users in admin groups
+	for _, group := range request.AdmissionRequest.UserInfo.Groups {
+		if utils.SliceContains(group, adminGroups) {
+			ret = admissionctl.Allowed("Members of admin group may edit managed resources")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+	}
+
+	ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed objects. Customers may not edit objects %v with these labels: %v", rules, s.ObjectSelector()))
+	ret.UID = request.AdmissionRequest.UID
+	return ret
+}
+
+// Authorized implements Webhook interface
+func (s *HiveOwnershipWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	return s.authorized(request)
+}
+
+// NewWebhook creates a new webhook
+func NewWebhook() *HiveOwnershipWebhook {
+	scheme := runtime.NewScheme()
+	v1beta1.AddToScheme(scheme)
+
+	return &HiveOwnershipWebhook{
+		s: *scheme,
+	}
+}
