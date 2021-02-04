@@ -24,7 +24,7 @@ const (
 
 var (
 	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:kube-system:generic-garbage-collector"}
-	adminGroups     = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	adminGroups     = []string{"osd-sre-admins", "osd-sre-cluster-admins", "cluster-admins"}
 	blockedChannels = []string{"4.5", "4.6"}
 
 	log = logf.Log.WithName(WebhookName)
@@ -157,7 +157,7 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 
 	// if we're here, non-privileged user is attempting to CREATE or UPDATE logging
 	// operator at 4.5 or 4.6 - deny this
-	ret = admissionctl.Denied("Only Red Hat SREs can install or upgrade to the v4.5 or v4.6 logging operator at this time, as there are known issues with logging v4.5/v4.6 which we are working to resolve.")
+	ret = admissionctl.Denied("Only cluster-admins and Red Hat SREs can install or upgrade to the v4.5 or v4.6 logging operator at this time, as there are known issues with logging v4.5/v4.6 which we are working to resolve.")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }
