@@ -1,7 +1,6 @@
 package hiveownership
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -114,7 +113,7 @@ func (s *HiveOwnershipWebhook) authorized(request admissionctl.Request) admissio
 		}
 	}
 
-	ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed objects. Customers may not edit objects %v with these labels: %v", rules, s.ObjectSelector()))
+	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }

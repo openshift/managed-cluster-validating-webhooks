@@ -106,6 +106,15 @@ func TestThing(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			// dedicated-admin users. This should be blocked as making changes as CU on clusterresourcequota which are managed are prohibited.
+			testID:          "dedicated-admin-test",
+			username:        "bob@foo.com",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			labels:          map[string]string{"hive.openshift.io/managed": "true"},
+			shouldBeAllowed: false,
+		},
+		{
 			// no special privileges, only an authenticated user. This should be blocked as making changes on clusterresourcequota which are managed are prohibited.
 			testID:          "unpriv-update-test",
 			username:        "unpriv-user",
