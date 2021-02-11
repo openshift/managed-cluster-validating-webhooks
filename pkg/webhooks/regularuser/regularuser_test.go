@@ -329,6 +329,68 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 	runRegularuserTests(t, tests)
 }
 
+func TestCustomDomains(t *testing.T) {
+	tests := []regularuserTests{
+		{
+			testID:          "customdomain-unauth-user",
+			targetResource:  "customdomains",
+			targetKind:      "CustomDomain",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "system:unauthenticated",
+			userGroups:      []string{"system:unauthenticated"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "customdomain-dedicated-admins",
+			targetResource:  "customdomains",
+			targetKind:      "CustomDomain",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "customdomain-dedicated-admins-edit",
+			targetResource:  "customdomains",
+			targetKind:      "CustomDomain",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "customdomain-dedicated-admins-delete",
+			targetResource:  "customdomains",
+			targetKind:      "CustomDomain",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "managed.openshift.io",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       v1beta1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// shouldn't be able to create a CustomDomain from machine.openshift.io if that should come to exist
+			testID:          "customdomain-dedicated-admins-wrong-group",
+			targetResource:  "customdomains",
+			targetKind:      "CustomDomain",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "machine.openshift.io",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: false,
+		},
+	}
+	runRegularuserTests(t, tests)
+}
+
 func TestMustGathers(t *testing.T) {
 	tests := []regularuserTests{
 		{
