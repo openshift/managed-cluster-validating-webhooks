@@ -17,14 +17,17 @@ import (
 )
 
 const (
-	WebhookName string = "regular-user-validation"
-	docString   string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the ClusterVersion, Node or SubjectPermission objects.`
+	WebhookName       string = "regular-user-validation"
+	docString         string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the ClusterVersion, Node or SubjectPermission objects.`
+	mustGatherKind    string = "MustGather"
+	mustGatherGroup   string = "managed.openshift.io"
+	customDomainKind  string = "CustomDomain"
+	customDomainGroup string = "managed.openshift.io"
 )
 
 var (
-	adminGroups           = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
-	ceeGroup       string = "osd-devaccess"
-	mustGatherKind string = "MustGather"
+	adminGroups        = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	ceeGroup    string = "osd-devaccess"
 
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
@@ -168,15 +171,23 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
+	if utils.SliceContains("dedicated-admins", request.UserInfo.Groups) &&
+		request.Kind.Kind == customDomainKind &&
+		request.Kind.Group == customDomainGroup {
+		ret = admissionctl.Allowed("dedicated-admins may manage Custom Domains")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+	if utils.SliceContains(ceeGroup, request.UserInfo.Groups) &&
+		request.Kind.Kind == mustGatherKind &&
+		request.Kind.Group == mustGatherGroup {
+		ret = admissionctl.Allowed("Members of CEE may manage MustGather CRs")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
 	for _, userGroup := range request.UserInfo.Groups {
 		if utils.SliceContains(userGroup, adminGroups) {
 			ret = admissionctl.Allowed("Members of admin groups are allowed")
-			ret.UID = request.AdmissionRequest.UID
-			return ret
-		}
-
-		if (userGroup == ceeGroup) && (request.Kind.Kind == mustGatherKind) {
-			ret = admissionctl.Allowed("Members of CEE may manage MustGather CRs")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
