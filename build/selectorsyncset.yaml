@@ -95,6 +95,37 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
+        name: sre-clusterlogging-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1beta1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /clusterlogging-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: clusterlogging-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - logging.openshift.io
+          apiVersions:
+          - v1
+          operations:
+          - CREATE
+          - UPDATE
+          resources:
+          - clusterloggings
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 1
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
         name: sre-group-validation
       webhooks:
       - admissionReviewVersions:
