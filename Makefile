@@ -67,6 +67,7 @@ build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 	$(CONTAINER_ENGINE) build -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
 	$(CONTAINER_ENGINE) tag $(IMG):$(IMAGETAG) $(IMG):latest
 
+IMAGE_TAG ?= \$${IMAGE_TAG}
 build-sss: syncset
 render: syncset
 .PHONY: syncset $(SELECTOR_SYNC_SET_DESTINATION)
@@ -83,7 +84,7 @@ $(SELECTOR_SYNC_SET_DESTINATION):
 				build/syncset.go \
 				-exclude $(SELECTOR_SYNC_SET_HOOK_EXCLUDES) \
 				-outfile $(@) \
-				-image "$(IMG):\$${IMAGE_TAG}"
+				-image "$(IMG):$(IMAGE_TAG)"
 
 ### Imported
 .PHONY: skopeo-push
@@ -105,6 +106,10 @@ skopeo-push:
 .PHONY: push-base
 push-base: build/Dockerfile
 	$(CONTAINER_ENGINE) push $(IMG):$(IMAGETAG)
+
+.PHONY: deploy-dev
+deploy-dev:
+	hack/deploy-dev.sh
 
 coverage: coverage.txt
 coverage.txt: vet $(GO_SOURCES)
