@@ -171,10 +171,11 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if utils.SliceContains("dedicated-admins", request.UserInfo.Groups) &&
+	if (utils.SliceContains("cluster-admins", request.UserInfo.Groups) ||
+		utils.SliceContains("dedicated-admins", request.UserInfo.Groups)) &&
 		request.Kind.Kind == customDomainKind &&
 		request.Kind.Group == customDomainGroup {
-		ret = admissionctl.Allowed("dedicated-admins may manage Custom Domains")
+		ret = admissionctl.Allowed("dedicated-admins and cluster-admins may manage Custom Domains")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
