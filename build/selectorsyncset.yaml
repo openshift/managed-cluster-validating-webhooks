@@ -151,7 +151,7 @@ objects:
           - UPDATE
           - DELETE
           resources:
-          - ClusterResourceQuota
+          - clusterresourcequotas
           scope: Cluster
         sideEffects: None
         timeoutSeconds: 2

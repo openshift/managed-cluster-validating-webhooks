@@ -38,7 +38,7 @@ var (
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"quota.openshift.io"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"ClusterResourceQuota"},
+				Resources:   []string{"clusterresourcequotas"},
 				Scope:       &scope,
 			},
 		},
