@@ -171,18 +171,13 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if (utils.SliceContains("cluster-admins", request.UserInfo.Groups) ||
-		utils.SliceContains("dedicated-admins", request.UserInfo.Groups)) &&
-		request.Kind.Kind == customDomainKind &&
-		request.Kind.Group == customDomainGroup {
-		ret = admissionctl.Allowed("dedicated-admins and cluster-admins may manage Custom Domains")
+	if isCustomDomainAuthorized(request) {
+		ret = admissionctl.Allowed("Management of CustomDomain CR is authorized")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if utils.SliceContains(ceeGroup, request.UserInfo.Groups) &&
-		request.Kind.Kind == mustGatherKind &&
-		request.Kind.Group == mustGatherGroup {
-		ret = admissionctl.Allowed("Members of CEE may manage MustGather CRs")
+	if isMustGatherAuthorized(request) {
+		ret = admissionctl.Allowed("Management of MustGather CR is authorized")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
@@ -198,6 +193,21 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
+}
+
+// isMustGatherAuthorized check if request is authorized for MustGather CR
+func isMustGatherAuthorized(request admissionctl.Request) bool {
+	return (utils.SliceContains(ceeGroup, request.UserInfo.Groups) &&
+		request.Kind.Kind == mustGatherKind &&
+		request.Kind.Group == mustGatherGroup)
+}
+
+// isCustomDomainAuthorized check if request is authorized for CustomDomain CR
+func isCustomDomainAuthorized(request admissionctl.Request) bool {
+	return ((utils.SliceContains("cluster-admins", request.UserInfo.Groups) ||
+		utils.SliceContains("dedicated-admins", request.UserInfo.Groups)) &&
+		request.Kind.Kind == customDomainKind &&
+		request.Kind.Group == customDomainGroup)
 }
 
 // NewWebhook creates a new webhook
