@@ -5,7 +5,7 @@
 # for development purposes.
 #
 # example flow:
-# $ export IMG=quay.io/my-user/managed-cluster-validating-webhooks IMAGETAG=latest IMAGE_TAG=latest
+# $ export IMG=quay.io/my-user/managed-cluster-validating-webhooks IMAGETAG=latest IMAGE_TAG=latest SYNCSET_GENERATOR_IMAGE=golang:1.14
 # $ make build-image
 # $ make syncset
 # $ make push-base
