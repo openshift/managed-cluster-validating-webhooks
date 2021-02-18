@@ -8,7 +8,7 @@ BASE_IMG ?= managed-cluster-validating-webhooks
 IMG ?= quay.io/app-sre/${BASE_IMG}
 
 # nb: registry.svc.ci.openshift.org/openshift/release:golang-1.14 doesn't work for this
-SYNCSET_GENERATOR_IMAGE := quay.io/app-sre/golang:1.14
+SYNCSET_GENERATOR_IMAGE ?= quay.io/app-sre/golang:1.14
 
 BINARY_FILE ?= build/_output/webhooks
 
