@@ -7,6 +7,7 @@
 # example flow:
 # $ export IMG=quay.io/my-user/managed-cluster-validating-webhooks IMAGETAG=latest IMAGE_TAG=latest
 # $ make build-image
+# $ make syncset
 # $ make push-base
 # $ make deploy-dev
 
