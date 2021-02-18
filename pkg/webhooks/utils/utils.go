@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -19,6 +20,14 @@ var (
 	admissionScheme = runtime.NewScheme()
 	admissionCodecs = serializer.NewCodecFactory(admissionScheme)
 )
+
+func DefaultLabelSelector() metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"api.openshift.com/managed": "true",
+		},
+	}
+}
 
 func SliceContains(needle string, haystack []string) bool {
 	for _, check := range haystack {

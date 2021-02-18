@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -10,8 +9,9 @@ import (
 	"strings"
 
 	templatev1 "github.com/openshift/api/template/v1"
-	hivev1 "github.com/openshift/hive/pkg/apis/hive/v1"
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/syncset"
+	webhooks "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
+	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -47,10 +47,6 @@ var (
 		"managed.openshift.io/osd":         "true",
 	}
 )
-
-func readHooks() map[string]webhooks.WebhookFactory {
-	return webhooks.Webhooks
-}
 
 func createServiceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
@@ -351,15 +347,6 @@ func createValidatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.
 	}
 }
 
-func encode(obj interface{}) []byte {
-	o, err := json.Marshal(obj)
-	if err != nil {
-		fmt.Printf("Error encoding %+v\n", obj)
-		os.Exit(1)
-	}
-	return o
-}
-
 func sliceContains(needle string, haystack []string) bool {
 	for _, hay := range haystack {
 		if hay == needle {
@@ -369,46 +356,20 @@ func sliceContains(needle string, haystack []string) bool {
 	return false
 }
 
-func createSelectorSyncSet(resources []runtime.RawExtension) *hivev1.SelectorSyncSet {
-	return &hivev1.SelectorSyncSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "SelectorSyncSet",
-			APIVersion: "hive.openshift.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "managed-cluster-validating-webhooks",
-			Labels: map[string]string{
-				"managed.openshift.io/gitHash":     "${IMAGE_TAG}",
-				"managed.openshift.io/gitRepoName": "${REPO_NAME}",
-				"managed.openshift.io/osd":         "true",
-			},
-		},
-		Spec: hivev1.SelectorSyncSetSpec{
-			SyncSetCommonSpec: hivev1.SyncSetCommonSpec{
-				ResourceApplyMode: hivev1.SyncResourceApplyMode,
-				Resources:         resources,
-			},
-			ClusterDeploymentSelector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"api.openshift.com/managed": "true",
-				},
-			},
-		},
-	}
-}
 func main() {
 	flag.Parse()
 
 	skip := strings.Split(*excludes, ",")
 	onlyInclude := strings.Split(*only, "")
 
-	encoded := make([]runtime.RawExtension, 0)
-	encoded = append(encoded, runtime.RawExtension{Object: createNamespace()})
-	encoded = append(encoded, runtime.RawExtension{Object: createServiceAccount()})
-	encoded = append(encoded, runtime.RawExtension{Object: createClusterRole()})
-	encoded = append(encoded, runtime.RawExtension{Object: createClusterRoleBinding()})
-	encoded = append(encoded, runtime.RawExtension{Object: createCACertConfigMap()})
-	encoded = append(encoded, runtime.RawExtension{Object: createService()})
+	templateResources := syncset.SyncSetResourcesByLabelSelector{}
+	templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createNamespace()})
+	templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createServiceAccount()})
+	templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterRole()})
+	templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterRoleBinding()})
+	templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createCACertConfigMap()})
+	templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createService()})
+	templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createDaemonSet()})
 
 	// Collect all of our webhook names and prepare to sort them all so the
 	// resulting SelectorSyncSet is always sorted.
@@ -436,20 +397,12 @@ func main() {
 		if sliceContains(hook().Name(), skip) {
 			continue
 		}
-		if len(onlyInclude) > 0 {
-			if sliceContains(hook().Name(), onlyInclude) {
-				encoded = append(encoded, runtime.RawExtension{Raw: encode(createValidatingWebhookConfiguration(hook()))})
-			}
+		if len(onlyInclude) > 0 && !sliceContains(hook().Name(), onlyInclude) {
 			continue
 		}
-		// can't use RawExtension{Object: } here because the VWC doesn't implement DeepCopyObject
-		encoded = append(encoded, runtime.RawExtension{Raw: encode(createValidatingWebhookConfiguration(hook()))})
+		templateResources.Add(hook().SyncSetLabelSelector(), runtime.RawExtension{Raw: syncset.Encode(createValidatingWebhookConfiguration(hook()))})
 	}
-	// TODO(lseelye): Until 4.3, place the DaemonSet after the
-	// ValidatingWebhookConfigurations are added to the `encoded` list so that the
-	// initContainer will work (see createDaemonSet and
-	// createValidatingWebhookConfiguration)
-	encoded = append(encoded, runtime.RawExtension{Object: createDaemonSet()})
+
 	if *showHookNames {
 		os.Exit(0)
 	}
@@ -459,7 +412,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	sss := createSelectorSyncSet(encoded)
+	selectorSyncSets := templateResources.RenderSelectorSyncSets(sssLabels)
 
 	te := templatev1.Template{
 		TypeMeta: metav1.TypeMeta{
@@ -480,11 +433,7 @@ func main() {
 				Value:    "managed-cluster-validating-webhooks",
 			},
 		},
-		Objects: []runtime.RawExtension{
-			{
-				Raw: encode(sss),
-			},
-		},
+		Objects: selectorSyncSets,
 	}
 
 	y, err := yaml.Marshal(te)

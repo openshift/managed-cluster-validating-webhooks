@@ -210,6 +210,11 @@ func isCustomDomainAuthorized(request admissionctl.Request) bool {
 		request.Kind.Group == customDomainGroup)
 }
 
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *RegularuserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
+}
+
 // NewWebhook creates a new webhook
 func NewWebhook() *RegularuserWebhook {
 	scheme := runtime.NewScheme()

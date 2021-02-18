@@ -309,6 +309,11 @@ func doesNamespaceContainProtectedLabels(ns *corev1.Namespace) []string {
 	return foundLabelNames
 }
 
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *NamespaceWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
+}
+
 // NewWebhook creates a new webhook
 func NewWebhook() *NamespaceWebhook {
 	scheme := runtime.NewScheme()

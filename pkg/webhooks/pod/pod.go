@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"k8s.io/api/admission/v1beta1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -163,6 +164,11 @@ func (s *PodWebhook) authorized(request admissionctl.Request) admissionctl.Respo
 	ret = admissionctl.Allowed("Allowed to create Pod because of RBAC")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
+}
+
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *PodWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
 }
 
 // NewWebhook creates a new webhook

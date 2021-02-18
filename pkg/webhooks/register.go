@@ -40,6 +40,9 @@ type Webhook interface {
 	TimeoutSeconds() int32
 	// Doc returns a string for end-customer documentation purposes.
 	Doc() string
+	// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+	// Return utils.DefaultLabelSelector() to stick with the default
+	SyncSetLabelSelector() metav1.LabelSelector
 }
 
 // WebhookFactory return a kind of Webhook

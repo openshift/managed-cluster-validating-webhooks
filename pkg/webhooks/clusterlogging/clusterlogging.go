@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -131,29 +132,7 @@ func (s *ClusterloggingWebhook) Authorized(request admissionctl.Request) admissi
 	return r
 }
 
-// renderClusterLogging decodes an *cl.ClusterLogging from the incoming request.
-// If the request includes an OldObject (from an update or deletion), it will be
-// preferred, otherwise, the Object will be preferred.
-func (s *ClusterloggingWebhook) renderClusterLogging(request admissionctl.Request) (*cl.ClusterLogging, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
-	clusterLogging := &cl.ClusterLogging{}
-	if len(request.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(request.OldObject, clusterLogging)
-	} else {
-		err = decoder.DecodeRaw(request.Object, clusterLogging)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return clusterLogging, nil
-}
-
 func (s *ClusterloggingWebhook) authorized(request admissionctl.Request) admissionctl.Response {
-	var ret admissionctl.Response
-
 	clusterLogging, err := s.renderClusterLogging(request)
 	if err != nil {
 		return admissionctl.Errored(http.StatusBadRequest, err)
@@ -192,6 +171,26 @@ func (s *ClusterloggingWebhook) authorized(request admissionctl.Request) admissi
 	}
 
 	return ret
+}
+
+// renderClusterLogging decodes an *cl.ClusterLogging from the incoming request.
+// If the request includes an OldObject (from an update or deletion), it will be
+// preferred, otherwise, the Object will be preferred.
+func (s *ClusterloggingWebhook) renderClusterLogging(request admissionctl.Request) (*cl.ClusterLogging, error) {
+	decoder, err := admissionctl.NewDecoder(&s.s)
+	if err != nil {
+		return nil, err
+	}
+	clusterLogging := &cl.ClusterLogging{}
+	if len(request.OldObject.Raw) > 0 {
+		err = decoder.DecodeRaw(request.OldObject, clusterLogging)
+	} else {
+		err = decoder.DecodeRaw(request.Object, clusterLogging)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return clusterLogging, nil
 }
 
 func le(lhs TimeUnit, rhs TimeUnit) (bool, error) {
@@ -254,6 +253,22 @@ func parseTimeUnit(value TimeUnit) (uint64, string, error) {
 	}
 	unit := match[2]
 	return number, unit, nil
+}
+
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *ClusterloggingWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	customLabelSelector := utils.DefaultLabelSelector()
+	customLabelSelector.MatchExpressions = append(customLabelSelector.MatchExpressions,
+		metav1.LabelSelectorRequirement{
+			Key:      "hive.openshift.io/version-major-minor",
+			Operator: metav1.LabelSelectorOpIn,
+			Values: []string{
+				"4.4",
+				"4.5",
+				"4.6",
+			},
+		})
+	return customLabelSelector
 }
 
 // NewWebhook creates a new webhook

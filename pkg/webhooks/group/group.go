@@ -168,6 +168,11 @@ func (s *GroupWebhook) Validate(req admissionctl.Request) bool {
 	return valid
 }
 
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *GroupWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
+}
+
 // NewWebhook creates a new webhook
 func NewWebhook() *GroupWebhook {
 	scheme := runtime.NewScheme()
