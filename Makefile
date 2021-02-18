@@ -110,6 +110,9 @@ push-base: build/Dockerfile
 .PHONY: deploy-dev
 deploy-dev:
 	hack/deploy-dev.sh
+	
+.PHONY: build-deploy-dev
+build-deploy-dev: syncset build-image push-base deploy-dev
 
 coverage: coverage.txt
 coverage.txt: vet $(GO_SOURCES)
