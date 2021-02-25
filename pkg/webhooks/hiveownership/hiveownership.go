@@ -123,6 +123,11 @@ func (s *HiveOwnershipWebhook) Authorized(request admissionctl.Request) admissio
 	return s.authorized(request)
 }
 
+// CustomSelector implements Webhook interface, returning the custom label selector for the syncset, if any
+func (s *HiveOwnershipWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
+}
+
 // NewWebhook creates a new webhook
 func NewWebhook() *HiveOwnershipWebhook {
 	scheme := runtime.NewScheme()

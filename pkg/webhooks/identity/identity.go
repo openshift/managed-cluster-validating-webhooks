@@ -145,6 +145,11 @@ func (s *IdentityWebhook) Authorized(request admissionctl.Request) admissionctl.
 	return s.authorized(request)
 }
 
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *IdentityWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
+}
+
 // NewWebhook creates a new webhook
 func NewWebhook() *IdentityWebhook {
 	scheme := runtime.NewScheme()

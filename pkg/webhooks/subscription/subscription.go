@@ -167,6 +167,11 @@ func (s *SubscriptionWebhook) Authorized(request admissionctl.Request) admission
 	return s.authorized(request)
 }
 
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *SubscriptionWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
+}
+
 // NewWebhook creates a new webhook
 func NewWebhook() *SubscriptionWebhook {
 	scheme := runtime.NewScheme()

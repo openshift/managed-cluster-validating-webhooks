@@ -281,6 +281,11 @@ func (s *UserWebhook) loadUsers() error {
 	return nil
 }
 
+// SyncSetLabelSelector returns the label selector to use in the SyncSet.
+func (s *UserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
+	return utils.DefaultLabelSelector()
+}
+
 // NewWebhook creates a new webhook
 func NewWebhook() *UserWebhook {
 	scheme := runtime.NewScheme()
