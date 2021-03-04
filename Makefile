@@ -5,7 +5,9 @@ GIT_HASH := $(shell git rev-parse --short=7 HEAD)
 IMAGETAG ?= ${GIT_HASH}
 
 BASE_IMG ?= managed-cluster-validating-webhooks
-IMG ?= quay.io/app-sre/${BASE_IMG}
+IMG_REGISTRY ?= quay.io
+IMG_ORG ?= app-sre
+IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
 
 # nb: registry.svc.ci.openshift.org/openshift/release:golang-1.14 doesn't work for this
 SYNCSET_GENERATOR_IMAGE := quay.io/app-sre/golang:1.14
@@ -105,6 +107,7 @@ skopeo-push:
 .PHONY: push-base
 push-base: build/Dockerfile
 	$(CONTAINER_ENGINE) push $(IMG):$(IMAGETAG)
+	$(CONTAINER_ENGINE) push $(IMG):latest
 
 coverage: coverage.txt
 coverage.txt: vet $(GO_SOURCES)
