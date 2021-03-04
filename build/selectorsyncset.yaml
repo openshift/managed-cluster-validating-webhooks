@@ -366,6 +366,7 @@ objects:
           resources:
           - clusterversions
           - clusterversions/status
+          - schedulers
           scope: '*'
         - apiGroups:
           - ""
