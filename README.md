@@ -14,8 +14,10 @@ A framework supporting validating webhooks for OpenShift.
     - [Local Live Testing](#local-live-testing)
       - [Create a Repository](#create-a-repository)
       - [Build and Push the Image](#build-and-push-the-image)
+      - [Prevent Overwriting (Hive-Managed Clusters)](#prevent-overwriting-hive-managed-clusters)
       - [Pare Down Your Daemonset (Optional)](#pare-down-your-daemonset-optional)
       - [Deploy the Image](#deploy-the-image)
+      - [Update Other Resources](#update-other-resources)
       - [Test Your Changes](#test-your-changes)
     - [End to End Testing](#end-to-end-testing)
   - [Disabling Webhooks](#disabling-webhooks)
@@ -167,6 +169,12 @@ For example, to build, tag, and push `quay.io/my-user/managed-cluster-validating
 make IMG_ORG=my-user build-base push-base
 ```
 
+#### Prevent Overwriting (Hive-Managed Clusters)
+
+If you are using an OSD cluster managed by hive, the resources in the `openshift-validation-webhook` project are controlled by SelectorSyncSets.
+By default, hive will periodically refresh these resources, reverting any changes you make according to the instructions below.
+To avoid this, [pause hive syncing for your cluster](https://github.com/openshift/ops-sop/blob/master/v4/knowledge_base/pause-syncset.md).
+
 #### Pare Down Your Daemonset (Optional)
 
 **Note:** Editing the daemonset requires elevated privileges.
@@ -242,6 +250,11 @@ For example:
 $ oc describe pod -n openshift-validation-webhook | grep '^ *Image:'
     Image:         quay.io/my-user/managed-cluster-validating-webhooks:latest
 ```
+
+#### Update Other Resources
+If your changes resulted in a delta to [selectorsyncset.yaml](build/selectorsyncset.yaml), you must manually edit the corresponding resources to apply those changes.
+
+**TODO:** More details on this.
 
 #### Test Your Changes
 
