@@ -56,7 +56,7 @@ var (
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"config.openshift.io"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"clusterversions", "clusterversions/status"},
+				Resources:   []string{"clusterversions", "clusterversions/status", "schedulers"},
 				Scope:       &scope,
 			},
 		},
