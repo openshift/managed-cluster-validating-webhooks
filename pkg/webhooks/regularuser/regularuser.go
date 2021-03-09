@@ -27,6 +27,7 @@ const (
 
 var (
 	adminGroups        = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	adminUsers         = []string{"backplane-cluster-admin"}
 	ceeGroup    string = "osd-devaccess"
 
 	scope = admissionregv1.AllScopes
@@ -178,6 +179,11 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 	}
 	if isMustGatherAuthorized(request) {
 		ret = admissionctl.Allowed("Management of MustGather CR is authorized")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, adminUsers) {
+		ret = admissionctl.Allowed("Specified admin users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
