@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	clusterAdminUsers           = []string{"kube:admin", "system:admin"}
+	clusterAdminUsers           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
 	sreAdminGroups              = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 	privilegedNamespaceRe       = regexp.MustCompile(privilegedNamespace)
 	badNamespaceRe              = regexp.MustCompile(badNamespace)
