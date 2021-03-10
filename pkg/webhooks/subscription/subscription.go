@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:kube-system:generic-garbage-collector"}
+	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:kube-system:generic-garbage-collector", "backplane-cluster-admin"}
 	adminGroups     = []string{"osd-sre-admins", "osd-sre-cluster-admins", "cluster-admins"}
 	blockedChannels = []string{"4.5", "4.6"}
 

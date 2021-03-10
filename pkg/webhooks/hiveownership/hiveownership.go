@@ -26,7 +26,7 @@ type HiveOwnershipWebhook struct {
 }
 
 var (
-	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:kube-system:generic-garbage-collector"}
+	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:kube-system:generic-garbage-collector", "backplane-cluster-admin"}
 	adminGroups     = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 
 	log = logf.Log.WithName(WebhookName)

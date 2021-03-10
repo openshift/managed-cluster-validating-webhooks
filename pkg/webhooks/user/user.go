@@ -57,8 +57,9 @@ var (
 	// kubeAdminUsernames are core Kubernetes users, not generally created by people
 	// system:serviceaccount:openshift-authentication:oauth-openshift is omitted
 	// from this intentionally so that the service account must abide by the Red
-	// Hat associate check
-	kubeAdminUsernames = []string{"kube:admin", "system:admin"}
+	// Hat associate check.
+	// backplane-cluster-admin is a user we use in backplane to impersonate cluster-admin
+	kubeAdminUsernames = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
 
 	scope = admissionregv1.ClusterScope
 	rules = []admissionregv1.RuleWithOperations{
