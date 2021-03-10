@@ -93,6 +93,7 @@ type TimeUnit string
 type retentionPolicyValidator struct {
 	name       string
 	hint       string
+	lowerBound TimeUnit
 	upperBound TimeUnit
 }
 
@@ -112,13 +113,18 @@ func (r *retentionPolicyValidator) isAllowed(retentionPolicy *cl.RetentionPolicy
 		return false, "The entered retention policy is not allowed. " + r.name + " must not be unset. Hint: " + r.hint, nil
 	}
 
-	isAllowedRetentionDays, err := le(TimeUnit(retentionPolicy.MaxAge), r.upperBound)
+	isAllowedRetentionDaysLower, err := le(r.lowerBound, TimeUnit(retentionPolicy.MaxAge))
+	if err != nil {
+		log.Error(err, "Couldn't compare timeunits")
+		return false, "", err
+	}
+	isAllowedRetentionDaysUpper, err := le(TimeUnit(retentionPolicy.MaxAge), r.upperBound)
 	if err != nil {
 		log.Error(err, "Couldn't compare timeunits")
 		return false, "", err
 	}
 
-	if !isAllowedRetentionDays {
+	if !isAllowedRetentionDaysLower || !isAllowedRetentionDaysUpper {
 		return false, "The entered RetentionPolicy " + r.name + " is not allowed. " + r.hint, nil
 	}
 
@@ -142,7 +148,8 @@ func (s *ClusterloggingWebhook) authorized(request admissionctl.Request) admissi
 
 	appValidator := retentionPolicyValidator{
 		name:       "app",
-		hint:       "Set MaxAge to a value <= 7d",
+		hint:       "Set MaxAge to a value <= 7d, >= 1h",
+		lowerBound: TimeUnit("1h"),
 		upperBound: TimeUnit("7d"),
 	}
 	ok, ret := appValidator.checkPolicy(retentionPolicy.App)
@@ -152,8 +159,9 @@ func (s *ClusterloggingWebhook) authorized(request admissionctl.Request) admissi
 
 	infraValidator := retentionPolicyValidator{
 		name:       "infra",
-		hint:       "MaxAge must be 0d",
-		upperBound: TimeUnit("0d"),
+		hint:       "MaxAge must be 1h",
+		lowerBound: TimeUnit("1h"),
+		upperBound: TimeUnit("1h"),
 	}
 	ok, ret = infraValidator.checkPolicy(retentionPolicy.Infra)
 	if !ok {
@@ -162,8 +170,9 @@ func (s *ClusterloggingWebhook) authorized(request admissionctl.Request) admissi
 
 	auditValidator := retentionPolicyValidator{
 		name:       "audit",
-		hint:       "Set MaxAge to a value <= 7d",
-		upperBound: TimeUnit("7d"),
+		hint:       "audit log must be 1h",
+		lowerBound: TimeUnit("1h"),
+		upperBound: TimeUnit("1h"),
 	}
 	ok, ret = auditValidator.checkPolicy(retentionPolicy.Audit)
 	if !ok {
