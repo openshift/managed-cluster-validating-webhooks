@@ -83,10 +83,10 @@ func createRawJSONString(appMaxAge, infraMaxAge, auditMaxAge string) string {
 
 func Test_InvalidTimeUnit(t *testing.T) {
 	testSuites := []clusterloggingTestSuite{
-		NewTestSuite("7x", "0d", "0d").ExpectNotAllowed(),
-		NewTestSuite("7D", "0d", "0d").ExpectNotAllowed(),
-		NewTestSuite("7S", "0d", "0d").ExpectNotAllowed(),
-		NewTestSuite("m", "0d", "0d").ExpectNotAllowed(),
+		NewTestSuite("7x", "1h", "1h").ExpectNotAllowed(),
+		NewTestSuite("7D", "1h", "1h").ExpectNotAllowed(),
+		NewTestSuite("7S", "1h", "1h").ExpectNotAllowed(),
+		NewTestSuite("m", "1h", "1h").ExpectNotAllowed(),
 	}
 
 	runTests(t, testSuites)
@@ -94,12 +94,19 @@ func Test_InvalidTimeUnit(t *testing.T) {
 
 func Test_RetentionPeriodNotAllowed(t *testing.T) {
 	testSuites := []clusterloggingTestSuite{
-		NewTestSuite("8d", "0d", "0d").ExpectNotAllowed(),
-		NewTestSuite("169h", "0d", "0d").ExpectNotAllowed(),
-		NewTestSuite("1h", "1m", "0d").ExpectNotAllowed(),
-		NewTestSuite("1h", "1s", "0d").ExpectNotAllowed(),
-		NewTestSuite("1h", "0s", "8d").ExpectNotAllowed(),
-		NewTestSuite("7M", "0d", "0d").ExpectNotAllowed(),
+		NewTestSuite("8d", "1h", "1h").ExpectNotAllowed(),
+		NewTestSuite("169h", "1h", "1h").ExpectNotAllowed(),
+		NewTestSuite("1h", "1m", "1h").ExpectNotAllowed(),
+		NewTestSuite("1h", "1s", "1h").ExpectNotAllowed(),
+		NewTestSuite("1h", "1h", "8d").ExpectNotAllowed(),
+		NewTestSuite("7M", "1h", "1h").ExpectNotAllowed(),
+		NewTestSuite("7M", "0h", "1h").ExpectNotAllowed(),
+		NewTestSuite("7M", "1h", "0h").ExpectNotAllowed(),
+		NewTestSuite("7M", "61m", "0h").ExpectNotAllowed(),
+		NewTestSuite("7M", "60m", "61m").ExpectNotAllowed(),
+		NewTestSuite("59m", "60m", "60m").ExpectNotAllowed(),
+		NewTestSuite("1h", "59m", "60m").ExpectNotAllowed(),
+		NewTestSuite("1h", "60m", "59m").ExpectNotAllowed(),
 	}
 
 	runTests(t, testSuites)
@@ -107,12 +114,10 @@ func Test_RetentionPeriodNotAllowed(t *testing.T) {
 
 func Test_RetentionPeriodAllowed(t *testing.T) {
 	testSuites := []clusterloggingTestSuite{
-		NewTestSuite("7d", "0d", "1d"),
-		NewTestSuite("168h", "0d", "0d"),
-		NewTestSuite("1h", "0m", "1d"),
-		NewTestSuite("1h", "0s", "7d"),
-		NewTestSuite("1h", "0s", "7m"),
-		NewTestSuite("1h", "0s", "7s"),
+		NewTestSuite("7d", "1h", "1h"),
+		NewTestSuite("168h", "1h", "1h"),
+		NewTestSuite("168h", "60m", "60m"),
+		NewTestSuite("1h", "1h", "1h"),
 	}
 
 	runTests(t, testSuites)
