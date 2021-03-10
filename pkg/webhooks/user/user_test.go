@@ -144,6 +144,15 @@ func TestAdminUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			testID:          "backplane-cluster-admin-can-do-it-all",
+			subjectUserName: "some-user",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated"},
+			operation:       v1beta1.Create,
+			identity:        testRedHatIdentity,
+			shouldBeAllowed: true,
+		},
+		{
 			testID:          "priv-oauth-service-account",
 			subjectUserName: "no-reply@redhat.com",
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",

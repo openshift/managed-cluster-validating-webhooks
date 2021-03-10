@@ -385,6 +385,24 @@ func TestAdminUser(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			// admin users gonna admin
+			testID:          "backplane-cluster-admin-test",
+			targetNamespace: "kube-system",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// Admins should be able to create a privileged namespace
+			testID:          "admin-com-ns-test",
+			targetNamespace: "com",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
 			// Admins should be able to create a privileged namespace
 			testID:          "admin-com-ns-test",
 			targetNamespace: "com",
