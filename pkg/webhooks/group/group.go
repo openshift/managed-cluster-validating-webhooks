@@ -47,7 +47,7 @@ var (
 	log                         = logf.Log.WithName(WebhookName)
 	protectedAdminGroupsRe      = regexp.MustCompile(protectedAdminGroups)
 	protectedManagementGroupsRe = regexp.MustCompile(protectedManagementGroups)
-	clusterAdminUsers           = []string{"kube:admin", "system:admin"}
+	clusterAdminUsers           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
 	adminGroups                 = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 
 	scope = admissionregv1.ClusterScope

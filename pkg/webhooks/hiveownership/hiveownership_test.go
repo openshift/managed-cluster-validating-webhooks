@@ -99,6 +99,13 @@ func TestThing(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			testID:          "kube-admin-test",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
 			testID:          "sre-test",
 			username:        "sre-foo@redhat.com",
 			userGroups:      []string{adminGroups[0], "system:authenticated", "system:authenticated:oauth"},

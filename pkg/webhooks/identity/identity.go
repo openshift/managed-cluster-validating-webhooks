@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:openshift-authentication:oauth-openshift"}
+	privilegedUsers = []string{"kube:admin", "system:admin", "system:serviceaccount:openshift-authentication:oauth-openshift", "backplane-cluster-admin"}
 	adminGroups     = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
 
 	log = logf.Log.WithName(WebhookName)

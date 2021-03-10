@@ -86,6 +86,15 @@ func TestThing(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			testID:          "backplane-cluster-admin-test",
+			identityName:    "github:test",
+			providerName:    "github",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
 			testID:          "dedi-admin-create-default",
 			identityName:    fmt.Sprintf("%s:test", DefaultIdentityProvider),
 			providerName:    DefaultIdentityProvider,
@@ -120,6 +129,16 @@ func TestThing(t *testing.T) {
 			identityName:    fmt.Sprintf("%s:test", DefaultIdentityProvider),
 			providerName:    DefaultIdentityProvider,
 			username:        "system:admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// backplane-cluster-admin update sre idp
+			testID:          "system:admin-update-sre-provider",
+			identityName:    fmt.Sprintf("%s:test", DefaultIdentityProvider),
+			providerName:    DefaultIdentityProvider,
+			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Update,
 			shouldBeAllowed: true,

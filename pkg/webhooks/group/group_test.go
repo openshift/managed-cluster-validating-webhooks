@@ -77,9 +77,27 @@ func TestAdminUsers(t *testing.T) {
 			// Should be able to do everything
 			testID:          "admin-create-priv-group",
 			groupName:       "osd-sre-admins",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// Should be able to do everything
+			testID:          "admin-create-priv-group",
+			groupName:       "osd-sre-admins",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       v1beta1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// Admins should be able to do everything
+			testID:          "admin-update-impersonator-group",
+			groupName:       "osd-impersonators",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       v1beta1.Update,
 			shouldBeAllowed: true,
 		},
 		{
