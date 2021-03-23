@@ -32,7 +32,7 @@ var (
 	scope = admissionregv1.NamespacedScope
 	rules = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{"UPDATE", "CREATE"},
+			Operations: []admissionregv1.OperationType{"UPDATE"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"operators.coreos.com"},
 				APIVersions: []string{"*"},
@@ -133,7 +133,7 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 	// can comment this out or remove after manual tests
 	// log.Info("User is attempting to modify subscription", "username", request.AdmissionRequest.UserInfo.Username, "operation", request.Operation, "subscription name", subReq.Spec.Name, "channel", subReq.Spec.Channel)
 
-	// If this isn't a request to install or upgrade logging 4.5 or 4.6, let RBAC handle this
+	// If this isn't a request to upgrade logging to 4.5 or 4.6, let RBAC handle this
 	if !s.isBlockedLoggingRequest(subReq) {
 		ret = admissionctl.Allowed("Base decisions for non-logging subscriptions on RBAC")
 		ret.UID = request.AdmissionRequest.UID
@@ -142,22 +142,22 @@ func (s *SubscriptionWebhook) authorized(request admissionctl.Request) admission
 
 	// Admin users
 	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, privilegedUsers) {
-		ret = admissionctl.Allowed("Admin users may install or upgrade to logging 4.5 or 4.6 operator")
+		ret = admissionctl.Allowed("Admin users may upgrade to logging 4.5 or 4.6 operator")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 	// Users in admin groups
 	for _, group := range request.AdmissionRequest.UserInfo.Groups {
 		if utils.SliceContains(group, adminGroups) {
-			ret = admissionctl.Allowed("Members of admin group may install or upgrade to logging 4.5 or 4.6 operator")
+			ret = admissionctl.Allowed("Members of admin group may upgrade to logging 4.5 or 4.6 operator")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 	}
 
-	// if we're here, non-privileged user is attempting to CREATE or UPDATE logging
+	// if we're here, non-privileged user is attempting to UPDATE logging
 	// operator at 4.5 or 4.6 - deny this
-	ret = admissionctl.Denied("Only cluster-admins and Red Hat SREs can install or upgrade to the v4.5 or v4.6 logging operator at this time, as there are known issues with logging v4.5/v4.6 which we are working to resolve.")
+	ret = admissionctl.Denied("Only cluster-admins and Red Hat SREs can upgrade to the v4.5 or v4.6 logging operator at this time, as there are known issues with logging v4.5/v4.6 which we are working to resolve.")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }
