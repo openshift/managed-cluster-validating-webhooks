@@ -60,11 +60,11 @@ type Webhook interface {
   SideEffects() *admissionregv1.SideEffectClass
   //TimeoutSeconds returns an int32 representing how long to wait for this hook to complete
   TimeoutSeconds() int32
-	// Doc returns a string for end-customer documentation purposes.
-	Doc() string
-	// SyncSetLabelSelector returns the label selector to use in the SyncSet.
-	// Return utils.DefaultLabelSelector() to stick with the default
-	SyncSetLabelSelector() metav1.LabelSelector
+  // Doc returns a string for end-customer documentation purposes.
+  Doc() string
+  // SyncSetLabelSelector returns the label selector to use in the SyncSet.
+  // Return utils.DefaultLabelSelector() to stick with the default
+  SyncSetLabelSelector() metav1.LabelSelector
 }
 ```
 
