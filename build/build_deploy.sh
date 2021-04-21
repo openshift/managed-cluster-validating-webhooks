@@ -4,5 +4,5 @@
 
 set -exv
 
-# build the image, the selectorsyncset, and push the image
-make -C $(dirname $0)/../ syncset build-base skopeo-push
+# TODO: Invoke this make target directly from appsre ci-int and scrap this file
+make -C $(dirname $0)/../ build-push
