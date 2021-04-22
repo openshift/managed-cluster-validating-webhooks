@@ -29,7 +29,7 @@ Ensure the git branch is current and run `make syncset`. The updated Template wi
 
 ## Development
 
-Each Webhook must register with, and therefor satisfy the interface specified in [pkg/webhooks/register.go](pkg/webhooks/register.go):
+Each Webhook must register with, and therefore satisfy the interface specified in [pkg/webhooks/register.go](pkg/webhooks/register.go):
 
 ```go
 // imports shown here for clarity
@@ -236,12 +236,13 @@ Node:         ip-10-0-147-186.ec2.internal/10.0.147.186
 Edit the `validation-webhook` daemonset's `.spec.template.spec.containers[0].image`, replacing it with the URI of the image you built and pushed [above](#build-and-push-the-image).
 For example, if you created `quay.io/my-user/managed-cluster-validating-webhooks:latest`, replace
 ```
-        image: quay.io/app-sre/managed-cluster-validating-webhooks:a324838
+        image: quay.io/app-sre/managed-cluster-validating-webhooks@sha256:f33f879a9e8b0dc5b0481f75ba5eb8422a8a9b06acf70330794eb564ee31e9e5
 ```
 with
 ```
         image: quay.io/my-user/managed-cluster-validating-webhooks:latest
 ```
+(You can specify your custom image by tag or by digest; the latter is only necessary if quay is down.)
 
 Once these changes are saved, you should see `validation-webhook-*` pods cycle.
 When they have settled, you can confirm that the pod(s) are running with your image.
@@ -310,8 +311,7 @@ docker run \
       go run \
         build/syncset.go \
         -exclude identity-validation,namespace-validation \
-        -outfile build/selectorsyncset.yaml \
-        -image "quay.io/app-sre/managed-cluster-validating-webhooks:\${IMAGE_TAG}"
+        -outfile build/selectorsyncset.yaml
 # truncated ...
 ```
 
