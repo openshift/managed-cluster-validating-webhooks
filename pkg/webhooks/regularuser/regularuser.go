@@ -18,7 +18,7 @@ import (
 
 const (
 	WebhookName       string = "regular-user-validation"
-	docString         string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the ClusterVersion, Node or SubjectPermission objects.`
+	docString         string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects.`
 	mustGatherKind    string = "MustGather"
 	mustGatherGroup   string = "managed.openshift.io"
 	customDomainKind  string = "CustomDomain"
@@ -57,7 +57,16 @@ var (
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"config.openshift.io"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"clusterversions", "clusterversions/status", "schedulers"},
+				Resources:   []string{"clusterversions", "clusterversions/status", "schedulers", "apiservers"},
+				Scope:       &scope,
+			},
+		},
+		{
+			Operations: []admissionregv1.OperationType{"*"},
+			Rule: admissionregv1.Rule{
+				APIGroups:   []string{"operator.openshift.io"},
+				APIVersions: []string{"*"},
+				Resources:   []string{"kubeapiservers", "openshiftapiservers"},
 				Scope:       &scope,
 			},
 		},
