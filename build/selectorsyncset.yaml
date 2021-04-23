@@ -367,6 +367,17 @@ objects:
           - clusterversions
           - clusterversions/status
           - schedulers
+          - apiservers
+          scope: '*'
+        - apiGroups:
+          - operator.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - '*'
+          resources:
+          - kubeapiservers
+          - openshiftapiservers
           scope: '*'
         - apiGroups:
           - ""
