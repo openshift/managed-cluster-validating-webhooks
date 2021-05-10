@@ -126,7 +126,7 @@ objects:
               - -cacert
               - /service-ca/service-ca.crt
               - -tls
-              image: ${REPO_DIGEST}
+              image: ${REGISTRY_IMG}:${IMAGE_DIGEST}
               imagePullPolicy: IfNotPresent
               name: webhooks
               ports:
@@ -526,6 +526,5 @@ parameters:
   value: managed-cluster-validating-webhooks
 - name: REGISTRY_IMG
   required: true
-  value: quay.io/app-sre/managed-cluster-validating-webhooks
-- name: REPO_DIGEST
+- name: IMAGE_DIGEST
   required: true
