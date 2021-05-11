@@ -231,7 +231,7 @@ func createDaemonSet() *appsv1.DaemonSet {
 							// have to worry about them changing underneath us.
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Name:            "webhooks",
-							Image:           "${REGISTRY_IMG}:${IMAGE_DIGEST}",
+							Image:           "${REGISTRY_IMG}@${IMAGE_DIGEST}",
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "service-certs",
