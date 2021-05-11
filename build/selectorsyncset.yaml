@@ -126,7 +126,7 @@ objects:
               - -cacert
               - /service-ca/service-ca.crt
               - -tls
-              image: ${REGISTRY_IMG}:${IMAGE_DIGEST}
+              image: ${REGISTRY_IMG}@${IMAGE_DIGEST}
               imagePullPolicy: IfNotPresent
               name: webhooks
               ports:
