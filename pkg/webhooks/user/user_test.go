@@ -7,7 +7,7 @@ import (
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/userloader"
 
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -61,7 +61,7 @@ type userTestSuites struct {
 	username        string
 	userGroups      []string
 	identity        string
-	operation       v1beta1.Operation
+	operation       admissionv1.Operation
 	oldObject       *runtime.RawExtension
 	shouldBeAllowed bool
 }
@@ -124,7 +124,7 @@ func TestMissingUsers(t *testing.T) {
 			subjectUserName: "no-reply@redhat.com",
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:openshift-authentication"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			identity:        testRedHatIdentity,
 			shouldBeAllowed: false,
 		},
@@ -139,7 +139,7 @@ func TestAdminUsers(t *testing.T) {
 			subjectUserName: "some-user",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			identity:        testRedHatIdentity,
 			shouldBeAllowed: true,
 		},
@@ -148,7 +148,7 @@ func TestAdminUsers(t *testing.T) {
 			subjectUserName: "some-user",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			identity:        testRedHatIdentity,
 			shouldBeAllowed: true,
 		},
@@ -157,7 +157,7 @@ func TestAdminUsers(t *testing.T) {
 			subjectUserName: "no-reply@redhat.com",
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:openshift-authentication"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			identity:        testRedHatIdentity,
 			shouldBeAllowed: true,
 		},
@@ -169,7 +169,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "sre-admin",
 			userGroups:      []string{"system:authenticated", "osd-sre-admins"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		// Allowed because creator is a member of an admin group, and the subject is
@@ -180,7 +180,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "sre-cluster-admin",
 			userGroups:      []string{"system:authenticated", "osd-sre-cluster-admins"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -189,7 +189,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "sre-cluster-admin",
 			userGroups:      []string{"system:authenticated", "cluster-admins"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -198,7 +198,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "sre-cluster-admin",
 			userGroups:      []string{"system:authenticated", "cluster-admins"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -207,7 +207,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "sre-cluster-admin",
 			userGroups:      []string{"system:authenticated", "cluster-admins"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -217,7 +217,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:openshift-authentication"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -228,7 +228,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:openshift-authentication"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -238,7 +238,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:openshift-authentication"},
 			identity:        testOtherIdentity,
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -248,7 +248,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:openshift-authentication"},
 			identity:        testOtherIdentity,
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -259,7 +259,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "sre-username",
 			userGroups:      []string{"system:authenticated", "osd-sre-cluster-admins"},
 			identity:        redHatIDP,
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -270,7 +270,7 @@ func TestAdminUsers(t *testing.T) {
 			username:        "sre-username",
 			userGroups:      []string{"system:authenticated", "osd-sre-cluster-admins"},
 			identity:        testOtherIdentity,
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 	}
@@ -286,7 +286,7 @@ func TestNonAdminUsers(t *testing.T) {
 			username:        "dedicated-admin",
 			userGroups:      []string{"system:authenticated", "dedicated-admins"},
 			identity:        testRedHatIdentity,
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		// dedicated-admins can manage their own
@@ -296,7 +296,7 @@ func TestNonAdminUsers(t *testing.T) {
 			username:        "dedicated-admin",
 			userGroups:      []string{"system:authenticated", "dedicated-admins"},
 			identity:        testOtherIdentity,
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		// dedicated admin can't delete privileged users (RH IDP)
@@ -305,7 +305,7 @@ func TestNonAdminUsers(t *testing.T) {
 			subjectUserName: "no-reply@redhat.com",
 			username:        "dedicated-admin",
 			userGroups:      []string{"system:authenticated", "dedicated-admins"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			identity:        testRedHatIdentity,
 			shouldBeAllowed: false,
 		},
@@ -315,7 +315,7 @@ func TestNonAdminUsers(t *testing.T) {
 			subjectUserName: "no-reply@redhat.com",
 			username:        "dedicated-admin",
 			userGroups:      []string{"system:authenticated", "dedicated-admins"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			identity:        testOtherIdentity,
 			shouldBeAllowed: false,
 		},
@@ -338,7 +338,7 @@ func TestRename(t *testing.T) {
 			subjectUserName: "no-reply+devaccess2@redhat.com",
 			username:        "dedicated-admin",
 			userGroups:      []string{"system:authenticated", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			identity:        testRedHatIdentity,
 			oldObject:       &oldRawObj,
 			shouldBeAllowed: false,
@@ -349,7 +349,7 @@ func TestRename(t *testing.T) {
 			subjectUserName: "no-reply+devaccess2@redhat.com",
 			username:        "sre-cluster-admin",
 			userGroups:      []string{"system:authenticated", "osd-sre-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			identity:        testRedHatIdentity,
 			oldObject:       &oldRawObj,
 			shouldBeAllowed: true,

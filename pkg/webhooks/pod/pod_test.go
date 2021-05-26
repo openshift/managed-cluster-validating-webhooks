@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,7 +34,7 @@ type podTestSuites struct {
 	targetPod       string
 	namespace       string
 	username        string
-	operation       v1beta1.Operation
+	operation       admissionv1.Operation
 	userGroups      []string
 	tolerations     []corev1.Toleration
 	shouldBeAllowed bool
@@ -105,7 +105,7 @@ func TestDedicatedAdminNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -128,7 +128,7 @@ func TestDedicatedAdminNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -151,7 +151,7 @@ func TestDedicatedAdminNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -174,7 +174,7 @@ func TestDedicatedAdminNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectPreferNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -191,7 +191,7 @@ func TestDedicatedAdminNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 	}
@@ -220,7 +220,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -243,7 +243,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -266,7 +266,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectPreferNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -289,7 +289,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectPreferNoSchedule,
 				},
 			},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -306,7 +306,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 	}
@@ -335,7 +335,7 @@ func TestUserNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -358,7 +358,7 @@ func TestUserNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectPreferNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -375,7 +375,7 @@ func TestUserNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -398,7 +398,7 @@ func TestUserNegative(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 	}
@@ -429,7 +429,7 @@ func TestUserPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -452,7 +452,7 @@ func TestUserPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -470,7 +470,7 @@ func TestUserPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -493,7 +493,7 @@ func TestUserPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectPreferNoSchedule,
 				},
 			},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -516,7 +516,7 @@ func TestUserPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectPreferNoSchedule,
 				},
 			},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -533,7 +533,7 @@ func TestUserPositive(t *testing.T) {
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
 			},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 	}

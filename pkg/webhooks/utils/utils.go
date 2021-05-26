@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -64,7 +64,7 @@ func ParseHTTPRequest(r *http.Request) (admissionctl.Request, admissionctl.Respo
 		resp = admissionctl.Errored(http.StatusBadRequest, err)
 		return req, resp, err
 	}
-	ar := v1beta1.AdmissionReview{}
+	ar := admissionv1.AdmissionReview{}
 	if _, _, err := admissionCodecs.UniversalDeserializer().Decode(body, nil, &ar); err != nil {
 		resp = admissionctl.Errored(http.StatusBadRequest, err)
 		return req, resp, err
@@ -84,5 +84,5 @@ func ParseHTTPRequest(r *http.Request) (admissionctl.Request, admissionctl.Respo
 }
 
 func init() {
-	utilruntime.Must(v1beta1.AddToScheme(admissionScheme))
+	utilruntime.Must(admissionv1.AddToScheme(admissionScheme))
 }

@@ -6,14 +6,14 @@ import (
 	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -233,7 +233,7 @@ func (s *RegularuserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *RegularuserWebhook {
 	scheme := runtime.NewScheme()
-	v1beta1.AddToScheme(scheme)
+	admissionv1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
 
 	return &RegularuserWebhook{

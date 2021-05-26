@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"sync"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"

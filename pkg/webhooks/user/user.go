@@ -21,14 +21,14 @@ import (
 	// Only need the DefaultIdentityProvider
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/identity"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -177,7 +177,7 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 	userReq := &userRequest{}
 
 	// if we delete, then look to OldObject in the request.
-	if request.Operation == v1beta1.Delete {
+	if request.Operation == admissionv1.Delete {
 		err = json.Unmarshal(request.OldObject.Raw, userReq)
 	} else {
 		err = json.Unmarshal(request.Object.Raw, userReq)
@@ -214,7 +214,7 @@ func (s *UserWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 		}
 		// We should be allowed to delete if they're not a member of the protected
 		// group because that is a cleanup operation
-		if request.AdmissionRequest.Operation == v1beta1.Delete {
+		if request.AdmissionRequest.Operation == admissionv1.Delete {
 			log.Info("Allowing a DELETE of a User", "userReq", userReq, "requestor", request.AdmissionRequest.UserInfo.Username)
 			ret = admissionctl.Allowed("Allowed to delete a user")
 			ret.UID = request.AdmissionRequest.UID
@@ -290,7 +290,7 @@ func (s *UserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *UserWebhook {
 	scheme := runtime.NewScheme()
-	v1beta1.AddToScheme(scheme)
+	admissionv1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
 	w := &UserWebhook{
 		s: *scheme,

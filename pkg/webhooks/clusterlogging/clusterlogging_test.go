@@ -6,8 +6,7 @@ import (
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/clusterlogging"
-
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -18,7 +17,7 @@ type clusterloggingTestSuite struct {
 	username        string
 	userGroups      []string
 	oldObject       *runtime.RawExtension
-	operation       v1beta1.Operation
+	operation       admissionv1.Operation
 	appMaxAge       string
 	infraMaxAge     string
 	auditMaxAge     string
@@ -57,7 +56,7 @@ const testObjectRaw string = `
 func NewTestSuite(appMaxAge, infraMaxAge, auditMaxAge string) clusterloggingTestSuite {
 	return clusterloggingTestSuite{
 		testID:          "1234",
-		operation:       v1beta1.Create,
+		operation:       admissionv1.Create,
 		appMaxAge:       appMaxAge,
 		infraMaxAge:     infraMaxAge,
 		auditMaxAge:     auditMaxAge,

@@ -1,5 +1,9 @@
 SHELL := /usr/bin/env bash
 
+# Verbosity
+AT_ = @
+AT = $(AT_$(V))
+# /Verbosity
 
 GIT_HASH := $(shell git rev-parse --short=7 HEAD)
 IMAGETAG ?= ${GIT_HASH}
@@ -39,21 +43,21 @@ all: test build-image build-sss
 
 .PHONY: test
 test: vet $(GO_SOURCES)
-	@go test $(TESTOPTS) $(shell go list -mod=readonly -e ./...)
-	@go run cmd/main.go -testhooks
+	$(AT)go test $(TESTOPTS) $(shell go list -mod=readonly -e ./...)
+	$(AT)go run cmd/main.go -testhooks
 
 .PHONY: clean
 clean:
-	@rm -f $(BINARY_FILE) coverage.txt
+	$(AT)rm -f $(BINARY_FILE) coverage.txt
 
 .PHONY: serve
 serve:
-	@go run ./cmd/main.go -port 8888
+	$(AT)go run ./cmd/main.go -port 8888
 
 .PHONY: vet
 vet:
-	@gofmt -s -l $(shell go list -f '{{ .Dir }}' ./... ) | grep ".*\.go"; if [ "$$?" = "0" ]; then gofmt -s -d $(shell go list -f '{{ .Dir }}' ./... ); exit 1; fi
-	@go vet ./cmd/... ./pkg/...
+	$(AT)gofmt -s -l $(shell go list -f '{{ .Dir }}' ./... ) | grep ".*\.go"; if [ "$$?" = "0" ]; then gofmt -s -d $(shell go list -f '{{ .Dir }}' ./... ); exit 1; fi
+	$(AT)go vet ./cmd/... ./pkg/...
 
 .PHONY: build
 build: $(BINARY_FILE)

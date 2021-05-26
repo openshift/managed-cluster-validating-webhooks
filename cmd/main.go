@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"os"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	klog "k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/dispatcher"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
@@ -31,7 +33,10 @@ var (
 
 func main() {
 	flag.Parse()
-	logf.SetLogger(logf.ZapLogger(true))
+	klog.SetOutput(os.Stdout)
+
+	logf.SetLogger(klogr.New())
+
 	if !*testHooks {
 		log.Info("HTTP server running at", "listen", net.JoinHostPort(*listenAddress, *listenPort))
 	}
@@ -71,5 +76,4 @@ func main() {
 	} else {
 		log.Error(server.ListenAndServe(), "Error serving non-TLS connection")
 	}
-
 }

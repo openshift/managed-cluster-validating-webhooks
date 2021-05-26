@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	admissionapi "k8s.io/api/admission/v1beta1"
+	admissionapi "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/types"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )

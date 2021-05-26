@@ -7,7 +7,7 @@ import (
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -46,7 +46,7 @@ type namespaceTestSuites struct {
 	username        string
 	userGroups      []string
 	oldObject       *runtime.RawExtension
-	operation       v1beta1.Operation
+	operation       admissionv1.Operation
 	labels          map[string]string
 	shouldBeAllowed bool
 }
@@ -96,7 +96,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "my-ns",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -105,7 +105,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -114,7 +114,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "openshift-test-namespace",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -123,7 +123,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "redhat-layered-product-ns",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -132,7 +132,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "my-ns",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -141,7 +141,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "my-ns",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -150,7 +150,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "com",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -159,7 +159,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "io",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -168,7 +168,7 @@ func TestDedicatedAdmins(t *testing.T) {
 			targetNamespace: "in",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 	}
@@ -184,7 +184,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "my-ns",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -193,7 +193,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "my-ns",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -202,7 +202,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "my-ns",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -211,7 +211,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -220,7 +220,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -229,7 +229,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "com",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -238,7 +238,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "io",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -247,7 +247,7 @@ func TestNormalUser(t *testing.T) {
 			targetNamespace: "in",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 	}
@@ -265,7 +265,7 @@ func TestLayeredProducts(t *testing.T) {
 			targetNamespace: "redhat-layered-product",
 			username:        "test-user",
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -274,7 +274,7 @@ func TestLayeredProducts(t *testing.T) {
 			targetNamespace: "openshift-test",
 			username:        "test-user",
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -283,7 +283,7 @@ func TestLayeredProducts(t *testing.T) {
 			targetNamespace: "my-ns",
 			username:        "test-user",
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -292,7 +292,7 @@ func TestLayeredProducts(t *testing.T) {
 			targetNamespace: "com",
 			username:        "test-user",
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -301,7 +301,7 @@ func TestLayeredProducts(t *testing.T) {
 			targetNamespace: "io",
 			username:        "test-user",
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -310,7 +310,7 @@ func TestLayeredProducts(t *testing.T) {
 			targetNamespace: "in",
 			username:        "test-user",
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 	}
@@ -326,7 +326,7 @@ func TestServiceAccounts(t *testing.T) {
 			targetNamespace: "openshift-test-ns",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -338,7 +338,7 @@ func TestServiceAccounts(t *testing.T) {
 			targetNamespace: "customer-ns",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -347,7 +347,7 @@ func TestServiceAccounts(t *testing.T) {
 			targetNamespace: "openshift-must-gather-qbjtf",
 			username:        "system:serviceaccount:osde2e-9a47q:cluster-admin", // This does *NOT* mean cluster-admin as in that ClusterRole
 			userGroups:      []string{"system:serviceaccounts:osde2e-9a47q", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 	}
@@ -363,7 +363,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -372,7 +372,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "lisa",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -381,7 +381,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -390,7 +390,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -399,7 +399,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "com",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -408,7 +408,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "com",
 			username:        "lisa",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -417,7 +417,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "io",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -426,7 +426,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "in",
 			username:        "lisa",
 			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -435,7 +435,7 @@ func TestAdminUser(t *testing.T) {
 			targetNamespace: "in",
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 	}
@@ -449,7 +449,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels:          map[string]string{"my-label": "hello"},
 			shouldBeAllowed: true,
 		},
@@ -458,7 +458,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 				"managed.openshift.io/storage-lb-quota-exempt": "true",
@@ -470,7 +470,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels:          map[string]string{"my-label": "hello"},
 			shouldBeAllowed: true,
 		},
@@ -479,7 +479,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 				"managed.openshift.io/storage-lb-quota-exempt": "true",
@@ -491,7 +491,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels:          map[string]string{"my-label": "hello"},
 			shouldBeAllowed: true,
 		},
@@ -500,7 +500,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 				"managed.openshift.io/storage-lb-quota-exempt": "true",
@@ -512,7 +512,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels:          map[string]string{"my-label": "hello"},
 			shouldBeAllowed: true,
 		},
@@ -521,7 +521,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "kube-system",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 				"managed.openshift.io/storage-lb-quota-exempt": "true",
@@ -533,7 +533,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels:          map[string]string{"my-label": "hello"},
 			shouldBeAllowed: true,
 		},
@@ -542,7 +542,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"my-label": "hello",
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
@@ -554,7 +554,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"my-label": "hello",
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
@@ -567,7 +567,7 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 				"managed.openshift.io/storage-lb-quota-exempt": "true",
@@ -586,7 +586,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject: createOldObject("my-customer-ns", "dedicated-admins-cant-remove-quota-label", map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "false",
 			}),
@@ -599,7 +599,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject: createOldObject("my-customer-ns", "dedicated-admins-cant-remove-quota-label2", map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "false",
 			}),
@@ -612,7 +612,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject: createOldObject("my-customer-ns", "dedicated-admins-cant-swap-quota-label", map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "false",
 			}),
@@ -625,7 +625,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject: createOldObject("my-customer-ns", "dedicated-admins-cant-trueify-exemption", map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 			}),
@@ -639,7 +639,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject: createOldObject("my-customer-ns", "dedicated-admins-cant-trueify-exemption", map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "false",
 			}),
@@ -653,7 +653,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "osd-sre-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject:       createOldObject("my-customer-ns", "dedicated-admin-cant-exempt-cust-ns-quota", map[string]string{}),
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
@@ -665,7 +665,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject:       createOldObject("my-customer-ns", "dedicated-admin-cant-exempt-cust-ns-quota", map[string]string{}),
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
@@ -677,7 +677,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "openshift-test-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject: createOldObject("openshift-test-ns", "dedicated-admin-cant-alter-priv-ns", map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 				"managed.openshift.io/storage-lb-quota-exempt": "true",
@@ -692,7 +692,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "openshift-test-ns2",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject:       createOldObject("openshift-test-ns", "dedicated-admin-cant-alter-priv-ns2", map[string]string{}),
 			labels:          map[string]string{"my-label": "hello"},
 			shouldBeAllowed: false,
@@ -702,7 +702,7 @@ func TestLabellingUpdates(t *testing.T) {
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			oldObject:       createOldObject("my-customer-ns", "dedicated-admin-can-label-cust-ns", map[string]string{}),
 			labels: map[string]string{
 				"my-cust-label": "true",

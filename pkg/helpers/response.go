@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	admissionapi "k8s.io/api/admission/v1beta1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	admissionapi "k8s.io/api/admission/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 

@@ -8,7 +8,7 @@ import (
 
 	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,12 +50,12 @@ func CanCanNot(b bool) string {
 // }
 func CreateFakeRequestJSON(uid string,
 	gvk metav1.GroupVersionKind, gvr metav1.GroupVersionResource,
-	operation v1beta1.Operation,
+	operation admissionv1.Operation,
 	username string, userGroups []string,
 	obj, oldObject *runtime.RawExtension) ([]byte, error) {
 
-	req := v1beta1.AdmissionReview{
-		Request: &v1beta1.AdmissionRequest{
+	req := admissionv1.AdmissionReview{
+		Request: &admissionv1.AdmissionRequest{
 			UID:       types.UID(uid),
 			Kind:      gvk,
 			Resource:  gvr,
@@ -67,9 +67,9 @@ func CreateFakeRequestJSON(uid string,
 		},
 	}
 	switch operation {
-	case v1beta1.Create:
+	case admissionv1.Create:
 		req.Request.Object = *obj
-	case v1beta1.Update:
+	case admissionv1.Update:
 		// TODO (lisa): Update should have a different object for Object than for OldObject
 		req.Request.Object = *obj
 		if oldObject != nil {
@@ -77,7 +77,7 @@ func CreateFakeRequestJSON(uid string,
 		} else {
 			req.Request.OldObject = *obj
 		}
-	case v1beta1.Delete:
+	case admissionv1.Delete:
 		req.Request.OldObject = *obj
 	}
 	b, err := json.Marshal(req)
@@ -91,7 +91,7 @@ func CreateFakeRequestJSON(uid string,
 // See also CreateFakeRequestJSON for more.
 func CreateHTTPRequest(uri, uid string,
 	gvk metav1.GroupVersionKind, gvr metav1.GroupVersionResource,
-	operation v1beta1.Operation,
+	operation admissionv1.Operation,
 	username string, userGroups []string,
 	obj, oldObject *runtime.RawExtension) (*http.Request, error) {
 	req, err := CreateFakeRequestJSON(uid, gvk, gvr, operation, username, userGroups, obj, oldObject)
@@ -105,7 +105,7 @@ func CreateHTTPRequest(uri, uid string,
 }
 
 // SendHTTPRequest will send the fake request to be handled by the Webhook
-func SendHTTPRequest(req *http.Request, s Webhook) (*v1beta1.AdmissionResponse, error) {
+func SendHTTPRequest(req *http.Request, s Webhook) (*admissionv1.AdmissionResponse, error) {
 	httpResponse := httptest.NewRecorder()
 	request, _, err := utils.ParseHTTPRequest(req)
 	if err != nil {
@@ -114,7 +114,7 @@ func SendHTTPRequest(req *http.Request, s Webhook) (*v1beta1.AdmissionResponse, 
 	resp := s.Authorized(request)
 	responsehelper.SendResponse(httpResponse, resp)
 	// at this popint, httpResponse should contain the data sent in response to the webhook query, which is the success/fail
-	ret := &v1beta1.AdmissionReview{}
+	ret := &admissionv1.AdmissionReview{}
 	err = json.Unmarshal(httpResponse.Body.Bytes(), ret)
 	if err != nil {
 		return nil, err
