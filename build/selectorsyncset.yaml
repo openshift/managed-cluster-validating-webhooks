@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
   creationTimestamp: null
@@ -171,7 +171,7 @@ objects:
         name: sre-group-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook
@@ -203,7 +203,7 @@ objects:
         name: sre-hiveownership-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook
@@ -237,7 +237,7 @@ objects:
         name: sre-identity-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook
@@ -269,7 +269,7 @@ objects:
         name: sre-namespace-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook
@@ -301,7 +301,7 @@ objects:
         name: sre-pod-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook
@@ -331,7 +331,7 @@ objects:
         name: sre-regular-user-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook
@@ -410,7 +410,7 @@ objects:
         name: sre-user-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook
@@ -465,7 +465,7 @@ objects:
         name: sre-clusterlogging-validation
       webhooks:
       - admissionReviewVersions:
-        - v1beta1
+        - v1
         clientConfig:
           service:
             name: validation-webhook

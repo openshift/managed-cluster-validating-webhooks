@@ -329,7 +329,7 @@ func createValidatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.
 		},
 		Webhooks: []admissionregv1.ValidatingWebhook{
 			{
-				AdmissionReviewVersions: []string{"v1beta1"},
+				AdmissionReviewVersions: []string{"v1"},
 				TimeoutSeconds:          &timeout,
 				SideEffects:             &sideEffects,
 				MatchPolicy:             &matchPolicy,
@@ -419,7 +419,7 @@ func main() {
 	te := templatev1.Template{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Template",
-			APIVersion: "v1",
+			APIVersion: "template.openshift.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "selectorsyncset-template",
