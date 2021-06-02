@@ -52,14 +52,14 @@ func TestResponse(t *testing.T) {
 			e:       nil,
 			status:  http.StatusOK,
 			// the writer sends a newline
-			expectedResult: formatOutput(`{"response":{"uid":"test-uid","allowed":true}}`),
+			expectedResult: formatOutput(`{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"test-uid","allowed":true}}`),
 		},
 		{
 			allowed:        false,
 			uid:            "test-fail-with-error",
 			e:              fmt.Errorf("request body is empty"),
 			status:         http.StatusBadRequest,
-			expectedResult: formatOutput(`{"response":{"uid":"","allowed":false,"status":{"metadata":{},"message":"request body is empty","code":400}}}`),
+			expectedResult: formatOutput(`{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"","allowed":false,"status":{"metadata":{},"message":"request body is empty","code":400}}}`),
 		},
 	}
 	for _, test := range tests {

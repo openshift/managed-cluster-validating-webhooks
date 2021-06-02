@@ -14,11 +14,12 @@ var log = logf.Log.WithName("response_helper")
 
 // SendResponse Send the AdmissionReview.
 func SendResponse(w io.Writer, resp admissionctl.Response) {
-
 	encoder := json.NewEncoder(w)
 	responseAdmissionReview := admissionapi.AdmissionReview{
 		Response: &resp.AdmissionResponse,
 	}
+	responseAdmissionReview.APIVersion = "admission.k8s.io/v1"
+	responseAdmissionReview.Kind = "AdmissionReview"
 	err := encoder.Encode(responseAdmissionReview)
 	// TODO (lisa): handle this in a non-recursive way (why would the second one succeed)?
 	if err != nil {
