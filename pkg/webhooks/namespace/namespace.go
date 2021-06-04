@@ -7,14 +7,14 @@ import (
 	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -247,7 +247,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 // unauthorizedLabelChanges returns true if the request should be denied because of a label violation. The error is the reason for denial.
 func (s *NamespaceWebhook) unauthorizedLabelChanges(req admissionctl.Request) (bool, error) {
 	// When there's a delete operation there are no meaningful changes to protected labels
-	if req.Operation == v1beta1.Delete {
+	if req.Operation == admissionv1.Delete {
 		return false, nil
 	}
 
@@ -255,7 +255,7 @@ func (s *NamespaceWebhook) unauthorizedLabelChanges(req admissionctl.Request) (b
 	if err != nil {
 		return true, err
 	}
-	if req.Operation == v1beta1.Create {
+	if req.Operation == admissionv1.Create {
 		// For creations, we look to newNamespace and ensure no protectedLabels are set
 		// We don't care about oldNamespace.
 		protectedLabelsFound := doesNamespaceContainProtectedLabels(newNamespace)
@@ -264,7 +264,7 @@ func (s *NamespaceWebhook) unauthorizedLabelChanges(req admissionctl.Request) (b
 		}
 		// There were some found
 		return true, fmt.Errorf("Manged OpenShift customers may not directly set certain protected labels (%s) on Namespaces", protectedLabels)
-	} else if req.Operation == v1beta1.Update {
+	} else if req.Operation == admissionv1.Update {
 		// For Updates we must see if the new object is making a change to the old one for any protected labels.
 		// First, let's see if the old object had any protected labels we ought to
 		// care about. If it has, then we can use that resulting list to compare to
@@ -317,7 +317,7 @@ func (s *NamespaceWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *NamespaceWebhook {
 	scheme := runtime.NewScheme()
-	v1beta1.AddToScheme(scheme)
+	admissionv1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
 
 	return &NamespaceWebhook{

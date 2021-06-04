@@ -6,7 +6,7 @@ import (
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +51,7 @@ type regularuserTests struct {
 	username          string
 	userGroups        []string
 	oldObject         *runtime.RawExtension
-	operation         v1beta1.Operation
+	operation         admissionv1.Operation
 	skip              bool // skip this particular test?
 	skipReason        string
 	shouldBeAllowed   bool
@@ -127,7 +127,7 @@ func TestFirstBlock(t *testing.T) {
 			targetGroup:     "autoscaling.openshift.io",
 			username:        "kube:system",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -138,7 +138,7 @@ func TestFirstBlock(t *testing.T) {
 			targetGroup:     "autoscaling.openshift.io",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 	}
@@ -156,7 +156,7 @@ func TestInvalidRequest(t *testing.T) {
 			targetGroup:     "",
 			username:        "kube:system",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			skip:            true,
 			skipReason:      "Skipping invalid request because at present, Validate will allow it since it isn't written to check ought but the username",
 			shouldBeAllowed: false,
@@ -169,7 +169,7 @@ func TestInvalidRequest(t *testing.T) {
 			targetGroup:     "",
 			username:        "",
 			userGroups:      []string{""},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 	}
@@ -189,7 +189,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:       "",
 			username:          "system:node:ip-10-0-0-1.test",
 			userGroups:        []string{"system:nodes", "system:authenticated"},
-			operation:         v1beta1.Update,
+			operation:         admissionv1.Update,
 			shouldBeAllowed:   true,
 		},
 		{
@@ -200,7 +200,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "system:unauthenticated",
 			userGroups:      []string{"system:unauthenticated"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -211,7 +211,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-name",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -222,7 +222,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-name",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -233,7 +233,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-name",
 			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -244,7 +244,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -255,7 +255,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -266,7 +266,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -277,7 +277,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -288,7 +288,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -299,7 +299,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -310,7 +310,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -321,7 +321,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -332,7 +332,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -343,7 +343,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -354,7 +354,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -365,7 +365,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -376,7 +376,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -387,7 +387,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:     "",
 			username:        "my-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -399,7 +399,7 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			targetGroup:       "",
 			username:          "my-user",
 			userGroups:        []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:         v1beta1.Update,
+			operation:         admissionv1.Update,
 			shouldBeAllowed:   true,
 		},
 	}
@@ -416,7 +416,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "system:unauthenticated",
 			userGroups:      []string{"system:unauthenticated"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -427,7 +427,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "dedi-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -438,7 +438,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "dedi-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -449,7 +449,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "dedi-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -460,7 +460,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "clstr-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "cluster-admins"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -471,7 +471,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "clstr-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "cluster-admins"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -482,7 +482,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "clstr-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "cluster-admins"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -494,7 +494,7 @@ func TestCustomDomains(t *testing.T) {
 			targetGroup:     "machine.openshift.io",
 			username:        "dedi-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 	}
@@ -511,7 +511,7 @@ func TestMustGathers(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "system:unauthenticated",
 			userGroups:      []string{"system:unauthenticated"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -522,7 +522,7 @@ func TestMustGathers(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -533,7 +533,7 @@ func TestMustGathers(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -544,7 +544,7 @@ func TestMustGathers(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -555,7 +555,7 @@ func TestMustGathers(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"osd-devaccess", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -566,7 +566,7 @@ func TestMustGathers(t *testing.T) {
 			targetGroup:     "managed.openshift.io",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 	}
@@ -583,7 +583,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "config.openshift.io",
 			username:        "system:unauthenticated",
 			userGroups:      []string{"system:unauthenticated"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -594,7 +594,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "config.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -605,7 +605,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "config.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -616,7 +616,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "config.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -627,7 +627,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "config.openshift.io",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -638,7 +638,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "system:unauthenticated",
 			userGroups:      []string{"system:unauthenticated"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -649,7 +649,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -660,7 +660,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -671,7 +671,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -682,7 +682,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -693,7 +693,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "system:unauthenticated",
 			userGroups:      []string{"system:unauthenticated"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -704,7 +704,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -715,7 +715,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -726,7 +726,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "my-name",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -737,7 +737,7 @@ func TestAPIServers(t *testing.T) {
 			targetGroup:     "operator.openshift.io",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 	}

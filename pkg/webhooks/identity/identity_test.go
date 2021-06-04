@@ -6,7 +6,7 @@ import (
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -28,7 +28,7 @@ type identityTestSuites struct {
 	username        string
 	userGroups      []string
 	oldObject       *runtime.RawExtension
-	operation       v1beta1.Operation
+	operation       admissionv1.Operation
 	shouldBeAllowed bool
 }
 
@@ -82,7 +82,7 @@ func TestThing(t *testing.T) {
 			providerName:    "github",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -91,7 +91,7 @@ func TestThing(t *testing.T) {
 			providerName:    "github",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -100,7 +100,7 @@ func TestThing(t *testing.T) {
 			providerName:    DefaultIdentityProvider,
 			username:        "ded-admin",
 			userGroups:      []string{adminGroups[0], "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -110,7 +110,7 @@ func TestThing(t *testing.T) {
 			providerName:    "test-provider",
 			username:        "unpriv-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -120,7 +120,7 @@ func TestThing(t *testing.T) {
 			providerName:    DefaultIdentityProvider,
 			username:        "system:serviceaccount:openshift-authentication:oauth-openshift",
 			userGroups:      []string{"system:serviceaccount:openshift-authentication:oauth-openshift", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -130,7 +130,7 @@ func TestThing(t *testing.T) {
 			providerName:    DefaultIdentityProvider,
 			username:        "system:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -140,7 +140,7 @@ func TestThing(t *testing.T) {
 			providerName:    DefaultIdentityProvider,
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -150,7 +150,7 @@ func TestThing(t *testing.T) {
 			providerName:    DefaultIdentityProvider,
 			username:        "dedicaded-admin-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -160,7 +160,7 @@ func TestThing(t *testing.T) {
 			providerName:    "customer-idp",
 			username:        "dedicaded-admin-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 	}

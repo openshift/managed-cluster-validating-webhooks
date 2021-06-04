@@ -8,7 +8,7 @@ import (
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -19,7 +19,7 @@ type hiveOwnershipTestSuites struct {
 	username        string
 	userGroups      []string
 	oldObject       *runtime.RawExtension
-	operation       v1beta1.Operation
+	operation       admissionv1.Operation
 	labels          map[string]string
 	shouldBeAllowed bool
 }
@@ -95,21 +95,21 @@ func TestThing(t *testing.T) {
 			testID:          "kube-admin-test",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
 			testID:          "kube-admin-test",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
 			testID:          "sre-test",
 			username:        "sre-foo@redhat.com",
 			userGroups:      []string{adminGroups[0], "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -117,7 +117,7 @@ func TestThing(t *testing.T) {
 			testID:          "dedicated-admin-test",
 			username:        "bob@foo.com",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			labels:          map[string]string{"hive.openshift.io/managed": "true"},
 			shouldBeAllowed: false,
 		},
@@ -126,7 +126,7 @@ func TestThing(t *testing.T) {
 			testID:          "unpriv-update-test",
 			username:        "unpriv-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			labels:          map[string]string{"hive.openshift.io/managed": "true"},
 			shouldBeAllowed: false,
 		},

@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	admissionapi "k8s.io/api/admission/v1beta1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	admissionapi "k8s.io/api/admission/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -14,11 +14,12 @@ var log = logf.Log.WithName("response_helper")
 
 // SendResponse Send the AdmissionReview.
 func SendResponse(w io.Writer, resp admissionctl.Response) {
-
 	encoder := json.NewEncoder(w)
 	responseAdmissionReview := admissionapi.AdmissionReview{
 		Response: &resp.AdmissionResponse,
 	}
+	responseAdmissionReview.APIVersion = admissionapi.SchemeGroupVersion.String()
+	responseAdmissionReview.Kind = "AdmissionReview"
 	err := encoder.Encode(responseAdmissionReview)
 	// TODO (lisa): handle this in a non-recursive way (why would the second one succeed)?
 	if err != nil {

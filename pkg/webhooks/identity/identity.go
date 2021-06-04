@@ -7,13 +7,13 @@ import (
 	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -105,7 +105,7 @@ func (s *IdentityWebhook) authorized(request admissionctl.Request) admissionctl.
 	idReq := &identityRequest{}
 
 	// if we delete, then look to OldObject in the request.
-	if request.Operation == v1beta1.Delete {
+	if request.Operation == admissionv1.Delete {
 		err = json.Unmarshal(request.OldObject.Raw, idReq)
 	} else {
 		err = json.Unmarshal(request.Object.Raw, idReq)
@@ -153,7 +153,7 @@ func (s *IdentityWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *IdentityWebhook {
 	scheme := runtime.NewScheme()
-	v1beta1.AddToScheme(scheme)
+	admissionv1.AddToScheme(scheme)
 
 	return &IdentityWebhook{
 		s: *scheme,

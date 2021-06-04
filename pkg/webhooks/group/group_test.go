@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
-
-	"k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -28,7 +27,7 @@ type groupTestsuites struct {
 	username        string
 	userGroups      []string
 	oldObject       *runtime.RawExtension
-	operation       v1beta1.Operation
+	operation       admissionv1.Operation
 	shouldBeAllowed bool
 }
 
@@ -79,7 +78,7 @@ func TestAdminUsers(t *testing.T) {
 			groupName:       "osd-sre-admins",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -88,7 +87,7 @@ func TestAdminUsers(t *testing.T) {
 			groupName:       "osd-sre-admins",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -97,7 +96,7 @@ func TestAdminUsers(t *testing.T) {
 			groupName:       "osd-impersonators",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -106,7 +105,7 @@ func TestAdminUsers(t *testing.T) {
 			groupName:       "osd-impersonators",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -115,7 +114,7 @@ func TestAdminUsers(t *testing.T) {
 			groupName:       "osd-impersonators",
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 	}
@@ -129,7 +128,7 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			groupName:       "osd-sre-admins",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
@@ -138,7 +137,7 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			groupName:       "my-group",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -147,7 +146,7 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			groupName:       "my-group",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -156,7 +155,7 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			groupName:       "osd-impersonators",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -165,7 +164,7 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			groupName:       "osd-devaccess",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -174,7 +173,7 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			groupName:       "osd-sre-admins",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -183,7 +182,7 @@ func TestDedicatedAdminUsers(t *testing.T) {
 			groupName:       "my-group",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 	}
@@ -197,7 +196,7 @@ func TestSREAdminUsers(t *testing.T) {
 			groupName:       "osd-sre-admins",
 			username:        "test-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -205,7 +204,7 @@ func TestSREAdminUsers(t *testing.T) {
 			groupName:       "my-group",
 			username:        "test-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -213,7 +212,7 @@ func TestSREAdminUsers(t *testing.T) {
 			groupName:       "dedicated-admins",
 			username:        "osd-sre-admin",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -221,7 +220,7 @@ func TestSREAdminUsers(t *testing.T) {
 			groupName:       "osd-impersonators",
 			username:        "osd-sre-admin",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -229,7 +228,7 @@ func TestSREAdminUsers(t *testing.T) {
 			groupName:       "osd-sre-admins",
 			username:        "test-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
@@ -237,7 +236,7 @@ func TestSREAdminUsers(t *testing.T) {
 			groupName:       "my-group",
 			username:        "test-user",
 			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 	}
@@ -252,7 +251,7 @@ func TestOSDDevAccess(t *testing.T) {
 			groupName:       "osd-devaccess",
 			username:        "cee-123",
 			userGroups:      []string{"osd-devaccess", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
@@ -261,7 +260,7 @@ func TestOSDDevAccess(t *testing.T) {
 			groupName:       "osd-devaccess",
 			username:        "cee-123",
 			userGroups:      []string{"osd-devaccess", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Delete,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: false,
 		},
 		{
@@ -270,7 +269,7 @@ func TestOSDDevAccess(t *testing.T) {
 			groupName:       "my-group",
 			username:        "cee-123",
 			userGroups:      []string{"osd-devaccess", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Create,
+			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
 		{
@@ -279,7 +278,7 @@ func TestOSDDevAccess(t *testing.T) {
 			groupName:       "osd-devaccess",
 			username:        "dedi-admin",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       v1beta1.Update,
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 	}
