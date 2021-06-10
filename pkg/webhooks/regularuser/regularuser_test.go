@@ -15,6 +15,7 @@ import (
 const (
 	objectStringResource string = `{
 		"metadata": {
+			"name": "%s",
 			"kind": "%s",
 			"uid": "%s",
 			"creationTimestamp": "2020-05-10T07:51:00Z"
@@ -23,6 +24,7 @@ const (
 	}`
 	objectStringSubResource string = `{
 		"metadata": {
+			"name": "%s",
 			"kind": "%s",
 			"uid": "%s",
 			"requestSubResource": "%s",
@@ -32,6 +34,7 @@ const (
 	}`
 	objectStringRequestSubResource string = `{
 		"metadata": {
+			"name": "%s",
 			"kind": "%s",
 			"uid": "%s",
 			"requestSubResource": "%s",
@@ -48,6 +51,7 @@ type regularuserTests struct {
 	targetResource    string
 	targetVersion     string
 	targetGroup       string
+	targetName        string
 	username          string
 	userGroups        []string
 	oldObject         *runtime.RawExtension
@@ -80,12 +84,12 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 		if test.targetSubResource != "" {
 			switch hook.MatchPolicy() {
 			case admissionregv1.Equivalent:
-				rawObjString = fmt.Sprintf(objectStringRequestSubResource, test.targetKind, test.testID, test.targetSubResource)
+				rawObjString = fmt.Sprintf(objectStringRequestSubResource, test.targetName, test.targetKind, test.testID, test.targetSubResource)
 			case admissionregv1.Exact:
-				rawObjString = fmt.Sprintf(objectStringSubResource, test.targetKind, test.testID, test.targetSubResource)
+				rawObjString = fmt.Sprintf(objectStringSubResource, test.targetName, test.targetKind, test.testID, test.targetSubResource)
 			}
 		} else {
-			rawObjString = fmt.Sprintf(objectStringResource, test.targetKind, test.testID)
+			rawObjString = fmt.Sprintf(objectStringResource, test.targetName, test.targetKind, test.testID)
 		}
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
@@ -567,6 +571,108 @@ func TestMustGathers(t *testing.T) {
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+	}
+	runRegularuserTests(t, tests)
+}
+
+func TestNetNamespacs(t *testing.T) {
+	tests := []regularuserTests{
+		{
+			testID:          "netnamespace-unauth-user",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "openshift-foo",
+			username:        "system:unauthenticated",
+			userGroups:      []string{"system:unauthenticated"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "netnamespace-unpriv-user",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "valid-name",
+			username:        "my-name",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "netnamespace-dedicated-admins-update-valid-name",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "my-name",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "netnamespace-dedicated-admins-update-kube-system",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "kube-system",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "netnamespace-dedicated-admins-update-openshift-cluster-ingress-operator",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "openshift-cluster-ingress-operator",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "netnamespace-sre-group-update-openshift-cluster-ingress-operator",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "openshift-cluster-ingress-operator",
+			username:        "my-name",
+			userGroups:      []string{"osd-sre-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "netnamespace-sre-cluster-group-update-kube-system",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "kube-system",
+			username:        "my-name",
+			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "netnamespace-admin-user-update-kube-system",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "kube-system",
+			username:        "kube:admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 	}

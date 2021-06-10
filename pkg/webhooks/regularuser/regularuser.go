@@ -3,8 +3,9 @@ package regularuser
 import (
 	"fmt"
 	"strings"
-	"sync"
 
+	networkv1 "github.com/openshift/api/network/v1"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/namespace"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -23,6 +24,8 @@ const (
 	mustGatherGroup   string = "managed.openshift.io"
 	customDomainKind  string = "CustomDomain"
 	customDomainGroup string = "managed.openshift.io"
+	netNamespaceKind  string = "NetNamespace"
+	netNamespaceGroup string = "network.openshift.io"
 )
 
 var (
@@ -88,14 +91,22 @@ var (
 				Scope:       &scope,
 			},
 		},
+		{
+			Operations: []admissionregv1.OperationType{"*"},
+			Rule: admissionregv1.Rule{
+				APIGroups:   []string{"network.openshift.io"},
+				APIVersions: []string{"*"},
+				Resources:   []string{"netnamespaces", "netnamespaces/*"},
+				Scope:       &scope,
+			},
+		},
 	}
 	log = logf.Log.WithName(WebhookName)
 )
 
 // RegularuserWebhook protects various objects from unauthorized manipulation
 type RegularuserWebhook struct {
-	mu sync.Mutex
-	s  runtime.Scheme
+	s runtime.Scheme
 }
 
 func (s *RegularuserWebhook) Doc() string {
@@ -191,6 +202,11 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
+	if isNetNamespaceAuthorized(s, request) {
+		ret = admissionctl.Allowed("Management of NetNamespace CR is authorized")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
 	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, adminUsers) {
 		ret = admissionctl.Allowed("Specified admin users are allowed")
 		ret.UID = request.AdmissionRequest.UID
@@ -225,6 +241,38 @@ func isCustomDomainAuthorized(request admissionctl.Request) bool {
 		request.Kind.Group == customDomainGroup)
 }
 
+// isNetNamespaceAuthorized check if request is authorized for NetNamespace CR
+func isNetNamespaceAuthorized(s *RegularuserWebhook, request admissionctl.Request) bool {
+	return ((utils.SliceContains("cluster-admins", request.UserInfo.Groups) ||
+		utils.SliceContains("dedicated-admins", request.UserInfo.Groups)) &&
+		request.Kind.Kind == netNamespaceKind &&
+		request.Kind.Group == netNamespaceGroup &&
+		isNetNamespaceValid(s, request))
+}
+
+// isNetNamespaceValid check if the NetNamespace is valid
+func isNetNamespaceValid(s *RegularuserWebhook, request admissionctl.Request) bool {
+	// Decode object into a NetNamespace object
+	decoder, err := admissionctl.NewDecoder(&s.s)
+	if err != nil {
+		return false
+	}
+	netNamespace := &networkv1.NetNamespace{}
+	if len(request.Object.Raw) == 0 {
+		return false
+	}
+	err = decoder.Decode(request, netNamespace)
+	if err != nil {
+		return false
+	}
+	// Check if the name is bad or is privileged
+	if namespace.PrivilegedNamespaceRe.Match([]byte(netNamespace.Name)) ||
+		namespace.BadNamespaceRe.Match([]byte(netNamespace.Name)) {
+		return false
+	}
+	return true
+}
+
 // SyncSetLabelSelector returns the label selector to use in the SyncSet.
 func (s *RegularuserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
@@ -235,6 +283,7 @@ func NewWebhook() *RegularuserWebhook {
 	scheme := runtime.NewScheme()
 	admissionv1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
+	networkv1.AddToScheme(scheme)
 
 	return &RegularuserWebhook{
 		s: *scheme,
