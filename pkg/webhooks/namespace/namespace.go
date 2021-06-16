@@ -28,11 +28,15 @@ const (
 	clusterAdminGroup            string = "cluster-admins"
 )
 
+// exported vars to be used across packages
+var (
+	PrivilegedNamespaceRe = regexp.MustCompile(privilegedNamespace)
+	BadNamespaceRe        = regexp.MustCompile(badNamespace)
+)
+
 var (
 	clusterAdminUsers           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
 	sreAdminGroups              = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
-	privilegedNamespaceRe       = regexp.MustCompile(privilegedNamespace)
-	badNamespaceRe              = regexp.MustCompile(badNamespace)
 	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
 	layeredProductNamespaceRe   = regexp.MustCompile(layeredProductNamespace)
 	// protectedLabels are labels which managed customers should not be allowed
@@ -207,7 +211,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 	}
 
 	// L64-73
-	if privilegedNamespaceRe.Match([]byte(ns.GetName())) {
+	if PrivilegedNamespaceRe.Match([]byte(ns.GetName())) {
 
 		if amIAdmin(request) {
 			ret = admissionctl.Allowed("Cluster and SRE admins may access")
@@ -219,7 +223,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if badNamespaceRe.Match([]byte(ns.GetName())) {
+	if BadNamespaceRe.Match([]byte(ns.GetName())) {
 
 		if amIAdmin(request) {
 			ret = admissionctl.Allowed("Cluster and SRE admins may access")
@@ -263,7 +267,7 @@ func (s *NamespaceWebhook) unauthorizedLabelChanges(req admissionctl.Request) (b
 			return false, nil
 		}
 		// There were some found
-		return true, fmt.Errorf("Manged OpenShift customers may not directly set certain protected labels (%s) on Namespaces", protectedLabels)
+		return true, fmt.Errorf("Managed OpenShift customers may not directly set certain protected labels (%s) on Namespaces", protectedLabels)
 	} else if req.Operation == admissionv1.Update {
 		// For Updates we must see if the new object is making a change to the old one for any protected labels.
 		// First, let's see if the old object had any protected labels we ought to
