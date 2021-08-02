@@ -14,6 +14,13 @@ var log = logf.Log.WithName("response_helper")
 
 // SendResponse Send the AdmissionReview.
 func SendResponse(w io.Writer, resp admissionctl.Response) {
+
+	// Apply ownership annotation to allow for granular alerts for
+	// manipulation of SREP owned webhooks.
+	resp.AuditAnnotations = map[string]string{
+		"owner": "srep-managed-webhook",
+	}
+
 	encoder := json.NewEncoder(w)
 	responseAdmissionReview := admissionapi.AdmissionReview{
 		Response: &resp.AdmissionResponse,
