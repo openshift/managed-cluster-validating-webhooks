@@ -1,9 +1,11 @@
-FROM registry.ci.openshift.org/openshift/release:golang-1.14 AS builder
+FROM registry.ci.openshift.org/openshift/release:golang-1.16 AS builder
 
 RUN mkdir -p /workdir
 WORKDIR /workdir
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
-RUN go mod vendor && make build
+RUN make build
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 

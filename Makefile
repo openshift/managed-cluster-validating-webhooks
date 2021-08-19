@@ -13,17 +13,21 @@ IMG_REGISTRY ?= quay.io
 IMG_ORG ?= app-sre
 IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
 
-# nb: registry.svc.ci.openshift.org/openshift/release:golang-1.14 doesn't work for this
-SYNCSET_GENERATOR_IMAGE := quay.io/app-sre/golang:1.14
+SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.16
 
 BINARY_FILE ?= build/_output/webhooks
 
 GO_SOURCES := $(find $(CURDIR) -type f -name "*.go" -print)
 EXTRA_DEPS := $(find $(CURDIR)/build -type f -print) Makefile
-GOOS ?= linux
-GOARCH ?= amd64
-GOENV = GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0
-GOBUILDFLAGS = -gcflags="all=-trimpath=$(GOPATH)" -asmflags="all=-trimpath=$(GOPATH)"
+
+# Containers may default GOFLAGS=-mod=vendor which would break us since
+# we're using modules.
+unexport GOFLAGS
+GOOS?=linux
+GOARCH?=amd64
+GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOFLAGS=
+
+GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPATH}"
 
 # do not include this comma-separated list of hooks into the syncset
 SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
@@ -35,7 +39,7 @@ TESTOPTS ?=
 
 DOC_BINARY := hack/documentation/document.go
 # ex -hideRules
-DOCFLAGS ?= 
+DOCFLAGS ?=
 
 default: all
 
@@ -85,6 +89,7 @@ $(SELECTOR_SYNC_SET_DESTINATION):
 	$(CONTAINER_ENGINE) run \
 		-v $(CURDIR):$(CURDIR):z \
 		-w $(CURDIR) \
+		-e GOFLAGS=$(GOFLAGS) \
 		--rm \
 		$(SYNCSET_GENERATOR_IMAGE) \
 			go run \
