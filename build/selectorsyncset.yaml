@@ -168,38 +168,6 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
-        name: sre-group-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /group-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: group-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - user.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - UPDATE
-          - CREATE
-          - DELETE
-          resources:
-          - groups
-          scope: Cluster
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-hiveownership-validation
       webhooks:
       - admissionReviewVersions:
@@ -225,38 +193,6 @@ objects:
           - DELETE
           resources:
           - clusterresourcequotas
-          scope: Cluster
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
-        name: sre-identity-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /identity-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: identity-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - user.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - UPDATE
-          - CREATE
-          - DELETE
-          resources:
-          - identities
           scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
@@ -409,38 +345,6 @@ objects:
           - netnamespaces
           - netnamespaces/*
           scope: '*'
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
-        name: sre-user-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /user-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: user-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - user.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - UPDATE
-          - CREATE
-          - DELETE
-          resources:
-          - users
-          scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
   status: {}
