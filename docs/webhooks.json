@@ -1,0 +1,205 @@
+[
+  {
+    "webhookName": "clusterlogging-validation",
+    "rules": [
+      {
+        "operations": [
+          "CREATE",
+          "UPDATE"
+        ],
+        "apiGroups": [
+          "logging.openshift.io"
+        ],
+        "apiVersions": [
+          "v1"
+        ],
+        "resources": [
+          "clusterloggings"
+        ],
+        "scope": "Namespaced"
+      }
+    ],
+    "documentString": "Managed OpenShift Customers may set log retention outside the allowed range of 0-7 days"
+  },
+  {
+    "webhookName": "hiveownership-validation",
+    "rules": [
+      {
+        "operations": [
+          "UPDATE",
+          "DELETE"
+        ],
+        "apiGroups": [
+          "quota.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "clusterresourcequotas"
+        ],
+        "scope": "Cluster"
+      }
+    ],
+    "webhookObjectSelector": {
+      "matchLabels": {
+        "hive.openshift.io/managed": "true"
+      }
+    },
+    "documentString": "Managed OpenShift customers may not edit certain managed resources. A managed resource has a \"hive.openshift.io/managed\": \"true\" label."
+  },
+  {
+    "webhookName": "namespace-validation",
+    "rules": [
+      {
+        "operations": [
+          "CREATE",
+          "UPDATE",
+          "DELETE"
+        ],
+        "apiGroups": [
+          ""
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "namespaces"
+        ],
+        "scope": "Cluster"
+      }
+    ],
+    "documentString": "Managed OpenShift Customers may not modify privileged namespaces identified by this regular expression (^kube.*|^openshift.*|^default$|^redhat.*) because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression (^com$|^io$|^in$) because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels [managed.openshift.io/storage-pv-quota-exempt managed.openshift.io/service-lb-quota-exempt]."
+  },
+  {
+    "webhookName": "pod-validation",
+    "rules": [
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          "v1"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "pods"
+        ],
+        "scope": "Namespaced"
+      }
+    ],
+    "documentString": "Managed OpenShift Customers may use tolerations on Pods that could cause those Pods to be scheduled on infra or master nodes."
+  },
+  {
+    "webhookName": "regular-user-validation",
+    "rules": [
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          "autoscaling.openshift.io",
+          "cloudcredential.openshift.io",
+          "machine.openshift.io",
+          "admissionregistration.k8s.io",
+          "cloudingress.managed.openshift.io",
+          "managed.openshift.io",
+          "splunkforwarder.managed.openshift.io",
+          "upgrade.managed.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "*/*"
+        ],
+        "scope": "*"
+      },
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          "config.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "clusterversions",
+          "clusterversions/status",
+          "schedulers",
+          "apiservers"
+        ],
+        "scope": "*"
+      },
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          "operator.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "kubeapiservers",
+          "openshiftapiservers"
+        ],
+        "scope": "*"
+      },
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          ""
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "nodes",
+          "nodes/*"
+        ],
+        "scope": "*"
+      },
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          "managed.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "subjectpermissions",
+          "subjectpermissions/*"
+        ],
+        "scope": "*"
+      },
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          "network.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "netnamespaces",
+          "netnamespaces/*"
+        ],
+        "scope": "*"
+      }
+    ],
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [autoscaling.openshift.io machine.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io config.openshift.io operator.openshift.io cloudcredential.openshift.io admissionregistration.k8s.io cloudingress.managed.openshift.io managed.openshift.io network.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
+  }
+]
