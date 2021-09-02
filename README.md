@@ -27,6 +27,10 @@ A framework supporting validating webhooks for OpenShift.
 
 Ensure the git branch is current and run `make syncset`. The updated Template will be  [build/selectorsyncset.yaml](build/selectorsyncset.yaml) by default.
 
+## Updating documenation files
+
+Ensure the git branch is current and run `make docs > docs/webhooks.json && make DOCFLAGS=-hideRules docs > docs/webhooks-short.json`.
+
 ## Development
 
 Each Webhook must register with, and therefore satisfy the interface specified in [pkg/webhooks/register.go](pkg/webhooks/register.go):
