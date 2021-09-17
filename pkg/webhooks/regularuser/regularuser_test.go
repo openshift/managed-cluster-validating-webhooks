@@ -558,7 +558,7 @@ func TestMustGathers(t *testing.T) {
 			targetVersion:   "v1alpha1",
 			targetGroup:     "managed.openshift.io",
 			username:        "my-name",
-			userGroups:      []string{"osd-devaccess", "system:authenticated", "system:authenticated:oauth"},
+			userGroups:      []string{"system:serviceaccounts:openshift-backplane-cee", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},

@@ -29,9 +29,9 @@ const (
 )
 
 var (
-	adminGroups        = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
-	adminUsers         = []string{"backplane-cluster-admin"}
-	ceeGroup    string = "osd-devaccess"
+	adminGroups = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	adminUsers  = []string{"backplane-cluster-admin"}
+	ceeGroup    = "system:serviceaccounts:openshift-backplane-cee"
 
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
