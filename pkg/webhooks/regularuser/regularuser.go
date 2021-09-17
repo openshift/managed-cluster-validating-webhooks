@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	adminGroups = []string{"system:serviceaccounts:openshift-backplane-srep", "osd-sre-cluster-admins"}
+	adminGroups = []string{"system:serviceaccounts:openshift-backplane-srep"}
 	adminUsers  = []string{"backplane-cluster-admin"}
 	ceeGroup    = "system:serviceaccounts:openshift-backplane-cee"
 

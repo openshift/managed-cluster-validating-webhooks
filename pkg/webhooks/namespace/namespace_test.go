@@ -422,15 +422,6 @@ func TestAdminUser(t *testing.T) {
 		},
 		{
 			// Admins should be able to create a privileged namespace
-			testID:          "admin-in-ns-test",
-			targetNamespace: "in",
-			username:        "lisa",
-			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to create a privileged namespace
 			testID:          "cluster-admin-in-ns-test",
 			targetNamespace: "in",
 			username:        "lisa",
@@ -458,27 +449,6 @@ func TestLabelCreates(t *testing.T) {
 			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			labels: map[string]string{
-				"managed.openshift.io/storage-pv-quota-exempt": "true",
-				"managed.openshift.io/storage-lb-quota-exempt": "true",
-			},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "sre-cluster-admins-can-create-priv-labelled-ns",
-			targetNamespace: "openshift-priv-ns",
-			username:        "no-reply@redhat.com",
-			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			labels:          map[string]string{"my-label": "hello"},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "sre-cluster-admins-can-create-priv-labelled-ns",
-			targetNamespace: "openshift-priv-ns",
-			username:        "no-reply@redhat.com",
-			userGroups:      []string{"osd-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
 			labels: map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
