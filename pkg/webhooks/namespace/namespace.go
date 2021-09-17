@@ -36,7 +36,7 @@ var (
 
 var (
 	clusterAdminUsers           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
-	sreAdminGroups              = []string{"osd-sre-admins", "osd-sre-cluster-admins"}
+	sreAdminGroups              = []string{"system:serviceaccounts:openshift-backplane-srep"}
 	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
 	layeredProductNamespaceRe   = regexp.MustCompile(layeredProductNamespace)
 	// protectedLabels are labels which managed customers should not be allowed
