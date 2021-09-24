@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sync"
 
+	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -18,13 +19,11 @@ import (
 
 const (
 	WebhookName           string = "pod-validation"
-	privilegedNamespace   string = `(^kube$|^kube-.*|^openshift$|^openshift-.*|^default$|^redhat-.*)`
 	unprivilegedNamespace string = `(openshift-logging|openshift-operators)`
 	docString             string = `Managed OpenShift Customers may use tolerations on Pods that could cause those Pods to be scheduled on infra or master nodes.`
 )
 
 var (
-	privilegedNamespaceRe   = regexp.MustCompile(privilegedNamespace)
 	unprivilegedNamespaceRe = regexp.MustCompile(unprivilegedNamespace)
 	log                     = logf.Log.WithName(WebhookName)
 
@@ -110,8 +109,7 @@ func (s *PodWebhook) renderPod(req admissionctl.Request) (*corev1.Pod, error) {
 }
 
 func isRequestPrivileged(namespace string) bool {
-
-	if privilegedNamespaceRe.Match([]byte(namespace)) {
+	if hookconfig.IsPrivilegedNamespace(namespace) {
 		if unprivilegedNamespaceRe.Match([]byte(namespace)) {
 			return false
 		}

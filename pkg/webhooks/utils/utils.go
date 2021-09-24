@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,16 @@ func DefaultLabelSelector() metav1.LabelSelector {
 func SliceContains(needle string, haystack []string) bool {
 	for _, check := range haystack {
 		if needle == check {
+			return true
+		}
+	}
+	return false
+}
+
+func RegexSliceContains(needle string, haystack []string) bool {
+	for _, check := range haystack {
+		checkRe := regexp.MustCompile(check)
+		if checkRe.Match([]byte(needle)) {
 			return true
 		}
 	}

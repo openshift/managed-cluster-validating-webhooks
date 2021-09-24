@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	networkv1 "github.com/openshift/api/network/v1"
+	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/namespace"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -266,7 +267,7 @@ func isNetNamespaceValid(s *RegularuserWebhook, request admissionctl.Request) bo
 		return false
 	}
 	// Check if the name is bad or is privileged
-	if namespace.PrivilegedNamespaceRe.Match([]byte(netNamespace.Name)) ||
+	if hookconfig.IsPrivilegedNamespace(netNamespace.Name) ||
 		namespace.BadNamespaceRe.Match([]byte(netNamespace.Name)) {
 		return false
 	}

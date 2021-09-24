@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
+	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/config"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +30,8 @@ func createRawPodJSON(name string, tolerations []corev1.Toleration, uid string, 
 	return fmt.Sprintf(str, name, namespace, uid, string(partial)), err
 }
 
+var mockManagedNamespaces []string = []string{"openshift-logging", "openshift-operators", "openshift-apiserver"}
+
 type podTestSuites struct {
 	testID          string
 	targetPod       string
@@ -50,6 +53,10 @@ func runPodTests(t *testing.T, tests []podTestSuites) {
 		Group:    "",
 		Version:  "v1",
 		Resource: "pods",
+	}
+
+	for _, ns := range mockManagedNamespaces {
+		hookconfig.AddNamespace(ns)
 	}
 
 	for _, test := range tests {

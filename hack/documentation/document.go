@@ -27,6 +27,7 @@ type docuhook struct {
 
 // WriteDocs will write out all the docs.
 func WriteDocs() {
+	webhooks.RegisterWebhooks()
 	hookNames := make([]string, 0)
 	for name := range webhooks.Webhooks {
 		hookNames = append(hookNames, name)

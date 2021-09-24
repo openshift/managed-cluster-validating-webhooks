@@ -29,7 +29,10 @@ Ensure the git branch is current and run `make syncset`. The updated Template wi
 
 ## Updating documenation files
 
-Ensure the git branch is current and run `make docs > docs/webhooks.json && make DOCFLAGS=-hideRules docs > docs/webhooks-short.json`.
+Ensure the git branch is current and run
+```shell
+make docs > docs/webhooks.json && make DOCFLAGS=-hideRules docs > docs/webhooks-short.json
+```
 
 ## Development
 
@@ -78,19 +81,30 @@ The remaining methods (and also including `GetURI` and `Name`) are involved with
 
 ### Adding New Webhooks
 
-Registering involves creating a file in [pkg/webhooks](pkg/webhooks) (eg [add_namespace_hook.go](pkg/webhooks/add_namespace_hook.go)) which calls the `Register` function exported from [register.go](pkg/webhooks/register.go):
+Registering involves adding a call to the `Register` function exported from [register.go](pkg/webhooks/register.go) to the `RegisterWebhooks` function in [pkg/webhooks/add_webhooks.go](pkg/webhooks/add_webhooks.go):
 
 ```go
-// pkg/webhooks/add_namespace_hook.go
+// pkg/webhooks/add_webhooks.go
 
 package webhooks
 
 import (
+  "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/clusterlogging"
+  hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/config"
+  "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/hiveownership"
   "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/namespace"
+  "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/pod"
+  "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/regularuser"
 )
 
-func init() {
+func RegisterWebhooks() {
+  hookconfig.GetManagedNamespaces()
+
   Register(namespace.WebhookName, func() Webhook { return namespace.NewWebhook() })
+  Register(pod.WebhookName, func() Webhook { return pod.NewWebhook() })
+  Register(clusterlogging.WebhookName, func() Webhook { return clusterlogging.NewWebhook() })
+  Register(hiveownership.WebhookName, func() Webhook { return hiveownership.NewWebhook() })
+  Register(regularuser.WebhookName, func() Webhook { return regularuser.NewWebhook() })
 }
 ```
 

@@ -31,11 +31,15 @@ var (
 	caCert  = flag.String("cacert", "", "CA Cert file")
 )
 
+func init() {
+	klog.SetOutput(os.Stdout)
+	logf.SetLogger(klogr.New())
+
+	webhooks.RegisterWebhooks()
+}
+
 func main() {
 	flag.Parse()
-	klog.SetOutput(os.Stdout)
-
-	logf.SetLogger(klogr.New())
 
 	if !*testHooks {
 		log.Info("HTTP server running at", "listen", net.JoinHostPort(*listenAddress, *listenPort))

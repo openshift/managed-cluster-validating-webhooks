@@ -9,7 +9,7 @@
   },
   {
     "webhookName": "namespace-validation",
-    "documentString": "Managed OpenShift Customers may not modify privileged namespaces identified by this regular expression (^kube.*|^openshift.*|^default$|^redhat.*) because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression (^com$|^io$|^in$) because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels [managed.openshift.io/storage-pv-quota-exempt managed.openshift.io/service-lb-quota-exempt]."
+    "documentString": "Managed OpenShift Customers may not modify privileged namespaces listed in the 'managed-namespaces' ConfigMap in the openshift-monitoring namespace because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression (^com$|^io$|^in$) because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels [managed.openshift.io/storage-pv-quota-exempt managed.openshift.io/service-lb-quota-exempt]."
   },
   {
     "webhookName": "pod-validation",
@@ -17,6 +17,6 @@
   },
   {
     "webhookName": "regular-user-validation",
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [managed.openshift.io splunkforwarder.managed.openshift.io autoscaling.openshift.io cloudcredential.openshift.io machine.openshift.io admissionregistration.k8s.io cloudingress.managed.openshift.io upgrade.managed.openshift.io config.openshift.io operator.openshift.io network.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [upgrade.managed.openshift.io config.openshift.io network.openshift.io cloudcredential.openshift.io machine.openshift.io admissionregistration.k8s.io managed.openshift.io splunkforwarder.managed.openshift.io autoscaling.openshift.io cloudingress.managed.openshift.io operator.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
   }
 ]

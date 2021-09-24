@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
+	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/config"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -44,6 +45,8 @@ const (
 	}`
 )
 
+var mockManagedNamespaces = []string{"openshift-foo", "openshift-cluster-ingress-operator"}
+
 type regularuserTests struct {
 	testID            string
 	targetSubResource string
@@ -62,6 +65,10 @@ type regularuserTests struct {
 }
 
 func runRegularuserTests(t *testing.T, tests []regularuserTests) {
+
+	for _, ns := range mockManagedNamespaces {
+		hookconfig.AddNamespace(ns)
+	}
 
 	for _, test := range tests {
 		if test.skip {
@@ -544,7 +551,7 @@ func TestMustGathers(t *testing.T) {
 	runRegularuserTests(t, tests)
 }
 
-func TestNetNamespacs(t *testing.T) {
+func TestNetNamespaces(t *testing.T) {
 	tests := []regularuserTests{
 		{
 			testID:          "netnamespace-unauth-user",
