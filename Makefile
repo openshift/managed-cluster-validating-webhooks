@@ -63,6 +63,10 @@ vet:
 	$(AT)gofmt -s -l $(shell go list -f '{{ .Dir }}' ./... ) | grep ".*\.go"; if [ "$$?" = "0" ]; then gofmt -s -d $(shell go list -f '{{ .Dir }}' ./... ); exit 1; fi
 	$(AT)go vet ./cmd/... ./pkg/...
 
+.PHONY: generate
+generate:
+	$(AT)go generate ./pkg/config
+
 .PHONY: build
 build: $(BINARY_FILE)
 

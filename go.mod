@@ -4,13 +4,11 @@ go 1.14
 
 require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/golang/mock v1.5.0
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
 	github.com/openshift/cluster-logging-operator v0.0.0-20210525135922-71decaca5680
 	github.com/openshift/hive/apis v0.0.0-20210526051511-c6ca3dd7d0e4
 	k8s.io/api v0.21.1
 	k8s.io/apimachinery v0.21.1
-	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/utils v0.0.0-20210521133846-da695404a2bc
 	sigs.k8s.io/controller-runtime v0.8.3
