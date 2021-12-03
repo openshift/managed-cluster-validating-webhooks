@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sync"
 
+	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -19,26 +20,22 @@ import (
 
 const (
 	WebhookName                  string = "namespace-validation"
-	privilegedNamespace          string = `(^kube.*|^openshift.*|^default$|^redhat.*)`
 	badNamespace                 string = `(^com$|^io$|^in$)`
-	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
 	layeredProductNamespace      string = `^redhat.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
-	docString                    string = `Managed OpenShift Customers may not modify privileged namespaces identified by this regular expression %s because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels %s.`
+	docString                    string = `Managed OpenShift Customers may not modify namespaces specified in the %v ConfigMaps because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels %s.`
 	clusterAdminGroup            string = "cluster-admins"
 )
 
 // exported vars to be used across packages
 var (
-	PrivilegedNamespaceRe = regexp.MustCompile(privilegedNamespace)
-	BadNamespaceRe        = regexp.MustCompile(badNamespace)
+	BadNamespaceRe = regexp.MustCompile(badNamespace)
 )
 
 var (
-	clusterAdminUsers           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
-	sreAdminGroups              = []string{"system:serviceaccounts:openshift-backplane-srep"}
-	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
-	layeredProductNamespaceRe   = regexp.MustCompile(layeredProductNamespace)
+	clusterAdminUsers         = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
+	sreAdminGroups            = []string{"system:serviceaccounts:openshift-backplane-srep"}
+	layeredProductNamespaceRe = regexp.MustCompile(layeredProductNamespace)
 	// protectedLabels are labels which managed customers should not be allowed
 	// change by dedicated-admins.
 	protectedLabels = []string{
@@ -73,7 +70,7 @@ type NamespaceWebhook struct {
 func (s *NamespaceWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 
 func (s *NamespaceWebhook) Doc() string {
-	return fmt.Sprintf(docString, privilegedNamespace, badNamespace, protectedLabels)
+	return fmt.Sprintf(docString, hookconfig.ConfigMapSources, badNamespace, protectedLabels)
 }
 
 // TimeoutSeconds implements Webhook interface
@@ -196,7 +193,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 	}
 	// service accounts making requests will include their name in the group
 	for _, group := range request.UserInfo.Groups {
-		if privilegedServiceAccountsRe.Match([]byte(group)) {
+		if hookconfig.IsPrivilegedServiceAccount(group) {
 			ret = admissionctl.Allowed("Privileged service accounts may access")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
@@ -211,15 +208,15 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 	}
 
 	// L64-73
-	if PrivilegedNamespaceRe.Match([]byte(ns.GetName())) {
+	if hookconfig.IsPrivilegedNamespace(ns.GetName()) {
 
 		if amIAdmin(request) {
 			ret = admissionctl.Allowed("Cluster and SRE admins may access")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
-		log.Info("Non-admin attempted to access a privileged namespace (eg matching this regex)", "regex", privilegedNamespace, "request", request.AdmissionRequest)
-		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed namespaces. Customer workloads should be placed in customer namespaces, and should not match this regular expression: %s", privilegedNamespace))
+		log.Info("Non-admin attempted to access a privileged namespace matching a regex from this list", "list", hookconfig.PrivilegedNamespaces, "request", request.AdmissionRequest)
+		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed namespaces. Customer workloads should be placed in customer namespaces, and should not match an entry in this list of regular expressions: %v", hookconfig.PrivilegedNamespaces))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
