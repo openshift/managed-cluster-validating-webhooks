@@ -315,6 +315,7 @@ objects:
           - clusterversions/status
           - schedulers
           - apiservers
+          - proxies
           scope: '*'
         - apiGroups:
           - machineconfiguration.openshift.io

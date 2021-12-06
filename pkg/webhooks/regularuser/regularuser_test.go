@@ -903,6 +903,40 @@ func TestAPIServers(t *testing.T) {
 			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
+		{
+			testID:          "proxy-unpriv-user",
+			targetResource:  "proxies",
+			targetKind:      "Proxy",
+			targetVersion:   "v1",
+			targetGroup:     "config.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+
+		{
+			testID:          "proxy-cluster-admin-group",
+			targetResource:  "proxies",
+			targetKind:      "Proxy",
+			targetVersion:   "v1",
+			targetGroup:     "config.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "proxy-cluster-sre-group",
+			targetResource:  "proxies",
+			targetKind:      "Proxy",
+			targetVersion:   "v1",
+			targetGroup:     "config.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
 	}
 	runRegularuserTests(t, tests)
 }
