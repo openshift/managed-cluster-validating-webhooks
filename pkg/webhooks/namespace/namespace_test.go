@@ -12,11 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const (
-	privilegedNamespace      string = "openshift-backplane"
-	privilegedServiceAccount string = "system:serviceaccounts:openshift-backplane"
-)
-
 // Raw JSON for a Namespace, used as runtime.RawExtension, and represented here
 // because sometimes we need it for OldObject as well as Object.
 const testNamespaceRaw string = `{
@@ -107,7 +102,7 @@ func TestDedicatedAdmins(t *testing.T) {
 		{
 			// Should not be able to delete a privileged namespace
 			testID:          "dedi-delete-priv-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
@@ -116,23 +111,14 @@ func TestDedicatedAdmins(t *testing.T) {
 		{
 			// Should not be able to create a privileged namespace
 			testID:          "dedi-create-priv-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "openshift-test-namespace",
 			username:        "test-user",
 			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
 		{
-			// Should be able to create a namespace starting with 'openshift-' but not listed in the PrivilegedNamespaces list
-			testID:          "dedi-create-nonpriv-openshift-ns",
-			targetNamespace: "openshift-unpriv-ns",
-			username:        "test-user",
-			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Should not be able to update layered product namespace
+			// Should not be able to update layered product ecnamespa
 			testID:          "dedi-update-layered-prod-ns",
 			targetNamespace: "redhat-layered-product-ns",
 			username:        "test-user",
@@ -222,7 +208,7 @@ func TestNormalUser(t *testing.T) {
 		{
 			// Shouldn't be able to create a privileged namespace
 			testID:          "nonpriv-create-priv-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -231,7 +217,7 @@ func TestNormalUser(t *testing.T) {
 		{
 			// Shouldn't be able to delete a privileged namespace
 			testID:          "nonpriv-delete-priv-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
@@ -283,18 +269,9 @@ func TestLayeredProducts(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			// Layered admins can create a ns that starts with 'openshift-' and is not listed in the managed namespaces list
-			testID:          "lp-create-unpriv-ns",
-			targetNamespace: "openshift-unpriv-ns",
-			username:        "test-user",
-			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Layered admins can not create a ns listed in the managed namespaces list
+			// Layered admins can't create a privileged ns
 			testID:          "lp-create-priv-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "openshift-test",
 			username:        "test-user",
 			userGroups:      []string{"layered-sre-cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -346,9 +323,9 @@ func TestServiceAccounts(t *testing.T) {
 		{
 			// serviceaccounts in privileged namespaces can interact with privileged namespaces
 			testID:          "sa-create-priv-ns",
-			targetNamespace: privilegedNamespace,
-			username:        privilegedServiceAccount,
-			userGroups:      []string{privilegedServiceAccount, "system:authenticated", "system:authenticated:oauth"},
+			targetNamespace: "openshift-test-ns",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
@@ -359,8 +336,8 @@ func TestServiceAccounts(t *testing.T) {
 			// Kubernetes RBAC
 			testID:          "sa-create-priv-ns",
 			targetNamespace: "customer-ns",
-			username:        privilegedServiceAccount,
-			userGroups:      []string{privilegedServiceAccount, "system:authenticated", "system:authenticated:oauth"},
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
@@ -373,15 +350,6 @@ func TestServiceAccounts(t *testing.T) {
 			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
-		{
-			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
-			testID:          "sa-create-priv-ns",
-			targetNamespace: privilegedNamespace,
-			username:        "system:serviceaccounts:openshift-unpriv-ns",
-			userGroups:      []string{"system:serviceaccounts:openshift-unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
-		},
 	}
 	runNamespaceTests(t, tests)
 }
@@ -392,7 +360,7 @@ func TestAdminUser(t *testing.T) {
 		{
 			// admin users gonna admin
 			testID:          "admin-test",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
@@ -401,7 +369,7 @@ func TestAdminUser(t *testing.T) {
 		{
 			// admin users gonna admin
 			testID:          "sre-test",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "lisa",
 			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
@@ -410,7 +378,7 @@ func TestAdminUser(t *testing.T) {
 		{
 			// admin users gonna admin
 			testID:          "cluster-admin-test",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
@@ -419,7 +387,7 @@ func TestAdminUser(t *testing.T) {
 		{
 			// admin users gonna admin
 			testID:          "backplane-cluster-admin-test",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
@@ -461,33 +429,6 @@ func TestAdminUser(t *testing.T) {
 			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
 		},
-		{
-			// Admins should be able to create a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to update a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to delete a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
 	}
 	runNamespaceTests(t, tests)
 }
@@ -496,7 +437,7 @@ func TestLabelCreates(t *testing.T) {
 	tests := []namespaceTestSuites{
 		{
 			testID:          "sre-can-create-priv-labelled-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -505,7 +446,7 @@ func TestLabelCreates(t *testing.T) {
 		},
 		{
 			testID:          "sre-can-create-priv-labelled-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -517,7 +458,7 @@ func TestLabelCreates(t *testing.T) {
 		},
 		{
 			testID:          "cluster-admin-can-create-priv-labelled-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -526,7 +467,7 @@ func TestLabelCreates(t *testing.T) {
 		},
 		{
 			testID:          "cluster-admins-can-create-priv-labelled-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "openshift-priv-ns",
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -538,7 +479,7 @@ func TestLabelCreates(t *testing.T) {
 		},
 		{
 			testID:          "admin-test",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -547,7 +488,7 @@ func TestLabelCreates(t *testing.T) {
 		},
 		{
 			testID:          "admin-test",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "kube-system",
 			username:        "kube:admin",
 			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
@@ -703,11 +644,11 @@ func TestLabellingUpdates(t *testing.T) {
 		},
 		{
 			testID:          "dedicated-admin-cant-alter-priv-ns",
-			targetNamespace: privilegedNamespace,
+			targetNamespace: "openshift-test-ns",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
 			operation:       admissionv1.Update,
-			oldObject: createOldObject(privilegedNamespace, "dedicated-admin-cant-alter-priv-ns", map[string]string{
+			oldObject: createOldObject("openshift-test-ns", "dedicated-admin-cant-alter-priv-ns", map[string]string{
 				"managed.openshift.io/storage-pv-quota-exempt": "true",
 				"managed.openshift.io/storage-lb-quota-exempt": "true",
 			}),
@@ -717,14 +658,14 @@ func TestLabellingUpdates(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "dedicated-admin-can-alter-unpriv-openshift-ns",
-			targetNamespace: "openshift-unpriv-ns",
+			testID:          "dedicated-admin-cant-alter-priv-ns2",
+			targetNamespace: "openshift-test-ns2",
 			username:        "test@user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
 			operation:       admissionv1.Update,
 			oldObject:       createOldObject("openshift-test-ns", "dedicated-admin-cant-alter-priv-ns2", map[string]string{}),
 			labels:          map[string]string{"my-label": "hello"},
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 		{
 			testID:          "dedicated-admin-can-label-cust-ns",
@@ -740,6 +681,7 @@ func TestLabellingUpdates(t *testing.T) {
 		},
 	}
 	runNamespaceTests(t, tests)
+
 }
 
 func TestBadRequests(t *testing.T) {
