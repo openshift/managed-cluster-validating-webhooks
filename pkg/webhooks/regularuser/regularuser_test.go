@@ -13,10 +13,6 @@ import (
 )
 
 const (
-	privilegedNamespace string = "openshift-backplane"
-)
-
-const (
 	objectStringResource string = `{
 		"metadata": {
 			"name": "%s",
@@ -587,24 +583,36 @@ func TestNetNamespacs(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "netnamespace-dedicated-admins-update-privileged-namespace",
+			testID:          "netnamespace-dedicated-admins-update-kube-system",
 			targetResource:  "netnamespaces",
 			targetKind:      "NetNamespace",
 			targetVersion:   "v1alpha1",
 			targetGroup:     "network.openshift.io",
-			targetName:      privilegedNamespace,
+			targetName:      "kube-system",
 			username:        "dedi-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
 			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "netnamespace-sre-group-update-privileged-namespace",
+			testID:          "netnamespace-dedicated-admins-update-openshift-cluster-ingress-operator",
 			targetResource:  "netnamespaces",
 			targetKind:      "NetNamespace",
 			targetVersion:   "v1alpha1",
 			targetGroup:     "network.openshift.io",
-			targetName:      privilegedNamespace,
+			targetName:      "openshift-cluster-ingress-operator",
+			username:        "dedi-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "dedicated-admins"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "netnamespace-sre-group-update-openshift-cluster-ingress-operator",
+			targetResource:  "netnamespaces",
+			targetKind:      "NetNamespace",
+			targetVersion:   "v1alpha1",
+			targetGroup:     "network.openshift.io",
+			targetName:      "openshift-cluster-ingress-operator",
 			username:        "my-name",
 			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,

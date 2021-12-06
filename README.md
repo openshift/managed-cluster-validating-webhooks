@@ -4,8 +4,6 @@ A framework supporting validating webhooks for OpenShift.
 
 - [Managed Cluster Validating Webhooks](#managed-cluster-validating-webhooks)
   - [Updating SelectorSyncSet Template](#updating-selectorsyncset-template)
-  - [Updating namespace and service account list](#updating-namespace-and-service-account-list)
-  - [Updating documentation files](#updating-documentation-files)
   - [Development](#development)
     - [Adding New Webhooks](#adding-new-webhooks)
     - [Helper Utils](#helper-utils)
@@ -28,10 +26,6 @@ A framework supporting validating webhooks for OpenShift.
 ## Updating SelectorSyncSet Template
 
 Ensure the git branch is current and run `make syncset`. The updated Template will be  [build/selectorsyncset.yaml](build/selectorsyncset.yaml) by default.
-
-## Updating namespace and service account list
-
-Ensure the git branch is current and run `make generate`. The updated lists will be written to [pkg/config/namespaces.go](pkg/config/namespaces.go). [Documentation should also be regenerated](#updating-documentation-files) to ensure the ConfigMaps specified are up-to-date.
 
 ## Updating documenation files
 

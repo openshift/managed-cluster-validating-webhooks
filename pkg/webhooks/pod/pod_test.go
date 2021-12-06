@@ -29,11 +29,6 @@ func createRawPodJSON(name string, tolerations []corev1.Toleration, uid string, 
 	return fmt.Sprintf(str, name, namespace, uid, string(partial)), err
 }
 
-const (
-	privilegedNamespace       string = "openshift-backplane"
-	privilegedServiceAccounts string = "system:serviceaccounts:openshift-backplane"
-)
-
 type podTestSuites struct {
 	testID          string
 	targetPod       string
@@ -90,7 +85,7 @@ func runPodTests(t *testing.T, tests []podTestSuites) {
 
 func TestDedicatedAdminNegative(t *testing.T) {
 	tests := []podTestSuites{
-		{ //Dedicated admin can not deploy pod on master on infra nodes in openshift-operators, openshift-logging namespace or any other namespace that is not a core namespace listed in PrivilegedNamespaces
+		{ //Dedicated admin can not deploy pod on master on infra nodes in openshift-operators, openshift-logging namespace or any other namespace that is not a core namespace like openshift-*, redhat-*, default, kube-*.
 			targetPod:  "my-test-pod",
 			testID:     "dedicated-admin-cant-deploy1",
 			namespace:  "random-project",
@@ -198,45 +193,6 @@ func TestDedicatedAdminNegative(t *testing.T) {
 			},
 			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
-		}, {
-			targetPod:  "my-test-pod",
-			testID:     "dedicated-admin-cant-deploy6",
-			namespace:  "openshift-unpriv-ns",
-			username:   "dedicated-admin",
-			userGroups: []string{"system:authenticated", "dedicated-admin"},
-			tolerations: []corev1.Toleration{
-				{
-					Key:      "node-role.kubernetes.io/master",
-					Operator: corev1.TolerationOpEqual,
-					Value:    "toleration key value",
-					Effect:   corev1.TaintEffectNoExecute,
-				},
-				{
-					Key:      "node-role.kubernetes.io/infra",
-					Operator: corev1.TolerationOpEqual,
-					Value:    "toleration key value2",
-					Effect:   corev1.TaintEffectPreferNoSchedule,
-				},
-			},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
-		},
-		{
-			targetPod:  "my-test-pod",
-			testID:     "dedicated-admin-cant-deploy7",
-			namespace:  "openshift-unpriv-ns",
-			username:   "dedicated-admin",
-			userGroups: []string{"system:authenticated", "dedicated-admin"},
-			tolerations: []corev1.Toleration{
-				{
-					Key:      "node-role.kubernetes.io/infra",
-					Operator: corev1.TolerationOpEqual,
-					Value:    "toleration key value2",
-					Effect:   corev1.TaintEffectNoSchedule,
-				},
-			},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
 		},
 	}
 	runPodTests(t, tests)
@@ -244,10 +200,10 @@ func TestDedicatedAdminNegative(t *testing.T) {
 
 func TestDedicatedAdminPositive(t *testing.T) {
 	tests := []podTestSuites{
-		{ //Dedicated admin can deploy pod on master on infra if it is in a core namespace listed in PrivilegedNamespaces with exceptions of openshift-operators and openshift-logging namespace.
+		{ //Dedicated admin can deploy pod on master on infra if it is in a core namespace like openshift-*, redhat-*, default, kube-* with exceptions of openshift-operators and openshift-logging namespace.
 			targetPod:  "my-test-pod",
 			testID:     "dedicated-admin-can-deploy1",
-			namespace:  privilegedNamespace,
+			namespace:  "openshift-apiserver",
 			username:   "dedicated-admin",
 			userGroups: []string{"system:authenticated", "dedicated-admin"},
 			tolerations: []corev1.Toleration{
@@ -270,7 +226,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 		{
 			targetPod:  "my-test-pod",
 			testID:     "dedicated-admin-can-deploy2",
-			namespace:  privilegedNamespace,
+			namespace:  "kube-system",
 			username:   "dedicated-admin",
 			userGroups: []string{"system:authenticated", "dedicated-admin"},
 			tolerations: []corev1.Toleration{
@@ -316,7 +272,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 		{
 			targetPod:  "my-test-pod",
 			testID:     "dedicated-admin-can-deploy4",
-			namespace:  privilegedNamespace,
+			namespace:  "default",
 			username:   "dedicated-admin",
 			userGroups: []string{"system:authenticated", "dedicated-admin"},
 			tolerations: []corev1.Toleration{
@@ -339,7 +295,7 @@ func TestDedicatedAdminPositive(t *testing.T) {
 		{
 			targetPod:  "my-test-pod",
 			testID:     "dedicated-admin-can-deploy5",
-			namespace:  privilegedNamespace,
+			namespace:  "default",
 			username:   "dedicated-admin",
 			userGroups: []string{"system:authenticated", "dedicated-admin"},
 			tolerations: []corev1.Toleration{
@@ -453,10 +409,10 @@ func TestUserNegative(t *testing.T) {
 // Normal user won't be able to create pods in privileged namespaces as RBAC will disallow it.
 func TestUserPositive(t *testing.T) {
 	tests := []podTestSuites{
-		{ //User can deploy pod on master on infra if it is in a core namespace listed in PrivilegedNamespaces with exceptions of openshift-operators and openshift-logging namespace.
+		{ //User can deploy pod on master on infra if it is in a core namespace like openshift-*, redhat-*, default, kube-* with exceptions of openshift-operators and openshift-logging namespace.
 			targetPod:  "my-test-pod",
 			testID:     "user-bob-can-deploy1",
-			namespace:  privilegedNamespace,
+			namespace:  "openshift-apiserver",
 			username:   "bob",
 			userGroups: []string{"system:authenticated", "system:authenticated:oauth"},
 			tolerations: []corev1.Toleration{
@@ -479,7 +435,7 @@ func TestUserPositive(t *testing.T) {
 		{
 			targetPod:  "my-test-pod",
 			testID:     "user-bob-can-deploy2",
-			namespace:  privilegedNamespace,
+			namespace:  "kube-system",
 			username:   "bob",
 			userGroups: []string{"system:authenticated", "system:authenticated:oauth"},
 			tolerations: []corev1.Toleration{
@@ -520,7 +476,7 @@ func TestUserPositive(t *testing.T) {
 		{
 			targetPod:  "my-test-pod",
 			testID:     "user-bob-can-deploy4",
-			namespace:  privilegedNamespace,
+			namespace:  "default",
 			username:   "bob",
 			userGroups: []string{"system:authenticated", "system:authenticated:oauth"},
 			tolerations: []corev1.Toleration{
@@ -542,8 +498,8 @@ func TestUserPositive(t *testing.T) {
 		},
 		{
 			targetPod:  "my-test-pod",
-			testID:     "user-bob-can-deploy5",
-			namespace:  privilegedNamespace,
+			testID:     "user-bob-can-deploy4",
+			namespace:  "default",
 			username:   "bob",
 			userGroups: []string{"system:authenticated", "system:authenticated:oauth"},
 			tolerations: []corev1.Toleration{
@@ -565,8 +521,8 @@ func TestUserPositive(t *testing.T) {
 		},
 		{
 			targetPod:  "my-test-pod",
-			testID:     "user-bob-can-deploy6",
-			namespace:  privilegedNamespace,
+			testID:     "user-bob-can-deploy4",
+			namespace:  "default",
 			username:   "bob",
 			userGroups: []string{"system:authenticated", "system:authenticated:oauth"},
 			tolerations: []corev1.Toleration{
