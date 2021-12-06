@@ -95,7 +95,7 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 	}
 
 	if request.Operation == admissionv1.Create {
-		if SCCwithHigherPriority(scc) {
+		if isSCCwithHigherPriority(scc) {
 			ret = admissionctl.Denied(fmt.Sprintf("Creating SCC with priority higher than %d is not allowed", anyuidPriority))
 			ret.UID = request.AdmissionRequest.UID
 			return ret
@@ -138,7 +138,7 @@ func isDefaultSCC(scc *securityv1.SecurityContextConstraints) bool {
 
 // SCCwithHigherPriority checks if the created SCC has the higher priority
 // than 10 (default to anyuid)
-func SCCwithHigherPriority(scc *securityv1.SecurityContextConstraints) bool {
+func isSCCwithHigherPriority(scc *securityv1.SecurityContextConstraints) bool {
 	if scc.Priority != nil {
 		if *scc.Priority > anyuidPriority {
 			return true
