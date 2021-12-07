@@ -119,6 +119,15 @@ func TestUserNegative(t *testing.T) {
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: false,
 		},
+		{
+			targetSCC:       "test-high-pri",
+			testID:          "user-cant-update-high-priority",
+			username:        "user1",
+			priority:        20,
+			operation:       admissionv1.Update,
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			shouldBeAllowed: false,
+		},
 	}
 	runSCCTests(t, tests)
 }
@@ -147,6 +156,15 @@ func TestUserPositive(t *testing.T) {
 			username:        "user1",
 			priority:        9,
 			operation:       admissionv1.Create,
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			shouldBeAllowed: true,
+		},
+		{
+			targetSCC:       "testscc",
+			testID:          "user-can-update-low-pri",
+			username:        "user1",
+			priority:        8,
+			operation:       admissionv1.Update,
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: true,
 		},

@@ -78,25 +78,27 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if request.Operation == admissionv1.Delete {
+	switch request.Operation {
+	case admissionv1.Delete:
 		if isDefaultSCC(scc) {
 			ret = admissionctl.Denied("Deleting default SCCs is not allowed")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
-	}
-
-	if request.Operation == admissionv1.Update {
+	case admissionv1.Create:
+		if isSCCwithHigherPriority(scc) {
+			ret = admissionctl.Denied(fmt.Sprintf("Creating SCC with priority higher than %d is not allowed", anyuidPriority))
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+	case admissionv1.Update:
 		if isDefaultSCC(scc) {
 			ret = admissionctl.Denied("Modifying default SCCs is not allowed")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
-	}
-
-	if request.Operation == admissionv1.Create {
 		if isSCCwithHigherPriority(scc) {
-			ret = admissionctl.Denied(fmt.Sprintf("Creating SCC with priority higher than %d is not allowed", anyuidPriority))
+			ret = admissionctl.Denied(fmt.Sprintf("Updating SCC with priority higher than %d is not allowed", anyuidPriority))
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
