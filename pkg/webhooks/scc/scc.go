@@ -72,7 +72,7 @@ func (s *SCCWebHook) Authorized(request admissionctl.Request) admissionctl.Respo
 func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
-	scc, err := s.renderSCC(request)
+	oldScc, newScc, err := s.renderSCC(request)
 	if err != nil {
 		log.Error(err, "Couldn't render a SCC from the incoming request")
 		return admissionctl.Errored(http.StatusBadRequest, err)
@@ -80,24 +80,24 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 
 	switch request.Operation {
 	case admissionv1.Delete:
-		if isDefaultSCC(scc) {
+		if isDefaultSCC(oldScc) {
 			ret = admissionctl.Denied("Deleting default SCCs is not allowed")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 	case admissionv1.Create:
-		if isSCCwithHigherPriority(scc) {
+		if isSCCwithHigherPriority(newScc) {
 			ret = admissionctl.Denied(fmt.Sprintf("Creating SCC with priority higher than %d is not allowed", anyuidPriority))
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 	case admissionv1.Update:
-		if isDefaultSCC(scc) {
+		if isDefaultSCC(oldScc) {
 			ret = admissionctl.Denied("Modifying default SCCs is not allowed")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
-		if isSCCwithHigherPriority(scc) {
+		if isSCCwithHigherPriority(newScc) {
 			ret = admissionctl.Denied(fmt.Sprintf("Updating SCC with priority higher than %d is not allowed", anyuidPriority))
 			ret.UID = request.AdmissionRequest.UID
 			return ret
@@ -110,21 +110,29 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 }
 
 // renderSCC render the SCC object from the requests
-func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.SecurityContextConstraints, error) {
+func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.SecurityContextConstraints, *securityv1.SecurityContextConstraints, error) {
 	decoder, err := admissionctl.NewDecoder(&s.s)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	scc := &securityv1.SecurityContextConstraints{}
+	oldScc := &securityv1.SecurityContextConstraints{}
+	newScc := &securityv1.SecurityContextConstraints{}
+
 	if len(request.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(request.OldObject, scc)
-	} else {
-		err = decoder.DecodeRaw(request.Object, scc)
+		err = decoder.DecodeRaw(request.OldObject, oldScc)
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return scc, nil
+
+	if len(request.Object.Raw) > 0 {
+		err = decoder.DecodeRaw(request.Object, newScc)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return oldScc, newScc, nil
 }
 
 // isDefaultSCC checks if the request is going to operate on the SCC in the
