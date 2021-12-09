@@ -140,6 +140,24 @@ func TestDedicatedAdmins(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
+			// Should not be able to kube-system
+			testID:          "dedi-update-kube-system-ns",
+			targetNamespace: "kube-system",
+			username:        "test-user",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			// Should not be able to default
+			testID:          "dedi-update-default-ns",
+			targetNamespace: "default",
+			username:        "test-user",
+			userGroups:      []string{"dedicated-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
 			// Should be able to delete a general namespace
 			testID:          "dedi-delete-random-ns",
 			targetNamespace: "my-ns",
