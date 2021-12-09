@@ -24,7 +24,7 @@ var namespaceFiles = []string{
 
 var (
 	// Base lists - default values which will always be enforced regardless of managed-cluster-config
-	namespaces = []string{"^redhat.*"}
+	namespaces = []string{"^kube.*", "^default$", "^redhat.*"}
 	configmaps = []string{}
 )
 
