@@ -207,7 +207,6 @@
     "rules": [
       {
         "operations": [
-          "CREATE",
           "UPDATE",
           "DELETE"
         ],

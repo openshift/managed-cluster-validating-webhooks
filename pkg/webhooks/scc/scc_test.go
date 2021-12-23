@@ -18,7 +18,6 @@ type sccTestSuites struct {
 	operation       admissionv1.Operation
 	userGroups      []string
 	shouldBeAllowed bool
-	priority        int32
 }
 
 const testObjectRaw string = `
@@ -28,12 +27,11 @@ const testObjectRaw string = `
 	"metadata": {
 		"name": "%s",
 		"uid": "1234"
-	},
-	"priority": %d
+	}
 }`
 
-func createRawJSONString(name string, pri int32) string {
-	s := fmt.Sprintf(testObjectRaw, name, pri)
+func createRawJSONString(name string) string {
+	s := fmt.Sprintf(testObjectRaw, name)
 	return s
 }
 
@@ -50,15 +48,19 @@ func runSCCTests(t *testing.T, tests []sccTestSuites) {
 	}
 
 	for _, test := range tests {
-		rawObjString := createRawJSONString(test.targetSCC, test.priority)
+		rawObjString := createRawJSONString(test.targetSCC)
 
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
 		}
 
+		oldObj := runtime.RawExtension{
+			Raw: []byte(rawObjString),
+		}
+
 		hook := NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
-			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, &obj, nil)
+			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, &obj, &oldObj)
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
@@ -72,7 +74,7 @@ func runSCCTests(t *testing.T, tests []sccTestSuites) {
 		}
 
 		if response.Allowed != test.shouldBeAllowed {
-			t.Fatalf("Mismatch: %s (groups=%s) %s %s the pod. Test's expectation is that the user %s", test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed))
+			t.Fatalf("Mismatch: %s (groups=%s) %s %s the scc. Test's expectation is that the user %s", test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed))
 		}
 	}
 }
@@ -89,7 +91,7 @@ func TestUserNegative(t *testing.T) {
 		{
 			targetSCC:       "hostaccess",
 			testID:          "user-cant-delete-hostaccess",
-			username:        "user1",
+			username:        "user2",
 			operation:       admissionv1.Delete,
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: false,
@@ -97,7 +99,7 @@ func TestUserNegative(t *testing.T) {
 		{
 			targetSCC:       "anyuid",
 			testID:          "user-cant-delete-anyuid",
-			username:        "user1",
+			username:        "user3",
 			operation:       admissionv1.Delete,
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: false,
@@ -105,25 +107,7 @@ func TestUserNegative(t *testing.T) {
 		{
 			targetSCC:       "anyuid",
 			testID:          "user-cant-modify-hostnetwork",
-			username:        "user1",
-			operation:       admissionv1.Update,
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			shouldBeAllowed: false,
-		},
-		{
-			targetSCC:       "test-high-pri",
-			testID:          "user-cant-create-high-priority",
-			username:        "user1",
-			priority:        20,
-			operation:       admissionv1.Create,
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			shouldBeAllowed: false,
-		},
-		{
-			targetSCC:       "test-high-pri",
-			testID:          "user-cant-update-high-priority",
-			username:        "user1",
-			priority:        20,
+			username:        "user4",
 			operation:       admissionv1.Update,
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: false,
@@ -146,24 +130,6 @@ func TestUserPositive(t *testing.T) {
 			targetSCC:       "testscc",
 			testID:          "user-can-modify-normal",
 			username:        "user1",
-			operation:       admissionv1.Update,
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			shouldBeAllowed: true,
-		},
-		{
-			targetSCC:       "testscc",
-			testID:          "user-can-create-low-pri",
-			username:        "user1",
-			priority:        9,
-			operation:       admissionv1.Create,
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			shouldBeAllowed: true,
-		},
-		{
-			targetSCC:       "testscc",
-			testID:          "user-can-update-low-pri",
-			username:        "user1",
-			priority:        8,
 			operation:       admissionv1.Update,
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: true,

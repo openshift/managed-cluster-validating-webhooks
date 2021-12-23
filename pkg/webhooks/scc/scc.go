@@ -21,13 +21,12 @@ const (
 )
 
 var (
-	timeout        int32 = 2
-	log                  = logf.Log.WithName(WebhookName)
-	anyuidPriority int32 = 10
-	scope                = admissionregv1.ClusterScope
-	rules                = []admissionregv1.RuleWithOperations{
+	timeout int32 = 2
+	log           = logf.Log.WithName(WebhookName)
+	scope         = admissionregv1.ClusterScope
+	rules         = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{"CREATE", "UPDATE", "DELETE"},
+			Operations: []admissionregv1.OperationType{"UPDATE", "DELETE"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"security.openshift.io"},
 				APIVersions: []string{"*"},
@@ -72,7 +71,7 @@ func (s *SCCWebHook) Authorized(request admissionctl.Request) admissionctl.Respo
 func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
-	oldScc, newScc, err := s.renderSCC(request)
+	scc, err := s.renderSCC(request)
 	if err != nil {
 		log.Error(err, "Couldn't render a SCC from the incoming request")
 		return admissionctl.Errored(http.StatusBadRequest, err)
@@ -80,25 +79,16 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 
 	switch request.Operation {
 	case admissionv1.Delete:
-		if isDefaultSCC(oldScc) {
-			ret = admissionctl.Denied("Deleting default SCCs is not allowed")
-			ret.UID = request.AdmissionRequest.UID
-			return ret
-		}
-	case admissionv1.Create:
-		if isSCCwithHigherPriority(newScc) {
-			ret = admissionctl.Denied(fmt.Sprintf("Creating SCC with priority higher than %d is not allowed", anyuidPriority))
+		if isDefaultSCC(scc) {
+			log.Info(fmt.Sprintf("Deleting operation detected on default SCC: %v", scc.Name))
+			ret = admissionctl.Denied(fmt.Sprintf("Deleting default SCCs %v is not allowed", defaultSCCs))
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 	case admissionv1.Update:
-		if isDefaultSCC(oldScc) {
-			ret = admissionctl.Denied("Modifying default SCCs is not allowed")
-			ret.UID = request.AdmissionRequest.UID
-			return ret
-		}
-		if isSCCwithHigherPriority(newScc) {
-			ret = admissionctl.Denied(fmt.Sprintf("Updating SCC with priority higher than %d is not allowed", anyuidPriority))
+		if isDefaultSCC(scc) {
+			log.Info(fmt.Sprintf("Updating operation detected on default SCC: %v", scc.Name))
+			ret = admissionctl.Denied(fmt.Sprintf("Modifying default SCCs %v is not allowed", defaultSCCs))
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
@@ -110,29 +100,21 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 }
 
 // renderSCC render the SCC object from the requests
-func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.SecurityContextConstraints, *securityv1.SecurityContextConstraints, error) {
+func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.SecurityContextConstraints, error) {
 	decoder, err := admissionctl.NewDecoder(&s.s)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	oldScc := &securityv1.SecurityContextConstraints{}
-	newScc := &securityv1.SecurityContextConstraints{}
+	scc := &securityv1.SecurityContextConstraints{}
 
 	if len(request.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(request.OldObject, oldScc)
+		err = decoder.DecodeRaw(request.OldObject, scc)
 	}
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if len(request.Object.Raw) > 0 {
-		err = decoder.DecodeRaw(request.Object, newScc)
-	}
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return oldScc, newScc, nil
+	return scc, nil
 }
 
 // isDefaultSCC checks if the request is going to operate on the SCC in the
@@ -140,17 +122,6 @@ func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.Securi
 func isDefaultSCC(scc *securityv1.SecurityContextConstraints) bool {
 	for _, s := range defaultSCCs {
 		if scc.Name == s {
-			return true
-		}
-	}
-	return false
-}
-
-// SCCwithHigherPriority checks if the created SCC has the higher priority
-// than 10 (default to anyuid)
-func isSCCwithHigherPriority(scc *securityv1.SecurityContextConstraints) bool {
-	if scc.Priority != nil {
-		if *scc.Priority > anyuidPriority {
 			return true
 		}
 	}
@@ -166,7 +137,7 @@ func (s *SCCWebHook) GetURI() string {
 func (s *SCCWebHook) Validate(request admissionctl.Request) bool {
 	valid := true
 	valid = valid && (request.UserInfo.Username != "")
-	valid = valid && (request.Kind.Kind == "SecurityContextConstraint")
+	valid = valid && (request.Kind.Kind == "SecurityContextConstraints")
 
 	return valid
 }

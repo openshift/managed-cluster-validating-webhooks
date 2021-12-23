@@ -371,7 +371,6 @@ objects:
           apiVersions:
           - '*'
           operations:
-          - CREATE
           - UPDATE
           - DELETE
           resources:
