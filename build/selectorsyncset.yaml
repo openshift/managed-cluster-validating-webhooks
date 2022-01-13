@@ -347,6 +347,37 @@ objects:
           scope: '*'
         sideEffects: None
         timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
+        name: sre-scc-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /scc-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: scc-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - security.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          - DELETE
+          resources:
+          - securitycontextconstraints
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
   status: {}
 - apiVersion: hive.openshift.io/v1
   kind: SelectorSyncSet
