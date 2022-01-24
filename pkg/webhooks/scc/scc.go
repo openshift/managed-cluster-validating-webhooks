@@ -36,7 +36,6 @@ var (
 		},
 	}
 	allowedUsers = []string{
-		"system:serviceaccount:openshift-monitoring:node-exporter",
 		"system:serviceaccount:openshift-monitoring:cluster-monitoring-operator",
 	}
 	allowedGroups = []string{}

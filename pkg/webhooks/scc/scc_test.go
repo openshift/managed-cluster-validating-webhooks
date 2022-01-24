@@ -129,7 +129,7 @@ func TestUserPositive(t *testing.T) {
 		{
 			targetSCC:       "hostaccess",
 			testID:          "allowed-user-can-modify-default",
-			username:        "system:serviceaccount:openshift-monitoring:node-exporter",
+			username:        "system:serviceaccount:openshift-monitoring:cluster-monitoring-operator",
 			operation:       admissionv1.Update,
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: true,
@@ -145,7 +145,7 @@ func TestUserPositive(t *testing.T) {
 		{
 			targetSCC:       "hostaccess",
 			testID:          "allowed-user-can-delete-default",
-			username:        "system:serviceaccount:openshift-monitoring:node-exporter",
+			username:        "system:serviceaccount:openshift-monitoring:cluster-monitoring-operator",
 			operation:       admissionv1.Delete,
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: true,
