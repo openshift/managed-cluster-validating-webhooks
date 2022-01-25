@@ -201,5 +201,27 @@
       }
     ],
     "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [managed.openshift.io upgrade.managed.openshift.io operator.openshift.io network.openshift.io autoscaling.openshift.io cloudcredential.openshift.io admissionregistration.k8s.io config.openshift.io machine.openshift.io cloudingress.managed.openshift.io splunkforwarder.managed.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
+  },
+  {
+    "webhookName": "scc-validation",
+    "rules": [
+      {
+        "operations": [
+          "UPDATE",
+          "DELETE"
+        ],
+        "apiGroups": [
+          "security.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "securitycontextconstraints"
+        ],
+        "scope": "Cluster"
+      }
+    ],
+    "documentString": "Managed OpenShift Customers may not modify the following default SCCs: [anyuid hostaccess hostmount-anyuid hostnetwork node-exporter nonroot privileged restricted pipelines-scc]"
   }
 ]
