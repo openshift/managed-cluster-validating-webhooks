@@ -360,6 +360,142 @@ func TestLayeredProducts(t *testing.T) {
 // TestServiceAccounts
 func TestServiceAccounts(t *testing.T) {
 	tests := []namespaceTestSuites{
+
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "openshift-ingress",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "openshift-ingress",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "openshift-ingress",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "default",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "default",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "default",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "kube-system",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "kube-system",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "kube-system",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "redhat-user",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "redhat-user",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "redhat-user",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "osde2e-xyz43",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "osde2e-xyz43",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "osde2e-xyz43",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
 		{
 			// serviceaccounts in privileged namespaces can interact with privileged namespaces
 			testID:          "sa-create-priv-ns",
@@ -367,6 +503,24 @@ func TestServiceAccounts(t *testing.T) {
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: privilegedNamespace,
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: privilegedNamespace,
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -379,6 +533,18 @@ func TestServiceAccounts(t *testing.T) {
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			// serviceaccounts in privileged namespaces can interact with customer namespaces
+			// this is counterintuitive because they shouldn't. Recall that RBAC would
+			// deny any disallowed access, so the "true" here is deferring to
+			// Kubernetes RBAC
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "customer-ns",
+			username:        "system:serviceaccounts:openshift-test-ns",
+			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
 			shouldBeAllowed: true,
 		},
 		{
@@ -397,6 +563,132 @@ func TestServiceAccounts(t *testing.T) {
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: privilegedNamespace,
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: privilegedNamespace,
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "kube-system",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "kube-system",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "kube-system",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "openshift-ingress",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "openshift-ingress",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "openshift-ingress",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "default",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "default",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "default",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "redhat-user",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "redhat-user",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			// serviceaccounts in unprivileged namespaces can not interact with privileged namespaces
+			testID:          "sa-create-priv-ns",
+			targetNamespace: "redhat-user",
+			username:        "system:serviceaccounts:unpriv-ns",
+			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
 	}
