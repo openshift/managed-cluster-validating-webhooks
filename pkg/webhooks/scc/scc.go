@@ -48,7 +48,6 @@ var (
 		"nonroot",
 		"privileged",
 		"restricted",
-		"pipelines-scc",
 	}
 )
 
