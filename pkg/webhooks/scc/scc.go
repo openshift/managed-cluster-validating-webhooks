@@ -3,12 +3,14 @@ package scc
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -23,7 +25,7 @@ const (
 var (
 	timeout int32 = 2
 	log           = logf.Log.WithName(WebhookName)
-	scope         = admissionregv1.ClusterScope
+	scope         = admissionregv1.AllScopes
 	rules         = []admissionregv1.RuleWithOperations{
 		{
 			Operations: []admissionregv1.OperationType{"UPDATE", "DELETE"},
@@ -31,6 +33,15 @@ var (
 				APIGroups:   []string{"security.openshift.io"},
 				APIVersions: []string{"*"},
 				Resources:   []string{"securitycontextconstraints"},
+				Scope:       &scope,
+			},
+		},
+		{
+			Operations: []admissionregv1.OperationType{"UPDATE"},
+			Rule: admissionregv1.Rule{
+				APIGroups:   []string{"rbac.authorization.k8s.io"},
+				APIVersions: []string{"*"},
+				Resources:   []string{"clusterrolebindings"},
 				Scope:       &scope,
 			},
 		},
@@ -50,6 +61,20 @@ var (
 		"restricted",
 		"pipelines-scc",
 	}
+	defaultClusterRoles = []string{
+		"system:openshift:scc:anyuid",
+		"system:openshift:scc:hostaccess",
+		"system:openshift:scc:hostmount-anyuid",
+		"system:openshift:scc:hostnetwork",
+		"system:openshift:scc:node-exporter",
+		"system:openshift:scc:nonroot",
+		"system:openshift:scc:privileged",
+		"system:openshift:scc:restricted",
+		"system:openshift:scc:pipelines-scc",
+	}
+	forbiddenCRBSubjects = []string{
+		"system:authenticated",
+	}
 )
 
 type SCCWebHook struct {
@@ -61,7 +86,6 @@ func NewWebhook() *SCCWebHook {
 	scheme := runtime.NewScheme()
 	admissionv1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
-
 	return &SCCWebHook{
 		s: *scheme,
 	}
@@ -79,6 +103,19 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 	if err != nil {
 		log.Error(err, "Couldn't render a SCC from the incoming request")
 		return admissionctl.Errored(http.StatusBadRequest, err)
+	}
+
+	crb, err := s.renderCRB(request)
+	if err != nil {
+		log.Error(err, "Couldn't render a ClusterRoleBinding from the incoming request")
+		return admissionctl.Errored(http.StatusBadRequest, err)
+	}
+
+	if isDefaultClusterRole(crb) && isForbiddenCRBSubject(crb) && request.Operation == admissionv1.Update {
+		log.Info(fmt.Sprintf("Attempt to add forbidden group detected on ClusterRoleBinding: %v", crb.Name))
+		ret = admissionctl.Denied(fmt.Sprintf("Adding group: %v to the default SCC: %v is not allowed", forbiddenCRBSubjects, crb.RoleRef.Name[strings.LastIndex(crb.RoleRef.Name, ":")+1:]))
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 
 	if isDefaultSCC(scc) && !isAllowedUserGroup(request) {
@@ -119,6 +156,24 @@ func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.Securi
 	return scc, nil
 }
 
+// renderCRB render the ClusterRoleBinding object from the requests
+func (s *SCCWebHook) renderCRB(request admissionctl.Request) (*rbacv1.ClusterRoleBinding, error) {
+	decoder, err := admissionctl.NewDecoder(&s.s)
+	if err != nil {
+		return nil, err
+	}
+	crb := &rbacv1.ClusterRoleBinding{}
+
+	if len(request.OldObject.Raw) > 0 {
+		err = decoder.DecodeRaw(request.OldObject, crb)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return crb, nil
+}
+
 // isAllowedUserGroup checks if the user or group is allowed to perform the action
 func isAllowedUserGroup(request admissionctl.Request) bool {
 	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
@@ -134,11 +189,31 @@ func isAllowedUserGroup(request admissionctl.Request) bool {
 	return false
 }
 
+func isForbiddenCRBSubject(crb *rbacv1.ClusterRoleBinding) bool {
+	for _, subject := range crb.Subjects {
+		for _, group := range forbiddenCRBSubjects {
+			if subject.Name == group {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // isDefaultSCC checks if the request is going to operate on the SCC in the
 // default list
 func isDefaultSCC(scc *securityv1.SecurityContextConstraints) bool {
 	for _, s := range defaultSCCs {
 		if scc.Name == s {
+			return true
+		}
+	}
+	return false
+}
+
+func isDefaultClusterRole(crb *rbacv1.ClusterRoleBinding) bool {
+	for _, d := range defaultClusterRoles {
+		if crb.RoleRef.Name == d {
 			return true
 		}
 	}

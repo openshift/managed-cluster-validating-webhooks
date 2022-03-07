@@ -220,6 +220,21 @@
           "securitycontextconstraints"
         ],
         "scope": "Cluster"
+      },
+      {
+        "operations": [
+          "UPDATE"
+        ],
+        "apiGroups": [
+          "rbac.authorization.k8s.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "clusterrolebindings"
+        ],
+        "scope": "Cluster"
       }
     ],
     "documentString": "Managed OpenShift Customers may not modify the following default SCCs: [anyuid hostaccess hostmount-anyuid hostnetwork node-exporter nonroot privileged restricted pipelines-scc]"

@@ -376,6 +376,15 @@ objects:
           resources:
           - securitycontextconstraints
           scope: Cluster
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          resources:
+          - clusterrolebindings
+          scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
   status: {}
