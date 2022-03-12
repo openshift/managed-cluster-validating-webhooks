@@ -284,6 +284,7 @@ objects:
           - admissionregistration.k8s.io
           - cloudingress.managed.openshift.io
           - managed.openshift.io
+          - ocmagent.managed.openshift.io
           - splunkforwarder.managed.openshift.io
           - upgrade.managed.openshift.io
           apiVersions:

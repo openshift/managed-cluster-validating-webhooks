@@ -48,6 +48,7 @@ var (
 					// Deny ability to manage SRE resources
 					// oc get --raw /apis | jq -r '.groups[] | select(.name | contains("managed")) | .name'
 					"managed.openshift.io",
+					"ocmagent.managed.openshift.io",
 					"splunkforwarder.managed.openshift.io",
 					"upgrade.managed.openshift.io",
 				},
