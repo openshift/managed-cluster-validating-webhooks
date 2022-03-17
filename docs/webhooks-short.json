@@ -17,7 +17,7 @@
   },
   {
     "webhookName": "regular-user-validation",
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [machine.openshift.io admissionregistration.k8s.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io config.openshift.io operator.openshift.io network.openshift.io autoscaling.openshift.io cloudingress.managed.openshift.io managed.openshift.io cloudcredential.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [cloudcredential.openshift.io machine.openshift.io admissionregistration.k8s.io cloudingress.managed.openshift.io operator.openshift.io network.openshift.io autoscaling.openshift.io managed.openshift.io ocmagent.managed.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io config.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
   },
   {
     "webhookName": "scc-validation",
