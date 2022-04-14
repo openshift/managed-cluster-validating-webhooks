@@ -278,10 +278,10 @@ objects:
         name: regular-user-validation.managed.openshift.io
         rules:
         - apiGroups:
-          - autoscaling.openshift.io
           - cloudcredential.openshift.io
           - machine.openshift.io
           - admissionregistration.k8s.io
+          - addons.managed.openshift.io
           - cloudingress.managed.openshift.io
           - managed.openshift.io
           - ocmagent.managed.openshift.io
@@ -293,6 +293,16 @@ objects:
           - '*'
           resources:
           - '*/*'
+          scope: '*'
+        - apiGroups:
+          - autoscaling.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - '*'
+          resources:
+          - clusterautoscalers
+          - machineautoscalers
           scope: '*'
         - apiGroups:
           - config.openshift.io
