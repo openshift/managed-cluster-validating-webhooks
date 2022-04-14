@@ -13,7 +13,7 @@ IMG_REGISTRY ?= quay.io
 IMG_ORG ?= app-sre
 IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
 
-SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.16
+SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.17
 
 BINARY_FILE ?= build/_output/webhooks
 
@@ -25,7 +25,8 @@ EXTRA_DEPS := $(find $(CURDIR)/build -type f -print) Makefile
 unexport GOFLAGS
 GOOS?=linux
 GOARCH?=amd64
-GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOFLAGS=
+GOFLAGS_MOD?=
+GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOFLAGS=${GOFLAGS_MOD}
 
 GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPATH}"
 
@@ -100,6 +101,16 @@ $(SELECTOR_SYNC_SET_DESTINATION):
 				build/syncset.go \
 				-exclude $(SELECTOR_SYNC_SET_HOOK_EXCLUDES) \
 				-outfile $(@)
+
+.PHONY: container-test
+container-test:
+	$(CONTAINER_ENGINE) run \
+		-v $(CURDIR):$(CURDIR):z \
+		-w $(CURDIR) \
+		-e GOFLAGS=$(GOFLAGS) \
+		--rm \
+		$(SYNCSET_GENERATOR_IMAGE) \
+			make test
 
 ### Imported
 .PHONY: skopeo-push
