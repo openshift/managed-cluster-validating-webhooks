@@ -40,13 +40,13 @@ var (
 			Operations: []admissionregv1.OperationType{"*"},
 			Rule: admissionregv1.Rule{
 				APIGroups: []string{
-					"autoscaling.openshift.io",
 					"cloudcredential.openshift.io",
 					"machine.openshift.io",
 					"admissionregistration.k8s.io",
-					"cloudingress.managed.openshift.io",
 					// Deny ability to manage SRE resources
 					// oc get --raw /apis | jq -r '.groups[] | select(.name | contains("managed")) | .name'
+					"addons.managed.openshift.io",
+					"cloudingress.managed.openshift.io",
 					"managed.openshift.io",
 					"ocmagent.managed.openshift.io",
 					"splunkforwarder.managed.openshift.io",
@@ -54,6 +54,15 @@ var (
 				},
 				APIVersions: []string{"*"},
 				Resources:   []string{"*/*"},
+				Scope:       &scope,
+			},
+		},
+		{
+			Operations: []admissionregv1.OperationType{"*"},
+			Rule: admissionregv1.Rule{
+				APIGroups:   []string{"autoscaling.openshift.io"},
+				APIVersions: []string{"*"},
+				Resources:   []string{"clusterautoscalers", "machineautoscalers"},
 				Scope:       &scope,
 			},
 		},

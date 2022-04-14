@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 
 	admissionv1 "k8s.io/api/admission/v1"
-	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -19,8 +18,8 @@ const (
 const (
 	objectStringResource string = `{
 		"metadata": {
-			"name": "%s",
 			"kind": "%s",
+			"name": "%s",
 			"uid": "%s",
 			"creationTimestamp": "2020-05-10T07:51:00Z"
 		},
@@ -28,18 +27,8 @@ const (
 	}`
 	objectStringSubResource string = `{
 		"metadata": {
-			"name": "%s",
 			"kind": "%s",
-			"uid": "%s",
-			"requestSubResource": "%s",
-			"creationTimestamp": "2020-05-10T07:51:00Z"
-		},
-		"users": null
-	}`
-	objectStringRequestSubResource string = `{
-		"metadata": {
 			"name": "%s",
-			"kind": "%s",
 			"uid": "%s",
 			"requestSubResource": "%s",
 			"creationTimestamp": "2020-05-10T07:51:00Z"
@@ -84,16 +73,14 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 		}
 		hook := NewWebhook()
 		var rawObjString string
+		if test.targetName == "" {
+			test.targetName = test.testID
+		}
 		// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#webhook-request-and-response
 		if test.targetSubResource != "" {
-			switch hook.MatchPolicy() {
-			case admissionregv1.Equivalent:
-				rawObjString = fmt.Sprintf(objectStringRequestSubResource, test.targetName, test.targetKind, test.testID, test.targetSubResource)
-			case admissionregv1.Exact:
-				rawObjString = fmt.Sprintf(objectStringSubResource, test.targetName, test.targetKind, test.testID, test.targetSubResource)
-			}
+			rawObjString = fmt.Sprintf(objectStringSubResource, test.targetKind, test.targetName, test.testID, test.targetSubResource)
 		} else {
-			rawObjString = fmt.Sprintf(objectStringResource, test.targetName, test.targetKind, test.testID)
+			rawObjString = fmt.Sprintf(objectStringResource, test.targetKind, test.targetName, test.testID)
 		}
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
@@ -112,7 +99,7 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 		}
 
 		if response.Allowed != test.shouldBeAllowed {
-			t.Fatalf("%s Mismatch: %s (groups=%s) %s %s the %s %s. Test's expectation is that the user %s. Reason %s", test.testID, test.username, test.userGroups, testutils.CanCanNot(response.Allowed), string(test.operation), test.targetKind, test.targetKind, testutils.CanCanNot(test.shouldBeAllowed), response.Result.Reason)
+			t.Fatalf("%s Mismatch: %s (groups=%s) %s %s the %s %s. Test's expectation is that the user %s. Reason %s", test.testID, test.username, test.userGroups, testutils.CanCanNot(response.Allowed), string(test.operation), test.targetKind, test.targetName, testutils.CanCanNot(test.shouldBeAllowed), response.Result.Reason)
 		}
 		if response.UID == "" {
 			t.Fatalf("%s No tracking UID associated with the response.", test.testID)
@@ -126,6 +113,35 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 // resource.
 // TODO (lisa): In many ways, these follow the same problem as TestInvalidRequest: the Validate method is returning true every time
 func TestFirstBlock(t *testing.T) {
+	tests := []regularuserTests{
+		{
+			testID:          "machine-priv-user",
+			targetResource:  "machines",
+			targetKind:      "Machine",
+			targetVersion:   "v1beta1",
+			targetGroup:     "machine.openshift.io",
+			username:        "kube:system",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "machine-unpriv-user",
+			targetResource:  "machines",
+			targetKind:      "Machine",
+			targetVersion:   "v1beta1",
+			targetGroup:     "machine.openshift.io",
+			username:        "test-user",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+	}
+	runRegularuserTests(t, tests)
+}
+
+// TestAutoScaling checks specific cases for autoscaling CRDs
+func TestAutoScaling(t *testing.T) {
 	tests := []regularuserTests{
 		{
 			testID:          "autoscale-priv-user",
