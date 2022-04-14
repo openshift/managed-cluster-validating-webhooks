@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
-	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
