@@ -40,7 +40,6 @@ var (
 			Operations: []admissionregv1.OperationType{"*"},
 			Rule: admissionregv1.Rule{
 				APIGroups: []string{
-					"autoscaling.openshift.io",
 					"cloudcredential.openshift.io",
 					"machine.openshift.io",
 					"admissionregistration.k8s.io",
@@ -55,6 +54,15 @@ var (
 				},
 				APIVersions: []string{"*"},
 				Resources:   []string{"*/*"},
+				Scope:       &scope,
+			},
+		},
+		{
+			Operations: []admissionregv1.OperationType{"*"},
+			Rule: admissionregv1.Rule{
+				APIGroups:   []string{"autoscaling.openshift.io"},
+				APIVersions: []string{"*"},
+				Resources:   []string{"clusterautoscalers", "machineautoscalers"},
 				Scope:       &scope,
 			},
 		},
