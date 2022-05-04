@@ -256,6 +256,17 @@ func TestNodesSubjectPermissionsClusterVersions(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			testID:          "node-unpriv-user-update",
+			targetResource:  "nodes",
+			targetKind:      "Node",
+			targetVersion:   "v1",
+			targetGroup:     "",
+			username:        "my-name",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
 			testID:          "clusterversions-admin-user",
 			targetResource:  "clusterversions",
 			targetKind:      "ClusterVersion",
