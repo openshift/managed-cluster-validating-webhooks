@@ -27,7 +27,7 @@ var (
 	scope = admissionregv1.NamespacedScope
 	rules = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{admissionregv1.Create, admissionregv1.Update, admissionregv1.Delete}, // READ pending
+			Operations: []admissionregv1.OperationType{admissionregv1.Create, admissionregv1.Update, admissionregv1.Delete},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"v1"},
 				APIVersions: []string{"*"},
