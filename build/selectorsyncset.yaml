@@ -389,6 +389,38 @@ objects:
           scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
+        name: sre-techpreviewnoupgrade-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /techpreviewnoupgrade-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: techpreviewnoupgrade-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - v1
+          apiVersions:
+          - '*'
+          operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+          resources:
+          - featureGates
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 1
   status: {}
 - apiVersion: hive.openshift.io/v1
   kind: SelectorSyncSet
