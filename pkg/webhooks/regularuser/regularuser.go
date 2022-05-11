@@ -237,8 +237,7 @@ To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool
 
 // isProtectedActionOnNode checks if the request is to update a node
 func isProtectedActionOnNode(request admissionctl.Request) bool {
-	return request.Kind.Kind == "Node" &&
-		string(request.Operation) == "UPDATE"
+	return request.Kind.Kind == "Node" && request.Operation == admissionv1.Update
 }
 
 // isMustGatherAuthorized check if request is authorized for MustGather CR
