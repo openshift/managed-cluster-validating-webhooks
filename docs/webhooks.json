@@ -100,10 +100,10 @@
           "*"
         ],
         "apiGroups": [
-          "autoscaling.openshift.io",
           "cloudcredential.openshift.io",
           "machine.openshift.io",
           "admissionregistration.k8s.io",
+          "addons.managed.openshift.io",
           "cloudingress.managed.openshift.io",
           "managed.openshift.io",
           "ocmagent.managed.openshift.io",
@@ -115,6 +115,22 @@
         ],
         "resources": [
           "*/*"
+        ],
+        "scope": "*"
+      },
+      {
+        "operations": [
+          "*"
+        ],
+        "apiGroups": [
+          "autoscaling.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "clusterautoscalers",
+          "machineautoscalers"
         ],
         "scope": "*"
       },
@@ -201,7 +217,7 @@
         "scope": "*"
       }
     ],
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [admissionregistration.k8s.io managed.openshift.io ocmagent.managed.openshift.io splunkforwarder.managed.openshift.io operator.openshift.io autoscaling.openshift.io cloudcredential.openshift.io machine.openshift.io network.openshift.io cloudingress.managed.openshift.io upgrade.managed.openshift.io config.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [autoscaling.openshift.io config.openshift.io machine.openshift.io admissionregistration.k8s.io addons.managed.openshift.io managed.openshift.io upgrade.managed.openshift.io network.openshift.io cloudcredential.openshift.io cloudingress.managed.openshift.io ocmagent.managed.openshift.io splunkforwarder.managed.openshift.io operator.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
   },
   {
     "webhookName": "scc-validation",
@@ -224,5 +240,28 @@
       }
     ],
     "documentString": "Managed OpenShift Customers may not modify the following default SCCs: [anyuid hostaccess hostmount-anyuid hostnetwork node-exporter nonroot privileged restricted]"
+  },
+  {
+    "webhookName": "techpreviewnoupgrade-validation",
+    "rules": [
+      {
+        "operations": [
+          "CREATE",
+          "UPDATE",
+          "DELETE"
+        ],
+        "apiGroups": [
+          "v1"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "featureGates"
+        ],
+        "scope": "Namespaced"
+      }
+    ],
+    "documentString": "Managed OpenShift Customers may use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters."
   }
 ]
