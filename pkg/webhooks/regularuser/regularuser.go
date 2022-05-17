@@ -231,10 +231,23 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		}
 	}
 
+	if isProtectedActionOnNode(request) {
+		ret = admissionctl.Denied(`Prevented from accessing Red Hat managed resources. This is an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support.
+
+To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool.`)
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+
 	log.Info("Denying access", "request", request.AdmissionRequest)
 	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
+}
+
+// isProtectedActionOnNode checks if the request is to update a node
+func isProtectedActionOnNode(request admissionctl.Request) bool {
+	return request.Kind.Kind == "Node" && request.Operation == admissionv1.Update
 }
 
 // isMustGatherAuthorized check if request is authorized for MustGather CR
