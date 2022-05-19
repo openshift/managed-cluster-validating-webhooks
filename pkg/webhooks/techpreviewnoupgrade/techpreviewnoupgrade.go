@@ -24,14 +24,14 @@ const (
 var (
 	log = logf.Log.WithName(WebhookName)
 
-	scope = admissionregv1.NamespacedScope
+	scope = admissionregv1.ClusterScope
 	rules = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{admissionregv1.Create, admissionregv1.Update, admissionregv1.Delete},
+			Operations: []admissionregv1.OperationType{admissionregv1.Create, admissionregv1.Update},
 			Rule: admissionregv1.Rule{
-				APIGroups:   []string{"v1"},
+				APIGroups:   []string{"config.openshift.io"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"featureGates"},
+				Resources:   []string{"featuregates"},
 				Scope:       &scope,
 			},
 		},
@@ -90,11 +90,9 @@ func (s *TechPreviewNoUpgradeWebhook) renderFeatureGate(request admissionctl.Req
 		return nil, err
 	}
 	featureGate := &configv1.FeatureGate{}
-	if len(request.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(request.OldObject, featureGate)
-	} else {
-		err = decoder.DecodeRaw(request.Object, featureGate)
-	}
+
+	// Check the incoming featureGate for TechPreviewNoUpgrade
+	err = decoder.DecodeRaw(request.Object, featureGate)
 	if err != nil {
 		return nil, err
 	}
@@ -103,15 +101,22 @@ func (s *TechPreviewNoUpgradeWebhook) renderFeatureGate(request admissionctl.Req
 }
 
 func (s *TechPreviewNoUpgradeWebhook) authorized(request admissionctl.Request) admissionctl.Response {
+	var ret admissionctl.Response
+
 	featureGate, err := s.renderFeatureGate(request)
 
 	if err != nil {
-		return admissionctl.Errored(http.StatusBadRequest, err)
+		log.Error(err, "Couldn't render a FeatureGate from the incoming request")
+
+		ret = admissionctl.Errored(http.StatusOK, err)
+		ret.UID = request.AdmissionRequest.UID
+
+		return ret
 	}
 
-	var ret admissionctl.Response
+	if featureGate != nil && featureGate.Spec.FeatureSet == "TechPreviewNoUpgrade" {
+		log.Info("Not allowing access because of TechPreviewNoUpgrade Feature Gate", "request", request.AdmissionRequest)
 
-	if featureGate.Spec.FeatureSet == "TechPreviewNoUpgrade" {
 		ret = admissionctl.Denied("The TechPreviewNoUpgrade Feature Gate is not allowed")
 		ret.UID = request.AdmissionRequest.UID
 
@@ -119,7 +124,8 @@ func (s *TechPreviewNoUpgradeWebhook) authorized(request admissionctl.Request) a
 	}
 
 	log.Info("Allowing access", "request", request.AdmissionRequest)
-	ret = admissionctl.Allowed("Features are allowed")
+
+	ret = admissionctl.Allowed("FeatureGate operation is allowed")
 	ret.UID = request.AdmissionRequest.UID
 
 	return ret

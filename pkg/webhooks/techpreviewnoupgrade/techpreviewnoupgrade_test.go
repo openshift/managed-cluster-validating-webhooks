@@ -16,7 +16,6 @@ type techpreviewnoupgradeTestSuite struct {
 	testID          string
 	username        string
 	userGroups      []string
-	oldObject       *runtime.RawExtension
 	operation       admissionv1.Operation
 	featureSet      string
 	shouldBeAllowed bool
@@ -52,7 +51,7 @@ func (s techpreviewnoupgradeTestSuite) ExpectNotAllowed() techpreviewnoupgradeTe
 	return s
 }
 
-func createOldObject(featureSet string) *runtime.RawExtension {
+func createObject(featureSet string) *runtime.RawExtension {
 	return &runtime.RawExtension{
 		Raw: []byte(createRawJSONString(featureSet)),
 	}
@@ -68,7 +67,6 @@ func Test_AllowAnythingOtherThanTechPreviewNoUpgrade(t *testing.T) {
 	testSuites := []techpreviewnoupgradeTestSuite{
 		NewTestSuite(admissionv1.Create, "AnythingOtherThanTechPreviewNoUpgrade"),
 		NewTestSuite(admissionv1.Update, "AnythingOtherThanTechPreviewNoUpgrade"),
-		NewTestSuite(admissionv1.Delete, "AnythingOtherThanTechPreviewNoUpgrade"),
 	}
 
 	runTests(t, testSuites)
@@ -78,7 +76,6 @@ func Test_DoNotAllowTechPreviewNoUpgrade(t *testing.T) {
 	testSuites := []techpreviewnoupgradeTestSuite{
 		NewTestSuite(admissionv1.Create, "TechPreviewNoUpgrade").ExpectNotAllowed(),
 		NewTestSuite(admissionv1.Update, "TechPreviewNoUpgrade").ExpectNotAllowed(),
-		NewTestSuite(admissionv1.Delete, "TechPreviewNoUpgrade").ExpectNotAllowed(),
 	}
 
 	runTests(t, testSuites)
@@ -86,9 +83,12 @@ func Test_DoNotAllowTechPreviewNoUpgrade(t *testing.T) {
 
 func runTests(t *testing.T, tests []techpreviewnoupgradeTestSuite) {
 	for _, test := range tests {
-		obj := createOldObject(test.featureSet)
+		obj := runtime.RawExtension{
+			Raw: []byte(createRawJSONString(test.featureSet)),
+		}
+
 		hook := techpreviewnoupgrade.NewWebhook()
-		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(), test.testID, metav1.GroupVersionKind{}, metav1.GroupVersionResource{}, test.operation, test.username, test.userGroups, obj, test.oldObject)
+		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(), test.testID, metav1.GroupVersionKind{}, metav1.GroupVersionResource{}, test.operation, test.username, test.userGroups, &obj, nil) // we are only worried about the introduction of the featureSet
 
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
@@ -105,6 +105,7 @@ func runTests(t *testing.T, tests []techpreviewnoupgradeTestSuite) {
 		}
 
 		if response.Allowed != test.shouldBeAllowed {
+
 			t.Fatalf("Mismatch: %v %s %s. Test's expectation is that the user %s. Reason: %s, Message: %v",
 				test,
 				testutils.CanCanNot(response.Allowed), string(test.operation),
