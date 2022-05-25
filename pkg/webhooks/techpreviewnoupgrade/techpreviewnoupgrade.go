@@ -108,7 +108,7 @@ func (s *TechPreviewNoUpgradeWebhook) authorized(request admissionctl.Request) a
 	if err != nil {
 		log.Error(err, "Couldn't render a FeatureGate from the incoming request")
 
-		ret = admissionctl.Errored(http.StatusOK, err)
+		ret = admissionctl.Errored(http.StatusBadRequest, err)
 		ret.UID = request.AdmissionRequest.UID
 
 		return ret
