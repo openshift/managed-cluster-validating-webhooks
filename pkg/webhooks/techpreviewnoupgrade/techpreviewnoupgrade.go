@@ -3,6 +3,7 @@ package techpreviewnoupgrade
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	configv1 "github.com/openshift/api/config/v1"
 	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -131,8 +132,17 @@ func hasTechPreviewNoUpgrade(features []string) bool {
 
 func NewWebhook() *TechPreviewNoUpgradeWebhook {
 	scheme := runtime.NewScheme()
-	admissionv1.AddToScheme(scheme)
-	corev1.AddToScheme(scheme)
+
+	err := admissionv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding admissionsv1 scheme to TechPreviewNoUpgradeWebhook")
+		os.Exit(1)
+	}
+	err = corev1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding corev1 scheme to TechPreviewNoUpgradeWebhook")
+		os.Exit(1)
+	}
 
 	return &TechPreviewNoUpgradeWebhook{
 		s: *scheme,

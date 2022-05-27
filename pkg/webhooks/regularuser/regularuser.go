@@ -2,6 +2,7 @@ package regularuser
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	networkv1 "github.com/openshift/api/network/v1"
@@ -304,10 +305,25 @@ func (s *RegularuserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 
 // NewWebhook creates a new webhook
 func NewWebhook() *RegularuserWebhook {
+
 	scheme := runtime.NewScheme()
-	admissionv1.AddToScheme(scheme)
-	corev1.AddToScheme(scheme)
-	networkv1.AddToScheme(scheme)
+	err := admissionv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding admissionv1 scheme to RegularuserWebhook")
+		os.Exit(1)
+	}
+
+	err = corev1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding corev1 scheme to RegularuserWebhook")
+		os.Exit(1)
+	}
+
+	err = networkv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding networkv1 scheme to RegularuserWebhook")
+		os.Exit(1)
+	}
 
 	return &RegularuserWebhook{
 		s: *scheme,

@@ -50,7 +50,12 @@ func WriteDocs() {
 		fmt.Printf("Error encoding: %s\n", err.Error())
 		os.Exit(1)
 	}
-	os.Stdout.Write(b)
+	_, err = os.Stdout.Write(b)
+	if err != nil {
+		fmt.Printf("Error Writing: %s\n", err.Error())
+		os.Exit(1)
+	}
+
 	fmt.Println()
 
 }

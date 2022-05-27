@@ -1,6 +1,7 @@
 package hiveownership
 
 import (
+	"os"
 	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -131,7 +132,11 @@ func (s *HiveOwnershipWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *HiveOwnershipWebhook {
 	scheme := runtime.NewScheme()
-	admissionv1.AddToScheme(scheme)
+	err := admissionv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding admissionsv1 scheme to HiveOwnershipWebhook")
+		os.Exit(1)
+	}
 
 	return &HiveOwnershipWebhook{
 		s: *scheme,
