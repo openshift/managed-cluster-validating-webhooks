@@ -409,16 +409,15 @@ objects:
         name: techpreviewnoupgrade-validation.managed.openshift.io
         rules:
         - apiGroups:
-          - v1
+          - config.openshift.io
           apiVersions:
           - '*'
           operations:
           - CREATE
           - UPDATE
-          - DELETE
           resources:
-          - featureGates
-          scope: Namespaced
+          - featuregates
+          scope: Cluster
         sideEffects: None
         timeoutSeconds: 1
   status: {}
