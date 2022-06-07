@@ -17,7 +17,7 @@
   },
   {
     "webhookName": "regular-user-validation",
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [admissionregistration.k8s.io cloudingress.managed.openshift.io ocmagent.managed.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io config.openshift.io operator.openshift.io cloudcredential.openshift.io machine.openshift.io addons.managed.openshift.io managed.openshift.io autoscaling.openshift.io network.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [autoscaling.openshift.io config.openshift.io operator.openshift.io network.openshift.io machine.openshift.io admissionregistration.k8s.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io ocmagent.managed.openshift.io cloudcredential.openshift.io addons.managed.openshift.io cloudingress.managed.openshift.io managed.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node or SubjectPermission objects."
   },
   {
     "webhookName": "scc-validation",
@@ -25,6 +25,6 @@
   },
   {
     "webhookName": "techpreviewnoupgrade-validation",
-    "documentString": "Managed OpenShift Customers may use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters."
+    "documentString": "Managed OpenShift Customers may not use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters."
   }
 ]

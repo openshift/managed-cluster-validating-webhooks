@@ -18,7 +18,7 @@ import (
 const (
 	WebhookName           string = "techpreviewnoupgrade-validation"
 	unprivilegedNamespace string = `(openshift-logging|openshift-operators)`
-	docString             string = `Managed OpenShift Customers may use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters.`
+	docString             string = `Managed OpenShift Customers may not use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters.`
 )
 
 var (
