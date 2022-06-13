@@ -3,6 +3,7 @@ package namespace
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"sync"
 
@@ -320,8 +321,17 @@ func (s *NamespaceWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *NamespaceWebhook {
 	scheme := runtime.NewScheme()
-	admissionv1.AddToScheme(scheme)
-	corev1.AddToScheme(scheme)
+	err := admissionv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding admissionsv1 scheme to NamespaceWebhook")
+		os.Exit(1)
+	}
+
+	err = corev1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding corev1 scheme to NamespaceWebhook")
+		os.Exit(1)
+	}
 
 	return &NamespaceWebhook{
 		s: *scheme,

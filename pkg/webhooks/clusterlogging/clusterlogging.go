@@ -3,6 +3,7 @@ package clusterlogging
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 
@@ -283,7 +284,11 @@ func (s *ClusterloggingWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *ClusterloggingWebhook {
 	scheme := runtime.NewScheme()
-	cl.AddToScheme(scheme)
+	err := cl.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding cluster-logging scheme to ClusterloggingWebhook")
+		os.Exit(1)
+	}
 
 	return &ClusterloggingWebhook{
 		s: *scheme,

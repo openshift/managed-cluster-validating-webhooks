@@ -3,6 +3,7 @@ package pod
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"sync"
 
@@ -172,8 +173,17 @@ func (s *PodWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 // NewWebhook creates a new webhook
 func NewWebhook() *PodWebhook {
 	scheme := runtime.NewScheme()
-	admissionv1.AddToScheme(scheme)
-	corev1.AddToScheme(scheme)
+	err := admissionv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding admissionsv1 scheme to PodWebhook")
+		os.Exit(1)
+	}
+
+	err = corev1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding corev1 scheme to PodWebhook")
+		os.Exit(1)
+	}
 
 	return &PodWebhook{
 		s: *scheme,
