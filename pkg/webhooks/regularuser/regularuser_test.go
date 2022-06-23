@@ -115,7 +115,7 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 func TestFirstBlock(t *testing.T) {
 	tests := []regularuserTests{
 		{
-			testID:          "machine-priv-user",
+			testID:          "machine-system-user",
 			targetResource:  "machines",
 			targetKind:      "Machine",
 			targetVersion:   "v1beta1",
@@ -124,6 +124,17 @@ func TestFirstBlock(t *testing.T) {
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
 			shouldBeAllowed: true,
+		},
+		{
+			testID:          "machine-clusteradmin-user",
+			targetResource:  "machines",
+			targetKind:      "Machine",
+			targetVersion:   "v1beta1",
+			targetGroup:     "machine.openshift.io",
+			username:        "test-cluster-admin-user",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "cluster-admins"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
 		},
 		{
 			testID:          "machine-unpriv-user",
@@ -160,6 +171,46 @@ func TestAutoScaling(t *testing.T) {
 			targetKind:      "ClusterAutoscaler",
 			targetVersion:   "v1",
 			targetGroup:     "autoscaling.openshift.io",
+			username:        "test-user",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+	}
+	runRegularuserTests(t, tests)
+}
+
+// TestMachineConfig checks specific cases for machineconfig CRDs
+func TestMachineConfig(t *testing.T) {
+	tests := []regularuserTests{
+		{
+			testID:          "machineconfig-system-user",
+			targetResource:  "machineconfigpools",
+			targetKind:      "MachineConfigPool",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
+			username:        "kube:system",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "machineconfig-clusteradmin-user",
+			targetResource:  "machineconfigpools",
+			targetKind:      "MachineConfigPool",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
+			username:        "test-cluster-admin-user",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "cluster-admins"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "machineconfig-unpriv-user",
+			targetResource:  "machineconfigpools",
+			targetKind:      "MachineConfigPool",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
