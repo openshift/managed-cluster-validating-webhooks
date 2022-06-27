@@ -317,6 +317,16 @@ objects:
           - apiservers
           scope: '*'
         - apiGroups:
+          - machineconfiguration.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - '*'
+          resources:
+          - machineconfigs
+          - machineconfigpools
+          scope: '*'
+        - apiGroups:
           - operator.openshift.io
           apiVersions:
           - '*'

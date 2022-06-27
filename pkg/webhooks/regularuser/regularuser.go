@@ -79,6 +79,15 @@ var (
 		{
 			Operations: []admissionregv1.OperationType{"*"},
 			Rule: admissionregv1.Rule{
+				APIGroups:   []string{"machineconfiguration.openshift.io"},
+				APIVersions: []string{"*"},
+				Resources:   []string{"machineconfigs", "machineconfigpools"},
+				Scope:       &scope,
+			},
+		},
+		{
+			Operations: []admissionregv1.OperationType{"*"},
+			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"operator.openshift.io"},
 				APIVersions: []string{"*"},
 				Resources:   []string{"kubeapiservers", "openshiftapiservers"},
