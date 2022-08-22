@@ -1,5 +1,4 @@
-# https://github.com/openshift/ocp-build-data/blob/1a16e3dc96b8e4845d4b960628ccbe5edafe0510/streams.yml#L40
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.17-openshift-4.10 AS builder
+FROM registry.ci.openshift.org/openshift/release:rhel-8-release-golang-1.17-openshift-4.10 AS builder
 
 RUN mkdir -p /workdir
 WORKDIR /workdir
