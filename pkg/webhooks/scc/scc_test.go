@@ -112,6 +112,14 @@ func TestUserNegative(t *testing.T) {
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: false,
 		},
+		{
+			targetSCC:       "hostnetwork-v2",
+			testID:          "user-cant-delete-hostnetwork-v2",
+			username:        "user1",
+			operation:       admissionv1.Delete,
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			shouldBeAllowed: false,
+		},
 	}
 	runSCCTests(t, tests)
 }

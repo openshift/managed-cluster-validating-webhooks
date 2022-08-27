@@ -45,10 +45,13 @@ var (
 		"hostaccess",
 		"hostmount-anyuid",
 		"hostnetwork",
+		"hostnetwork-v2",
 		"node-exporter",
 		"nonroot",
+		"nonroot-v2",
 		"privileged",
 		"restricted",
+		"restricted-v2",
 	}
 )
 
