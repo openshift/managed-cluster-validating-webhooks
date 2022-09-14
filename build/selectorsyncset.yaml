@@ -318,6 +318,15 @@ objects:
           - proxies
           scope: '*'
         - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - '*'
+          resources:
+          - configmaps
+          scope: '*'
+        - apiGroups:
           - machineconfiguration.openshift.io
           apiVersions:
           - '*'
