@@ -190,6 +190,9 @@ func (s *SCCWebHook) Rules() []admissionregv1.RuleWithOperations {
 	return rules
 }
 
+// NamespaceSelector implements Webhook interface
+func (s *SCCWebHook) NamespaceSelector() *metav1.LabelSelector { return nil }
+
 // ObjectSelector implements Webhook interface
 func (s *SCCWebHook) ObjectSelector() *metav1.LabelSelector {
 	return nil

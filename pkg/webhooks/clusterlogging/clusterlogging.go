@@ -44,6 +44,9 @@ type ClusterloggingWebhook struct {
 	s runtime.Scheme
 }
 
+// NamespaceSelector implements Webhook interface
+func (s *ClusterloggingWebhook) NamespaceSelector() *metav1.LabelSelector { return nil }
+
 // ObjectSelector implements Webhook interface
 func (s *ClusterloggingWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 

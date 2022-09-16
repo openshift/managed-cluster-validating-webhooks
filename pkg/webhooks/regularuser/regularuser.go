@@ -158,6 +158,8 @@ func (s *RegularuserWebhook) Doc() string {
 	return fmt.Sprintf(docString, allGroups)
 }
 
+func (s *RegularuserWebhook) NamespaceSelector() *metav1.LabelSelector { return nil }
+
 // ObjectSelector implements Webhook interface
 func (s *RegularuserWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 
