@@ -276,6 +276,12 @@ objects:
         failurePolicy: Ignore
         matchPolicy: Equivalent
         name: regular-user-validation.managed.openshift.io
+        namespaceSelector:
+          matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: In
+            values:
+            - openshift-config
         rules:
         - apiGroups:
           - cloudcredential.openshift.io
@@ -322,10 +328,12 @@ objects:
           apiVersions:
           - '*'
           operations:
-          - '*'
+          - CREATE
+          - UPDATE
+          - DELETE
           resources:
           - configmaps
-          scope: '*'
+          scope: Namespaced
         - apiGroups:
           - machineconfiguration.openshift.io
           apiVersions:

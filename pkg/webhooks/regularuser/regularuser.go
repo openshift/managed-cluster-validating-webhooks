@@ -35,8 +35,9 @@ var (
 	adminUsers  = []string{"backplane-cluster-admin"}
 	ceeGroup    = "system:serviceaccounts:openshift-backplane-cee"
 
-	scope = admissionregv1.AllScopes
-	rules = []admissionregv1.RuleWithOperations{
+	scope           = admissionregv1.AllScopes
+	namespacedScope = admissionregv1.NamespacedScope
+	rules           = []admissionregv1.RuleWithOperations{
 		{
 			Operations: []admissionregv1.OperationType{"*"},
 			Rule: admissionregv1.Rule{
@@ -77,12 +78,12 @@ var (
 			},
 		},
 		{
-			Operations: []admissionregv1.OperationType{"*"},
+			Operations: []admissionregv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{""},
 				APIVersions: []string{"*"},
 				Resources:   []string{"configmaps"},
-				Scope:       &scope,
+				Scope:       &namespacedScope,
 			},
 		},
 		{
@@ -158,7 +159,17 @@ func (s *RegularuserWebhook) Doc() string {
 	return fmt.Sprintf(docString, allGroups)
 }
 
-func (s *RegularuserWebhook) NamespaceSelector() *metav1.LabelSelector { return nil }
+func (s *RegularuserWebhook) NamespaceSelector() *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      "kubernetes.io/metadata.name",
+				Operator: metav1.LabelSelectorOperator("In"),
+				Values:   []string{"openshift-config"},
+			},
+		},
+	}
+}
 
 // ObjectSelector implements Webhook interface
 func (s *RegularuserWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
@@ -331,12 +342,17 @@ func shouldAllowConfigMapChange(s *RegularuserWebhook, request admissionctl.Requ
 		return false
 	}
 	configMap := &corev1.ConfigMap{}
-	err = decoder.DecodeRaw(request.Object, configMap)
+	if admissionregv1.OperationType(request.Operation) == admissionregv1.OperationType("DELETE") {
+		err = decoder.DecodeRaw(request.OldObject, configMap)
+	} else {
+		err = decoder.DecodeRaw(request.Object, configMap)
+	}
+
 	if err != nil {
 		return false
 	}
 
-	if configMap.ObjectMeta.Name != "user-ca-bundle" || configMap.ObjectMeta.Namespace != "openshift-config" {
+	if configMap.ObjectMeta.Name != "user-ca-bundle" {
 		return true
 	}
 
