@@ -334,7 +334,6 @@ func createValidatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.
 				SideEffects:             &sideEffects,
 				MatchPolicy:             &matchPolicy,
 				Name:                    fmt.Sprintf("%s.managed.openshift.io", hook.Name()),
-				NamespaceSelector:       hook.NamespaceSelector(),
 				ObjectSelector:          hook.ObjectSelector(),
 				FailurePolicy:           &failPolicy,
 				ClientConfig: admissionregv1.WebhookClientConfig{
