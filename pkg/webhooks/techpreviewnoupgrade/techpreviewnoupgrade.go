@@ -43,8 +43,6 @@ type TechPreviewNoUpgradeWebhook struct {
 	s runtime.Scheme
 }
 
-func (s *TechPreviewNoUpgradeWebhook) NamespaceSelector() *metav1.LabelSelector { return nil }
-
 func (s *TechPreviewNoUpgradeWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 
 func (s *TechPreviewNoUpgradeWebhook) Doc() string {

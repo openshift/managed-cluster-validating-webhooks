@@ -47,9 +47,6 @@ type PodWebhook struct {
 	s  runtime.Scheme
 }
 
-// NamespaceSelector implements Webhook interface
-func (s *PodWebhook) NamespaceSelector() *metav1.LabelSelector { return nil }
-
 // ObjectSelector implements Webhook interface
 func (s *PodWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 

@@ -69,9 +69,6 @@ type NamespaceWebhook struct {
 	s  runtime.Scheme
 }
 
-// NamespaceSelector implements Webhook interface
-func (s *NamespaceWebhook) NamespaceSelector() *metav1.LabelSelector { return nil }
-
 // ObjectSelector implements Webhook interface
 func (s *NamespaceWebhook) ObjectSelector() *metav1.LabelSelector { return nil }
 

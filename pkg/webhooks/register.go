@@ -29,7 +29,6 @@ type Webhook interface {
 	MatchPolicy() admissionregv1.MatchPolicyType
 	// Rules is a slice of rules on which this hook should trigger
 	Rules() []admissionregv1.RuleWithOperations
-	NamespaceSelector() *metav1.LabelSelector
 	// ObjectSelector uses a *metav1.LabelSelector to augment the webhook's
 	// Rules() to match only on incoming requests which match the specific
 	// LabelSelector.

@@ -86,9 +86,6 @@ func (s *HiveOwnershipWebhook) Doc() string {
 	return docString
 }
 
-// NamespaceSelector implements Webhook interface
-func (s *HiveOwnershipWebhook) NamespaceSelector() *metav1.LabelSelector { return nil }
-
 // ObjectSelector intercepts based on having the label
 // .metadata.labels["hive.openshift.io/managed"] == "true"
 func (s *HiveOwnershipWebhook) ObjectSelector() *metav1.LabelSelector {
