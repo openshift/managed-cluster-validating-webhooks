@@ -322,7 +322,9 @@ objects:
           apiVersions:
           - '*'
           operations:
-          - '*'
+          - CREATE
+          - UPDATE
+          - DELETE
           resources:
           - configmaps
           scope: '*'

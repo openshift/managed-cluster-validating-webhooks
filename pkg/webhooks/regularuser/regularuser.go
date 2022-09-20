@@ -77,7 +77,7 @@ var (
 			},
 		},
 		{
-			Operations: []admissionregv1.OperationType{"*"},
+			Operations: []admissionregv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{""},
 				APIVersions: []string{"*"},
@@ -331,7 +331,11 @@ func shouldAllowConfigMapChange(s *RegularuserWebhook, request admissionctl.Requ
 		return false
 	}
 	configMap := &corev1.ConfigMap{}
-	err = decoder.DecodeRaw(request.Object, configMap)
+	if admissionregv1.OperationType(request.Operation) == admissionregv1.OperationType("DELETE") {
+		err = decoder.DecodeRaw(request.OldObject, configMap)
+	} else {
+		err = decoder.DecodeRaw(request.Object, configMap)
+	}
 	if err != nil {
 		return false
 	}
