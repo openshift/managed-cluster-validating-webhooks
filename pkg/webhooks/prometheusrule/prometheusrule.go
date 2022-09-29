@@ -17,18 +17,18 @@ import (
 )
 
 const (
-	WebhookName               string = "prometheusrule-validation"
-	docString                 string = `Managed OpenShift Customers may not create PrometheusRule in namespaces managed by Red Hat.`
-	privilegedServiceAccounts string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
+	WebhookName                    string = "prometheusrule-validation"
+	docString                      string = `Managed OpenShift Customers may not create PrometheusRule in namespaces managed by Red Hat.`
+	privilegedServiceAccountGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
 )
 
 var (
-	timeout                     int32 = 2
-	allowedUsers                      = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
-	sreAdminGroups                    = []string{"system:serviceaccounts:openshift-backplane-srep"}
-	privilegedServiceAccountsRe       = regexp.MustCompile(privilegedServiceAccounts)
-	scope                             = admissionregv1.NamespacedScope
-	rules                             = []admissionregv1.RuleWithOperations{
+	timeout                          int32 = 2
+	allowedUsers                           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
+	sreAdminGroups                         = []string{"system:serviceaccounts:openshift-backplane-srep"}
+	privilegedServiceAccountGroupsRe       = regexp.MustCompile(privilegedServiceAccountGroups)
+	scope                                  = admissionregv1.NamespacedScope
+	rules                                  = []admissionregv1.RuleWithOperations{
 		{
 			Operations: []admissionregv1.OperationType{
 				admissionregv1.Create,
@@ -87,7 +87,7 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 			return ret
 		}
 		for _, group := range request.UserInfo.Groups {
-			if privilegedServiceAccountsRe.Match([]byte(group)) {
+			if privilegedServiceAccountGroupsRe.Match([]byte(group)) {
 				ret = admissionctl.Allowed("Privileged service accounts do operations on PrometheusRules")
 				ret.UID = request.AdmissionRequest.UID
 				return ret
