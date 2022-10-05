@@ -20,6 +20,7 @@ const (
 		"metadata": {
 			"kind": "%s",
 			"name": "%s",
+			"namespace": "%s",
 			"uid": "%s",
 			"creationTimestamp": "2020-05-10T07:51:00Z"
 		},
@@ -45,6 +46,7 @@ type regularuserTests struct {
 	targetVersion     string
 	targetGroup       string
 	targetName        string
+	targetNamespace   string
 	username          string
 	userGroups        []string
 	oldObject         *runtime.RawExtension
@@ -80,7 +82,7 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 		if test.targetSubResource != "" {
 			rawObjString = fmt.Sprintf(objectStringSubResource, test.targetKind, test.targetName, test.testID, test.targetSubResource)
 		} else {
-			rawObjString = fmt.Sprintf(objectStringResource, test.targetKind, test.targetName, test.testID)
+			rawObjString = fmt.Sprintf(objectStringResource, test.targetKind, test.targetName, test.targetNamespace, test.testID)
 		}
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
@@ -901,6 +903,131 @@ func TestAPIServers(t *testing.T) {
 			username:        "kube:admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "proxy-unpriv-user",
+			targetResource:  "proxies",
+			targetKind:      "Proxy",
+			targetVersion:   "v1",
+			targetGroup:     "config.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+
+		{
+			testID:          "proxy-cluster-admin-group",
+			targetResource:  "proxies",
+			targetKind:      "Proxy",
+			targetVersion:   "v1",
+			targetGroup:     "config.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "proxy-cluster-sre-group",
+			targetResource:  "proxies",
+			targetKind:      "Proxy",
+			targetVersion:   "v1",
+			targetGroup:     "config.openshift.io",
+			username:        "my-name",
+			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "user-ca-bundle-unpriv-user",
+			targetResource:  "configmaps",
+			targetKind:      "ConfigMap",
+			targetVersion:   "*",
+			targetGroup:     "",
+			targetName:      "user-ca-bundle",
+			targetNamespace: "openshift-config",
+			username:        "my-name",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "non-user-ca-bundle-unpriv-user",
+			targetResource:  "configmaps",
+			targetKind:      "ConfigMap",
+			targetVersion:   "*",
+			targetGroup:     "",
+			targetName:      "any-other-config-map",
+			targetNamespace: "openshift-config",
+			username:        "my-name",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "user-ca-bundle-in-openshift-config-namespace-cluster-admin-group",
+			targetResource:  "configmaps",
+			targetKind:      "ConfigMap",
+			targetVersion:   "*",
+			targetGroup:     "",
+			targetName:      "user-ca-bundle",
+			targetNamespace: "openshift-config",
+			username:        "my-name",
+			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "user-ca-bundle-in-any-other-namespace-cluster-admin-group",
+			targetResource:  "configmaps",
+			targetKind:      "ConfigMap",
+			targetVersion:   "*",
+			targetGroup:     "",
+			targetName:      "user-ca-bundle",
+			targetNamespace: "any-other-namespace",
+			username:        "my-name",
+			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "create-update-user-ca-bundle-cluster-sre-group",
+			targetResource:  "configmaps",
+			targetKind:      "ConfigMap",
+			targetVersion:   "*",
+			targetGroup:     "",
+			targetName:      "user-ca-bundle",
+			targetNamespace: "openshift-config",
+			username:        "my-name",
+			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "update-user-ca-bundle-cluster-sre-group",
+			targetResource:  "configmaps",
+			targetKind:      "ConfigMap",
+			targetVersion:   "*",
+			targetGroup:     "",
+			targetName:      "user-ca-bundle",
+			targetNamespace: "openshift-config",
+			username:        "my-name",
+			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "delete-user-ca-bundle-cluster-sre-group",
+			targetResource:  "configmaps",
+			targetKind:      "ConfigMap",
+			targetVersion:   "*",
+			targetGroup:     "",
+			targetName:      "user-ca-bundle",
+			targetNamespace: "openshift-config",
+			username:        "my-name",
+			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 	}

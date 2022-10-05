@@ -315,6 +315,18 @@ objects:
           - clusterversions/status
           - schedulers
           - apiservers
+          - proxies
+          scope: '*'
+        - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+          resources:
+          - configmaps
           scope: '*'
         - apiGroups:
           - machineconfiguration.openshift.io
