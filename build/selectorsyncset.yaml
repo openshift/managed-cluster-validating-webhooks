@@ -264,6 +264,38 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
+        name: sre-prometheusrule-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /prometheusrule-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: prometheusrule-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - monitoring.coreos.com
+          apiVersions:
+          - '*'
+          operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+          resources:
+          - prometheusrules
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
         name: sre-regular-user-validation
       webhooks:
       - admissionReviewVersions:
