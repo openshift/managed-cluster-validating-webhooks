@@ -79,7 +79,10 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if hookconfig.IsPrivilegedNamespace(pr.GetNamespace()) && pr.GetNamespace() != "openshift-user-workload-monitoring" {
+	if hookconfig.IsPrivilegedNamespace(pr.GetNamespace()) &&
+		// TODO: [OSD-13680] Remove this exception for openshift-customer-monitoring
+		pr.GetNamespace() != "openshift-customer-monitoring" &&
+		pr.GetNamespace() != "openshift-user-workload-monitoring" {
 		log.Info(fmt.Sprintf("%s operation detected on managed namespace: %s", request.Operation, pr.GetNamespace()))
 		if isAllowedUser(request) {
 			ret = admissionctl.Allowed(fmt.Sprintf("User can do operations on PrometheusRules"))
