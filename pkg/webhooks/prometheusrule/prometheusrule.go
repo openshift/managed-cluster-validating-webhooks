@@ -44,6 +44,9 @@ var (
 		},
 	}
 	log = logf.Log.WithName(WebhookName)
+
+	// TODO: [OSD-13909] Remove this exception for openshift-monitoring
+	acmAddonRuleLabels = map[string]string{"component": "ocm-policy-propagator", "app.kubernetes.io/name": "grc"}
 )
 
 // prometheusruleWebhook validates a prometheusRule change
@@ -83,6 +86,12 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 		// TODO: [OSD-13680] Remove this exception for openshift-customer-monitoring
 		pr.GetNamespace() != "openshift-customer-monitoring" &&
 		pr.GetNamespace() != "openshift-user-workload-monitoring" {
+		// TODO: [OSD-13909] Remove this exception for openshift-monitoring
+		if pr.GetNamespace() == "openshift-monitoring" && isACMAddonRule(pr) {
+			ret = admissionctl.Allowed(fmt.Sprintf("Addons can operate on PrometheusRules in the 'openshift-monitoring' namespace"))
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
 		log.Info(fmt.Sprintf("%s operation detected on managed namespace: %s", request.Operation, pr.GetNamespace()))
 		if isAllowedUser(request) {
 			ret = admissionctl.Allowed(fmt.Sprintf("User can do operations on PrometheusRules"))
@@ -106,6 +115,18 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 	ret = admissionctl.Allowed("Non managed namespace")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
+}
+
+// isAddonRule checks if the PrometheusRule is used by an addon
+func isACMAddonRule(pr *prometheusRule) bool {
+	// ACM addon rule
+	for key, expected := range acmAddonRuleLabels {
+		value, ok := pr.Labels[key]
+		if !ok || value != expected {
+			return false
+		}
+	}
+	return true
 }
 
 // isclusterAdminUsers checks if the user or group is allowed to perform the action
