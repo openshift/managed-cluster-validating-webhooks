@@ -80,7 +80,7 @@ func TestUsers(t *testing.T) {
 	tests := []prometheusruleTestSuites{
 		{
 			testID:          "regular-user-cant-create-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "user1",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -89,7 +89,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "regular-user-cant-delete-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "user2",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -98,7 +98,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "regular-user-cant-update-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "user3",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -134,7 +134,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "regular-user-cant-create-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -143,7 +143,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "regular-user-cant-delete-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -152,7 +152,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "regular-user-cant-update-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -162,7 +162,7 @@ func TestUsers(t *testing.T) {
 
 		{
 			testID:          "blackplane-admin-can-create-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -171,7 +171,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "blackplane-admin-can-delete-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -180,7 +180,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "blackplane-admin-can-update-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -190,7 +190,7 @@ func TestUsers(t *testing.T) {
 		{
 
 			testID:          "Allowed-can-create-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -200,7 +200,7 @@ func TestUsers(t *testing.T) {
 		{
 
 			testID:          "Allowed-can-delete-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "prometheusrule",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -210,7 +210,7 @@ func TestUsers(t *testing.T) {
 		{
 
 			testID:          "Allowed-can-update-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			targetResource:  "prometheusrule",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -220,7 +220,7 @@ func TestUsers(t *testing.T) {
 		{
 
 			testID:          "admin-can-create-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			username:        "kube:admin",
 			targetResource:  "prometheusrule",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -230,7 +230,7 @@ func TestUsers(t *testing.T) {
 		{
 
 			testID:          "admin-can-create-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			username:        "kube:admin",
 			targetResource:  "prometheusrule",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -240,7 +240,7 @@ func TestUsers(t *testing.T) {
 		{
 
 			testID:          "admin-can-create-prometheusrule-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			targetNamespace: "openshift-kube-apiserver",
 			username:        "kube:admin",
 			targetResource:  "prometheusrule",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
