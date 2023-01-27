@@ -327,16 +327,6 @@ objects:
           - '*/*'
           scope: '*'
         - apiGroups:
-          - autoscaling.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - '*'
-          resources:
-          - clusterautoscalers
-          - machineautoscalers
-          scope: '*'
-        - apiGroups:
           - config.openshift.io
           apiVersions:
           - '*'
