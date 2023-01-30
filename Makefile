@@ -9,9 +9,11 @@ GIT_HASH := $(shell git rev-parse --short=7 HEAD)
 IMAGETAG ?= ${GIT_HASH}
 
 BASE_IMG ?= managed-cluster-validating-webhooks
+BASE_PKG_IMG ?= managed-cluster-validating-webhooks-hs-package
 IMG_REGISTRY ?= quay.io
 IMG_ORG ?= app-sre
 IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
+PKG_IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_PKG_IMG}
 
 SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.17
 
@@ -34,6 +36,9 @@ GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPAT
 SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
 SELECTOR_SYNC_SET_DESTINATION = build/selectorsyncset.yaml
 
+PACKAGE_RESOURCE_DESTINATION = config/package/resources.yaml.gotmpl
+PACKAGE_RESOURCE_MANIFEST = config/package/manifest.yaml
+
 CONTAINER_ENGINE ?= $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 #eg, -v
 TESTOPTS ?=
@@ -44,7 +49,7 @@ DOCFLAGS ?=
 
 default: all
 
-all: test build-image build-sss
+all: test build-image build-package build-sss
 
 .PHONY: test
 test: vet $(GO_SOURCES)
@@ -76,15 +81,25 @@ $(BINARY_FILE): test $(GO_SOURCES)
 	$(GOENV) go build $(GOBUILDFLAGS) -o $(BINARY_FILE) ./cmd
 
 .PHONY: build-base
-build-base: build-image
+build-base: build-image build-package-image
 .PHONY: build-image
 build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 	$(CONTAINER_ENGINE) build -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
 	$(CONTAINER_ENGINE) tag $(IMG):$(IMAGETAG) $(IMG):latest
 
+.PHONY: build-package-image
+build-package-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
+	$(shell sed -i -e "s#REPLACED_BY_PIPELINE#$(IMG):$(IMAGETAG)#g" $(PACKAGE_RESOURCE_DESTINATION))
+	$(CONTAINER_ENGINE) build -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/config/package/managed-cluster-validating-webhooks-package.Containerfile) . && \
+	$(CONTAINER_ENGINE) tag $(PKG_IMG):$(IMAGETAG) $(PKG_IMG):latest
+
 .PHONY: build-push
 build-push:
 	build/build_push.sh $(IMG):$(IMAGETAG)
+
+.PHONY: build-push-package
+build-push-package:
+	build/build_push_package.sh $(PKG_IMG):$(IMAGETAG)
 
 build-sss: syncset
 render: syncset
@@ -98,9 +113,24 @@ $(SELECTOR_SYNC_SET_DESTINATION):
 		--rm \
 		$(SYNCSET_GENERATOR_IMAGE) \
 			go run \
-				build/syncset.go \
+				build/resources.go \
 				-exclude $(SELECTOR_SYNC_SET_HOOK_EXCLUDES) \
-				-outfile $(@)
+				-syncsetfile $(@)
+
+render: package
+.PHONY: package $(PACKAGE_RESOURCE_DESTINATION)
+package: $(PACKAGE_RESOURCE_DESTINATION) $(PACKAGE_RESOURCE_MANIFEST)
+$(PACKAGE_RESOURCE_DESTINATION):
+	mkdir -p $(shell dirname $(PACKAGE_RESOURCE_DESTINATION))
+	$(CONTAINER_ENGINE) run \
+		-v $(CURDIR):$(CURDIR):z \
+		-w $(CURDIR) \
+		-e GOFLAGS=$(GOFLAGS) \
+		--rm \
+		$(SYNCSET_GENERATOR_IMAGE) \
+			go run \
+				build/resources.go \
+				-packagedir $(shell dirname $(@))
 
 .PHONY: container-test
 container-test:
@@ -128,11 +158,28 @@ skopeo-push:
 		"docker-daemon:${IMG}:${IMAGETAG}" \
 		"docker://${IMG}:${IMAGETAG}"
 
+.PHONY: skopeo-push-package
+skopeo-push-package:
+	@if [[ -z $$QUAY_USER || -z $$QUAY_TOKEN ]]; then \
+		echo "You must set QUAY_USER and QUAY_TOKEN environment variables" ;\
+		echo "ex: make QUAY_USER=value QUAY_TOKEN=value $@" ;\
+		exit 1 ;\
+	fi
+	# QUAY_USER and QUAY_TOKEN are supplied as env vars
+	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
+		"docker-daemon:${PKG_IMG}:${IMAGETAG}" \
+		"docker://${PKG_IMG}:latest"
+	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
+		"docker-daemon:${PKG_IMG}:${IMAGETAG}" \
+		"docker://${PKG_IMG}:${IMAGETAG}"
+
 
 .PHONY: push-base
 push-base: build/Dockerfile
 	$(CONTAINER_ENGINE) push $(IMG):$(IMAGETAG)
 	$(CONTAINER_ENGINE) push $(IMG):latest
+	$(CONTAINER_ENGINE) push $(PKG_IMG):$(IMAGETAG)
+	$(CONTAINER_ENGINE) push $(PKG_IMG):latest
 
 coverage: coverage.txt
 coverage.txt: vet $(GO_SOURCES)
