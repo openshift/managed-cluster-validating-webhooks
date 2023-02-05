@@ -48,7 +48,7 @@ metadata:
     app: validation-webhook
   name: validation-webhook
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: validation-webhook
@@ -87,6 +87,12 @@ spec:
                   hypershift.openshift.io/hosted-control-plane: '{{.package.metadata.namespace}}'
               topologyKey: kubernetes.io/hostname
             weight: 100
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: validation-webhook
+            topologyKey: topology.kubernetes.io/zone
       containers:
       - command:
         - webhooks

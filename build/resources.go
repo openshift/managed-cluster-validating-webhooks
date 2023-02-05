@@ -48,7 +48,7 @@ var (
 	caBundleName  = flag.String("cabundlename", "webhook-cert", "ConfigMap where CA cert is created")
 	templateFile  = flag.String("syncsetfile", "", "Path to where the SelectorSyncSet template should be written")
 	packageDir    = flag.String("packagedir", "", "Path to where the package manifest and resources should be written")
-	replicas      = flag.Int("replicas", 3, "Number of replicas for Hypershift-based MCVW deployment")
+	replicas      = flag.Int("replicas", 2, "Number of replicas for Hypershift-based MCVW deployment")
 	excludes      = flag.String("exclude", "debug-hook", "Comma-separated list of webhook names to skip")
 	only          = flag.String("only", "", "Only include these comma-separated webhooks")
 	showHookNames = flag.Bool("showhooks", false, "Print registered webhook names and exit")
@@ -247,10 +247,21 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 											MatchLabels: map[string]string{
 												hsControlPlaneLabel: "{{.package.metadata.namespace}}",
 											},
-											MatchExpressions: nil,
 										},
 										TopologyKey: "kubernetes.io/hostname",
 									},
+								},
+							},
+						},
+						PodAntiAffinity: &corev1.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+								{
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"app": "validation-webhook",
+										},
+									},
+									TopologyKey: "topology.kubernetes.io/zone",
 								},
 							},
 						},
