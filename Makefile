@@ -89,9 +89,12 @@ build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 
 .PHONY: build-package-image
 build-package-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
+	# Change image placeholder in deployment template to the real image
 	$(shell sed -i -e "s#REPLACED_BY_PIPELINE#$(IMG):$(IMAGETAG)#g" $(PACKAGE_RESOURCE_DESTINATION))
 	$(CONTAINER_ENGINE) build -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/config/package/managed-cluster-validating-webhooks-package.Containerfile) . && \
 	$(CONTAINER_ENGINE) tag $(PKG_IMG):$(IMAGETAG) $(PKG_IMG):latest
+	# Restore the template file modified for the package build
+	git checkout $(PACKAGE_RESOURCE_DESTINATION)
 
 .PHONY: build-push
 build-push:
