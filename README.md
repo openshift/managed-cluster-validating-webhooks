@@ -285,7 +285,7 @@ End to End testing is managed by the [osde2e repo](https://github.com/openshift/
 List the webhooks (if you don't know them already):
 
 ```shell
-# go run build/syncset.go -showhooks
+# go run build/resources.go -showhooks
 group-validation
 identity-validation
 namespace-validation
@@ -319,7 +319,7 @@ docker run \
     --rm \
     golang:1.14 \
       go run \
-        build/syncset.go \
+        build/resources.go \
         -exclude identity-validation,namespace-validation \
         -outfile build/selectorsyncset.yaml
 # truncated ...
