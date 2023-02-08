@@ -350,6 +350,8 @@ func (s *RegularuserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *RegularuserWebhook) HypershiftEnabled() bool { return true }
+
 // NewWebhook creates a new webhook
 func NewWebhook() *RegularuserWebhook {
 

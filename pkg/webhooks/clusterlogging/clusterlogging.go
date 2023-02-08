@@ -281,6 +281,8 @@ func (s *ClusterloggingWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return customLabelSelector
 }
 
+func (s *ClusterloggingWebhook) HypershiftEnabled() bool { return false }
+
 // NewWebhook creates a new webhook
 func NewWebhook() *ClusterloggingWebhook {
 	scheme := runtime.NewScheme()

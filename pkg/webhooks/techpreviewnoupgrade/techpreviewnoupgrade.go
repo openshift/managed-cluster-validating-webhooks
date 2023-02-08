@@ -85,6 +85,8 @@ func (s *TechPreviewNoUpgradeWebhook) SyncSetLabelSelector() metav1.LabelSelecto
 	return utils.DefaultLabelSelector()
 }
 
+func (s *TechPreviewNoUpgradeWebhook) HypershiftEnabled() bool { return true }
+
 func (s *TechPreviewNoUpgradeWebhook) renderFeatureGate(request admissionctl.Request) (*configv1.FeatureGate, error) {
 	decoder, err := admissionctl.NewDecoder(&s.s)
 	if err != nil {

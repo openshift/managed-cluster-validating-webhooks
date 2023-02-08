@@ -170,6 +170,8 @@ func (s *PodWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *PodWebhook) HypershiftEnabled() bool { return false }
+
 // NewWebhook creates a new webhook
 func NewWebhook() *PodWebhook {
 	scheme := runtime.NewScheme()
