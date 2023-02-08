@@ -49,7 +49,7 @@ DOCFLAGS ?=
 
 default: all
 
-all: test build-image build-package build-sss
+all: test build-image build-package-image build-sss
 
 .PHONY: test
 test: vet $(GO_SOURCES)
