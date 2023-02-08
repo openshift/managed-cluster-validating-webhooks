@@ -36,10 +36,14 @@ const (
 	deployPhase string = "deploy"
 	// Defines the 'config' package-operator phase for any resources related to MCVW configuration
 	configPhase string = "config"
+	// Defines the 'webhooks' package-operator phase for any resources related to MCVW configuration
+	webhooksPhase string = "webhooks"
 	// Defines the label for targeting hypershift cluster taints/tolerations
 	hsControlPlaneLabel = "hypershift.openshift.io/hosted-control-plane"
 	// Defines the label for targeting hypershift control plane taints/tolerations
 	hsClusterLabel = "hypershift.openshift.io/cluster"
+	//caBundle annotation
+	caBundleAnnotation = "service.beta.openshift.io/inject-cabundle"
 )
 
 var (
@@ -514,6 +518,18 @@ func createPackagedService(phase string) *corev1.Service {
 	return service
 }
 
+func createPackagedValidatingWebhookConfiguration(webhook webhooks.Webhook, phase string) admissionregv1.ValidatingWebhookConfiguration {
+	webhookConfiguration := createValidatingWebhookConfiguration(webhook)
+	uri := webhook.GetURI()
+	url := "https://" + serviceName + ".{{.package.metadata.namespace}}.svc.cluster.local" + uri
+	webhookConfiguration.Annotations[pkoPhaseAnnotation] = phase
+	webhookConfiguration.Annotations[caBundleAnnotation] = "false"
+	webhookConfiguration.Webhooks[0].ClientConfig = admissionregv1.WebhookClientConfig{
+		URL: &url,
+	}
+	return webhookConfiguration
+}
+
 // hookToResources turns a Webhook into a ValidatingWebhookConfiguration and Service.
 // The Webhook is expected to implement Rules() which will return a
 func createValidatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.ValidatingWebhookConfiguration {
@@ -680,7 +696,7 @@ func main() {
 			panic(fmt.Sprintf("Failed to write to %s: %s\n", *templateFile, err.Error()))
 		}
 	} else {
-		fmt.Printf("No -syncsetfile option supplied, will not generate selector sync set")
+		fmt.Printf("No -syncsetfile option supplied, will not generate selector sync set\n")
 	}
 
 	if buildPackage {
@@ -692,6 +708,40 @@ func main() {
 		packageResources = append(packageResources, runtime.RawExtension{Object: createPackagedService(deployPhase)})
 		packageResources = append(packageResources, runtime.RawExtension{Object: createPackagedDeployment(int32(*replicas), deployPhase)})
 
+		hookNames := make([]string, 0)
+		for name := range webhooks.Webhooks {
+			hookNames = append(hookNames, name)
+		}
+		sort.Strings(hookNames)
+		seen := make(map[string]bool)
+		for _, hookName := range hookNames {
+			hook := webhooks.Webhooks[hookName]
+			if seen[hook().GetURI()] {
+				panic(fmt.Sprintf("Duplicate hook URI: %s", hook().GetURI()))
+			}
+			seen[hook().GetURI()] = true
+
+			if !hook().HypershiftEnabled() {
+				continue
+			}
+
+			// no rules...?
+			if len(hook().Rules()) == 0 {
+				continue
+			}
+
+			if *showHookNames {
+				fmt.Println(hook().Name())
+			}
+			if sliceContains(hook().Name(), skip) {
+				continue
+			}
+			if len(onlyInclude) > 0 && !sliceContains(hook().Name(), onlyInclude) {
+				continue
+			}
+
+			packageResources = append(packageResources, runtime.RawExtension{Raw: syncset.Encode(createPackagedValidatingWebhookConfiguration(hook(), webhooksPhase))})
+		}
 		var rb strings.Builder
 		for _, packageResource := range packageResources {
 			resourceYaml, err := yaml.Marshal(packageResource)
@@ -707,6 +757,6 @@ func main() {
 			panic(fmt.Sprintf("Failed to write to %s: %s", fname, err.Error()))
 		}
 	} else {
-		fmt.Printf("No -packagedir option supplied, will not generate package manifest")
+		fmt.Printf("No -packagedir option supplied, will not generate package manifest\n")
 	}
 }

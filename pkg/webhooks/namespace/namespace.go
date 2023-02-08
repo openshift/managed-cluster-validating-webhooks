@@ -318,6 +318,8 @@ func (s *NamespaceWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *NamespaceWebhook) HypershiftEnabled() bool { return true }
+
 // NewWebhook creates a new webhook
 func NewWebhook() *NamespaceWebhook {
 	scheme := runtime.NewScheme()
