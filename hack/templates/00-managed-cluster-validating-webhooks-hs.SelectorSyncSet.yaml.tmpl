@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: hs-managed-cluster-validating-webhooks-template
+parameters:
+  - name: REGISTRY_IMG
+    required: true
+  - name: IMAGE_DIGEST
+    required: true
+objects:
+  - apiVersion: hive.openshift.io/v1
+    kind: SelectorSyncSet
+    metadata:
+      name: managed-cluster-validating-webhooks-hs-policy
+    spec:
+      clusterDeploymentSelector:
+        matchLabels:
+          ext-hypershift.openshift.io/cluster-type: service-cluster
+      resourceApplyMode: Sync
+      resources:
+        - apiVersion: apps.open-cluster-management.io/v1
+          kind: PlacementRule
+          metadata:
+            name: managed-cluster-validating-webhooks
+            namespace: openshift-acm-policies
+          spec:
+            clusterSelector:
+              matchExpressions:
+                - key: hypershift.open-cluster-management.io/management-cluster
+                  operator: In
+                  values:
+                    - "true"
+        - apiVersion: policy.open-cluster-management.io/v1
+          kind: PlacementBinding
+          metadata:
+            name: managed-cluster-validating-webhooks
+            namespace: openshift-acm-policies
+          placementRef:
+            name: managed-cluster-validating-webhooks
+            kind: PlacementRule
+            apiGroup: apps.open-cluster-management.io
+          subjects:
+            - name: managed-cluster-validating-webhooks
+              kind: Policy
+              apiGroup: policy.open-cluster-management.io
+        - apiVersion: policy.open-cluster-management.io/v1
+          kind: Policy
+          metadata:
+            name: managed-cluster-validating-webhooks
+            namespace: openshift-acm-policies
+          spec:
+            remediationAction: enforce
+            disabled: false
+            policy-templates:
+              - objectDefinition:
+                  apiVersion: policy.open-cluster-management.io/v1
+                  kind: ConfigurationPolicy
+                  metadata:
+                    name: managed-cluster-validating-webhooks
+                  spec:
+                    namespaceSelector:
+                      matchLabels:
+                        hypershift.openshift.io/hosted-control-plane: "true"
+                    pruneObjectBehavior: DeleteIfCreated
+                    object-templates:
+                      - complianceType: MustHave
+                        objectDefinition:
+                          apiVersion: package-operator.run/v1alpha1
+                          kind: Package
+                          metadata:
+                            name: validation-webhooks
+                          spec:
+                            image: ${REGISTRY_IMG}:${IMAGE_DIGEST}

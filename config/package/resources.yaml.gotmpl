@@ -1,0 +1,349 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    package-operator.run/phase: rbac
+  creationTimestamp: null
+  name: validation-webhook
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    package-operator.run/phase: config
+    service.beta.openshift.io/inject-cabundle: "true"
+  creationTimestamp: null
+  name: webhook-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    package-operator.run/phase: deploy
+    service.beta.openshift.io/serving-cert-secret-name: webhook-cert
+  creationTimestamp: null
+  labels:
+    name: validation-webhook
+  name: validation-webhook
+spec:
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: validation-webhook
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    package-operator.run/phase: deploy
+  creationTimestamp: null
+  labels:
+    app: validation-webhook
+  name: validation-webhook
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: validation-webhook
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: validation-webhook
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/hosted-control-plane
+                operator: In
+                values:
+                - "true"
+            weight: 50
+          - preference:
+              matchExpressions:
+              - key: hypershift.openshift.io/cluster
+                operator: In
+                values:
+                - '{{.package.metadata.namespace}}'
+            weight: 100
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  hypershift.openshift.io/hosted-control-plane: '{{.package.metadata.namespace}}'
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: validation-webhook
+            topologyKey: topology.kubernetes.io/zone
+      containers:
+      - command:
+        - webhooks
+        - -tlskey
+        - /service-certs/tls.key
+        - -tlscert
+        - /service-certs/tls.crt
+        - -cacert
+        - /service-ca/service-ca.crt
+        - -tls
+        image: REPLACED_BY_PIPELINE
+        imagePullPolicy: IfNotPresent
+        name: webhooks
+        ports:
+        - containerPort: 5000
+        resources: {}
+        volumeMounts:
+        - mountPath: /service-certs
+          name: service-certs
+          readOnly: true
+        - mountPath: /service-ca
+          name: service-ca
+          readOnly: true
+      restartPolicy: Always
+      serviceAccountName: validation-webhook
+      tolerations:
+      - effect: NoSchedule
+        key: hypershift.openshift.io/hosted-control-plane
+        operator: Equal
+        value: "true"
+      - effect: NoSchedule
+        key: hypershift.openshift.io/cluster
+        operator: Equal
+        value: '{{.package.metadata.namespace}}'
+      volumes:
+      - name: service-certs
+        secret:
+          secretName: webhook-cert
+      - configMap:
+          name: webhook-cert
+        name: service-ca
+status: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
+  name: sre-namespace-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/namespace-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: namespace-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - namespaces
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
+  name: sre-regular-user-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/regularuser-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: regular-user-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - cloudcredential.openshift.io
+    - machine.openshift.io
+    - admissionregistration.k8s.io
+    - addons.managed.openshift.io
+    - cloudingress.managed.openshift.io
+    - managed.openshift.io
+    - ocmagent.managed.openshift.io
+    - splunkforwarder.managed.openshift.io
+    - upgrade.managed.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - '*/*'
+    scope: '*'
+  - apiGroups:
+    - autoscaling.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - clusterautoscalers
+    - machineautoscalers
+    scope: '*'
+  - apiGroups:
+    - config.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - clusterversions
+    - clusterversions/status
+    - schedulers
+    - apiservers
+    - proxies
+    scope: '*'
+  - apiGroups:
+    - ""
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - configmaps
+    scope: '*'
+  - apiGroups:
+    - machineconfiguration.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - machineconfigs
+    - machineconfigpools
+    scope: '*'
+  - apiGroups:
+    - operator.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - kubeapiservers
+    - openshiftapiservers
+    scope: '*'
+  - apiGroups:
+    - ""
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - nodes
+    - nodes/*
+    scope: '*'
+  - apiGroups:
+    - managed.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - subjectpermissions
+    - subjectpermissions/*
+    scope: '*'
+  - apiGroups:
+    - network.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - '*'
+    resources:
+    - netnamespaces
+    - netnamespaces/*
+    scope: '*'
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
+  name: sre-scc-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/scc-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: scc-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - security.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - UPDATE
+    - DELETE
+    resources:
+    - securitycontextconstraints
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
+  name: sre-techpreviewnoupgrade-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/techpreviewnoupgrade-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: techpreviewnoupgrade-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - config.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - featuregates
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 1

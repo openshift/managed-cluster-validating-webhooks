@@ -43,6 +43,8 @@ type Webhook interface {
 	// SyncSetLabelSelector returns the label selector to use in the SyncSet.
 	// Return utils.DefaultLabelSelector() to stick with the default
 	SyncSetLabelSelector() metav1.LabelSelector
+	//HypershiftEnabled will return boolean value for hypershift enabled configurations
+	HypershiftEnabled() bool
 }
 
 // WebhookFactory return a kind of Webhook

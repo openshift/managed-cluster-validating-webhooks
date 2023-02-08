@@ -215,3 +215,5 @@ func (s *SCCWebHook) Doc() string {
 func (s *SCCWebHook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
+
+func (s *SCCWebHook) HypershiftEnabled() bool { return true }
