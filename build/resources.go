@@ -518,7 +518,7 @@ func createPackagedService(phase string) *corev1.Service {
 	return service
 }
 
-func createPackageConfiguration(webhook webhooks.Webhook, phase string) admissionregv1.ValidatingWebhookConfiguration {
+func createPackagedValidatingWebhookConfiguration(webhook webhooks.Webhook, phase string) admissionregv1.ValidatingWebhookConfiguration {
 	webhookConfiguration := createValidatingWebhookConfiguration(webhook)
 	uri := webhook.GetURI()
 	url := "https://" + serviceName + ".{{.package.metadata.namespace}}.svc.cluster.local" + uri
@@ -740,7 +740,7 @@ func main() {
 				continue
 			}
 
-			packageResources = append(packageResources, runtime.RawExtension{Raw: syncset.Encode(createPackageConfiguration(hook(), webhooksPhase))})
+			packageResources = append(packageResources, runtime.RawExtension{Raw: syncset.Encode(createPackagedValidatingWebhookConfiguration(hook(), webhooksPhase))})
 		}
 		var rb strings.Builder
 		for _, packageResource := range packageResources {
