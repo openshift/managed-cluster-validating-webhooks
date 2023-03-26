@@ -38,6 +38,7 @@ var (
 	}
 	allowedUsers = []string{
 		"system:serviceaccount:openshift-monitoring:cluster-monitoring-operator",
+		"system:serviceaccount:openshift-cluster-version:default",
 	}
 	allowedGroups = []string{}
 	defaultSCCs   = []string{
