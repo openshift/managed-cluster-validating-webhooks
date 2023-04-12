@@ -15,7 +15,7 @@ IMG_ORG ?= app-sre
 IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
 PKG_IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_PKG_IMG}
 
-SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.17
+SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.18
 
 BINARY_FILE ?= build/_output/webhooks
 
