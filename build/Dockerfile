@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/openshift/release:rhel-8-release-golang-1.17-openshift-4.10 AS builder
+FROM registry.ci.openshift.org/openshift/release:rhel-8-release-golang-1.18-openshift-4.12 AS builder
 
 RUN mkdir -p /workdir
 WORKDIR /workdir
