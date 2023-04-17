@@ -6,11 +6,20 @@ spec:
   scopes:
     - Namespaced
   phases:
+    - name: config
+    - name: rbac
+    - name: deploy
     - name: webhooks
       class: hosted-cluster
-    - name: rbac
-    - name: config
-    - name: deploy
+  config:
+    openAPIV3Schema:
+      properties:
+        serviceca:
+          description: Service Certificate Authority used for webhook client authentication
+          type: string
+      required:
+      - serviceca
+      type: object
   availabilityProbes:
     - probes:
         - condition:
