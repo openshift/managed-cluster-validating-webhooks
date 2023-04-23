@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -61,7 +60,7 @@ func main() {
 		Addr: net.JoinHostPort(*listenAddress, *listenPort),
 	}
 	if *useTLS {
-		cafile, err := ioutil.ReadFile(*caCert)
+		cafile, err := os.ReadFile(*caCert)
 		if err != nil {
 			log.Error(err, "Couldn't read CA cert file")
 			os.Exit(1)

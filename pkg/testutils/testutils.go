@@ -36,18 +36,21 @@ func CanCanNot(b bool) string {
 // and finally the runtime.RawExtension representation of the request's Object or OldObject
 // The Object/OldObject is automatically inferred by the operation; delete operations will force OldObject
 // To create the RawExtension:
-// 	obj := runtime.RawExtension{
+//
+//	obj := runtime.RawExtension{
 //		Raw: []byte(rawObjString),
 //	}
+//
 // where rawObjString is a literal JSON blob, eg:
-// {
-//  "metadata": {
-//    "name": "namespace-name",
-//    "uid": "request-userid",
-//    "creationTimestamp": "2020-05-10T07:51:00Z"
-//  },
-//  "users": null
-// }
+//
+//	{
+//	 "metadata": {
+//	   "name": "namespace-name",
+//	   "uid": "request-userid",
+//	   "creationTimestamp": "2020-05-10T07:51:00Z"
+//	 },
+//	 "users": null
+//	}
 func CreateFakeRequestJSON(uid string,
 	gvk metav1.GroupVersionKind, gvr metav1.GroupVersionResource,
 	operation admissionv1.Operation,
@@ -56,10 +59,11 @@ func CreateFakeRequestJSON(uid string,
 
 	req := admissionv1.AdmissionReview{
 		Request: &admissionv1.AdmissionRequest{
-			UID:       types.UID(uid),
-			Kind:      gvk,
-			Resource:  gvr,
-			Operation: operation,
+			UID:         types.UID(uid),
+			Kind:        gvk,
+			RequestKind: &gvk,
+			Resource:    gvr,
+			Operation:   operation,
 			UserInfo: authenticationv1.UserInfo{
 				Username: username,
 				Groups:   userGroups,
