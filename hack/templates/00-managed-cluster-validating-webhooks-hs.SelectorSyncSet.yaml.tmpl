@@ -66,8 +66,22 @@ objects:
                       - complianceType: MustHave
                         objectDefinition:
                           apiVersion: package-operator.run/v1alpha1
-                          kind: Package
+                          kind: ObjectTemplate
                           metadata:
                             name: validation-webhooks
                           spec:
-                            image: ${REGISTRY_IMG}@${IMAGE_DIGEST}
+                            template: |
+                              apiVersion: package-operator.run/v1alpha1
+                              kind: Package
+                              metadata:
+                                name: validation-webhooks
+                              spec:
+                                image: ${REGISTRY_IMG}@${IMAGE_DIGEST}
+                                config: {{toJson .config}}
+                            sources:
+                            - apiVersion: v1
+                              kind: ConfigMap
+                              name: openshift-service-ca.crt
+                              items:
+                              - key: .data['service-ca\.crt']
+                                destination: .serviceca

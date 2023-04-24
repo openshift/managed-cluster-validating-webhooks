@@ -149,6 +149,7 @@ webhooks:
   - v1
   clientConfig:
     url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/namespace-validation
+    caBundle: {{.config.serviceca | b64enc | toJson}}
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: namespace-validation.managed.openshift.io
@@ -180,6 +181,7 @@ webhooks:
   - v1
   clientConfig:
     url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/scc-validation
+    caBundle: {{.config.serviceca | b64enc | toJson}}
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: scc-validation.managed.openshift.io
@@ -210,6 +212,7 @@ webhooks:
   - v1
   clientConfig:
     url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/techpreviewnoupgrade-validation
+    caBundle: {{.config.serviceca | b64enc | toJson}}
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: techpreviewnoupgrade-validation.managed.openshift.io
