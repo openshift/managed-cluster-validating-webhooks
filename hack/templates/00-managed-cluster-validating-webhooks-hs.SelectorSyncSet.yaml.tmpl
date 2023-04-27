@@ -57,6 +57,8 @@ objects:
                   kind: ConfigurationPolicy
                   metadata:
                     name: managed-cluster-validating-webhooks
+                    annotations:
+                      policy.open-cluster-management.io/disable-templates: "true"
                   spec:
                     namespaceSelector:
                       matchLabels:
