@@ -22,10 +22,12 @@ type Webhook interface {
 	// Name is the name of the webhook
 	Name() string
 	// FailurePolicy is how the hook config should react if k8s can't access it
+	// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#failure-policy
 	FailurePolicy() admissionregv1.FailurePolicyType
 	// MatchPolicy mirrors validatingwebhookconfiguration.webhooks[].matchPolicy.
 	// If it is important to the webhook, be sure to check subResource vs
 	// requestSubResource.
+	// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#matching-requests-matchpolicy
 	MatchPolicy() admissionregv1.MatchPolicyType
 	// Rules is a slice of rules on which this hook should trigger
 	Rules() []admissionregv1.RuleWithOperations
@@ -37,13 +39,15 @@ type Webhook interface {
 	// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#side-effects
 	SideEffects() admissionregv1.SideEffectClass
 	// TimeoutSeconds returns an int32 representing how long to wait for this hook to complete
+	// The timeout value must be between 1 and 30 seconds.
+	// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#timeouts
 	TimeoutSeconds() int32
 	// Doc returns a string for end-customer documentation purposes.
 	Doc() string
 	// SyncSetLabelSelector returns the label selector to use in the SyncSet.
 	// Return utils.DefaultLabelSelector() to stick with the default
 	SyncSetLabelSelector() metav1.LabelSelector
-	//HypershiftEnabled will return boolean value for hypershift enabled configurations
+	// HypershiftEnabled will return boolean value for hypershift enabled configurations
 	HypershiftEnabled() bool
 }
 

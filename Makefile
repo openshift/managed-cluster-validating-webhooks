@@ -27,7 +27,7 @@ EXTRA_DEPS := $(find $(CURDIR)/build -type f -print) Makefile
 unexport GOFLAGS
 GOOS?=linux
 GOARCH?=amd64
-GOFLAGS_MOD?=
+GOFLAGS_MOD?=-mod=mod
 GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOFLAGS=${GOFLAGS_MOD}
 
 GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPATH}"
