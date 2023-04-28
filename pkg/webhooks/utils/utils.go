@@ -94,6 +94,14 @@ func ParseHTTPRequest(r *http.Request) (admissionctl.Request, admissionctl.Respo
 	return req, resp, nil
 }
 
+// WebhookResponse assembles an allowed or denied admission response with the same UID as the provided request.
+// The reason for allowed admission responses is not shown to the end user and is commonly empty string: ""
+func WebhookResponse(request admissionctl.Request, allowed bool, reason string) admissionctl.Response {
+	resp := admissionctl.ValidationResponse(allowed, reason)
+	resp.UID = request.UID
+	return resp
+}
+
 func init() {
 	utilruntime.Must(admissionv1.AddToScheme(admissionScheme))
 }

@@ -1,7 +1,6 @@
 package imagecontentpolicies
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 
@@ -9,7 +8,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
-	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,37 +40,33 @@ func (w *ImageContentPoliciesWebhook) Authorized(request admission.Request) admi
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	icp := configv1.ImageContentPolicy{}
-	icsp := operatorv1alpha1.ImageContentSourcePolicy{}
-	allowedResp := admission.Response{
-		AdmissionResponse: admissionv1.AdmissionResponse{
-			UID:     request.UID,
-			Allowed: true,
-		},
-	}
 
 	switch request.RequestKind.Kind {
 	case "ImageContentPolicy":
+		icp := configv1.ImageContentPolicy{}
 		if err := decoder.Decode(request, &icp); err != nil {
 			w.log.Error(err, "failed to render an ImageContentPolicy from request")
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
 		if !authorizeImageContentPolicy(icp) {
-			return admission.Errored(http.StatusBadRequest, fmt.Errorf(WebhookDoc))
+			w.log.Info("denying ImageContentPolicy", "name", icp.Name)
+			return utils.WebhookResponse(request, false, WebhookDoc)
 		}
 	case "ImageContentSourcePolicy":
+		icsp := operatorv1alpha1.ImageContentSourcePolicy{}
 		if err := decoder.Decode(request, &icsp); err != nil {
 			w.log.Error(err, "failed to render an ImageContentSourcePolicy from request")
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
 		if !authorizeImageContentSourcePolicy(icsp) {
-			return admission.Errored(http.StatusBadRequest, fmt.Errorf(WebhookDoc))
+			w.log.Info("denying ImageContentSourcePolicy", "name", icsp.Name)
+			return utils.WebhookResponse(request, false, WebhookDoc)
 		}
 	}
 
-	return allowedResp
+	return utils.WebhookResponse(request, true, "")
 }
 
 func (w *ImageContentPoliciesWebhook) GetURI() string {
