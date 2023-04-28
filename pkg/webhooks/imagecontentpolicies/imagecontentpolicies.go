@@ -11,6 +11,7 @@ import (
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -29,8 +30,11 @@ type ImageContentPoliciesWebhook struct {
 }
 
 func NewWebhook() *ImageContentPoliciesWebhook {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(configv1.Install(scheme))
+	utilruntime.Must(operatorv1alpha1.Install(scheme))
 	return &ImageContentPoliciesWebhook{
-		scheme: runtime.NewScheme(),
+		scheme: scheme,
 		log:    logf.Log.WithName(WebhookName),
 	}
 }
@@ -74,20 +78,19 @@ func (w *ImageContentPoliciesWebhook) GetURI() string {
 }
 
 func (w *ImageContentPoliciesWebhook) Validate(request admission.Request) bool {
-	if len(request.Object.Raw) > 0 {
+	if len(request.Object.Raw) == 0 {
 		// Unexpected, but if the request object is empty we have no hope of decoding it
 		return false
 	}
 
-	switch {
-	case request.Kind.Kind == "ImageContentPolicy":
-	case request.Kind.Kind == "ImageContentSourcePolicy":
+	switch request.Kind.Kind {
+	case "ImageContentPolicy":
+		fallthrough
+	case "ImageContentSourcePolicy":
 		return true
 	default:
 		return false
 	}
-
-	return false
 }
 
 func (w *ImageContentPoliciesWebhook) Name() string {
