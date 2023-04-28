@@ -2,6 +2,7 @@ package imagecontentpolicies
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -338,6 +339,20 @@ func TestImageContentPolicy(t *testing.T) {
 
 			if resp.Allowed != test.allowed {
 				t.Errorf("expected allowed: %v, got allowed: %v", test.allowed, resp.Allowed)
+			}
+
+			if resp.UID == "" {
+				t.Errorf("all allow/deny responses require a UID")
+			}
+
+			if test.allowed {
+				if resp.Result.Code != int32(http.StatusOK) {
+					t.Errorf("expected allowed request with code: %d, got %d", http.StatusOK, resp.Result.Code)
+				}
+			} else {
+				if resp.Result.Code != int32(http.StatusForbidden) {
+					t.Errorf("expected allowed request with code: %d, got %d", http.StatusForbidden, resp.Result.Code)
+				}
 			}
 		})
 	}
