@@ -41,9 +41,6 @@ func Test_authorizeImageContentPolicy(t *testing.T) {
 				Spec: configv1.ImageContentPolicySpec{
 					RepositoryDigestMirrors: []configv1.RepositoryDigestMirrors{
 						{
-							Source: "registry.redhat.io/something",
-						},
-						{
 							Source: "registry.redhat.io",
 						},
 					},
@@ -72,6 +69,9 @@ func Test_authorizeImageContentPolicy(t *testing.T) {
 			icp: configv1.ImageContentPolicy{
 				Spec: configv1.ImageContentPolicySpec{
 					RepositoryDigestMirrors: []configv1.RepositoryDigestMirrors{
+						{
+							Source: "registry.redhat.io/something",
+						},
 						{
 							Source: "example.com",
 						},
@@ -270,7 +270,7 @@ func TestImageContentPolicy(t *testing.T) {
 				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "example.com")),
 			},
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "registry.redhat.io/test")),
+				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "registry.redhat.io")),
 			},
 			gvk:     icpgvk,
 			gvr:     icpgvr,
@@ -316,7 +316,7 @@ func TestImageContentPolicy(t *testing.T) {
 				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "example.com")),
 			},
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "registry.redhat.io/test")),
+				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "registry.redhat.io")),
 			},
 			gvk:     icspgvk,
 			gvr:     icspgvr,
