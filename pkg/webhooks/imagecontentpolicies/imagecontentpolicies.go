@@ -18,10 +18,11 @@ import (
 
 const (
 	WebhookName = "imagecontentpolicies-validation"
-	WebhookDoc  = "Managed OpenShift customers may not create ImageContentPolicy or ImageContentSourcePolicy resources that configure mirrors for quay.io, registry.redhat.com, nor registry.access.redhat.com."
+	WebhookDoc  = "Managed OpenShift customers may not create ImageContentPolicy or ImageContentSourcePolicy resources that configure mirrors for quay.io, registry.redhat.io, nor registry.access.redhat.com."
 	// unauthorizedRepositoryMirrors is a regex that is used to reject certain specified repository mirrors.
-	// Generally all contained regexes follow a similar pattern, i.e. rejecting quay.io or quay.io/.*
-	unauthorizedRepositoryMirrors = `(^quay\.io(/.*)?$|^registry\.redhat\.io(/.*)?$|^registry\.access\.redhat\.com(/.*)?)`
+	// Only registry.redhat.io exactly is blocked, while all other contained regexes
+	// follow a similar pattern, i.e. rejecting quay.io or quay.io/.*
+	unauthorizedRepositoryMirrors = `(^registry\.redhat\.io$|^quay\.io(/.*)?$|^registry\.access\.redhat\.com(/.*)?)`
 )
 
 type ImageContentPoliciesWebhook struct {
