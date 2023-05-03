@@ -11,7 +11,6 @@ import (
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -31,11 +30,8 @@ type ImageContentPoliciesWebhook struct {
 }
 
 func NewWebhook() *ImageContentPoliciesWebhook {
-	scheme := runtime.NewScheme()
-	utilruntime.Must(configv1.Install(scheme))
-	utilruntime.Must(operatorv1alpha1.Install(scheme))
 	return &ImageContentPoliciesWebhook{
-		scheme: scheme,
+		scheme: runtime.NewScheme(),
 		log:    logf.Log.WithName(WebhookName),
 	}
 }
