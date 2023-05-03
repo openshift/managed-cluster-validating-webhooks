@@ -11,6 +11,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func Test_authorizeImageContentPolicy(t *testing.T) {
@@ -353,6 +354,169 @@ func TestImageContentPolicy(t *testing.T) {
 				if resp.Result.Code != int32(http.StatusForbidden) {
 					t.Errorf("expected allowed request with code: %d, got %d", http.StatusForbidden, resp.Result.Code)
 				}
+			}
+		})
+	}
+}
+
+func TestAuthorized(t *testing.T) {
+	tests := []struct {
+		name            string
+		request         admission.Request
+		expectedAllowed bool
+	}{
+		{
+			name: "denied icp create",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "uid123",
+					Kind: metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageContentPolicy",
+					},
+					RequestKind: &metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageContentPolicy",
+					},
+					Name:      "test",
+					Operation: admissionv1.Create,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+				    	"apiVersion": "config.openshift.io/v1",
+				    	"kind": "ImageContentPolicy",
+				    	"metadata": {
+					        "name": "test"
+					    },
+					    "spec": {
+					        "repositoryDigestMirrors": [
+				        	    {
+				    	            "source": "registry.redhat.io"
+					            }
+					        ]
+					    }
+					}`),
+					},
+				},
+			},
+			expectedAllowed: false,
+		},
+		{
+			name: "allowed icp create",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "uid123",
+					Kind: metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageContentPolicy",
+					},
+					RequestKind: &metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageContentPolicy",
+					},
+					Name:      "test",
+					Operation: admissionv1.Create,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+				    	"apiVersion": "config.openshift.io/v1",
+				    	"kind": "ImageContentPolicy",
+				    	"metadata": {
+					        "name": "test"
+					    },
+					    "spec": {
+					        "repositoryDigestMirrors": [
+				        	    {
+				    	            "source": "example.com"
+					            }
+					        ]
+					    }
+					}`),
+					},
+				},
+			},
+			expectedAllowed: true,
+		},
+		{
+			name: "denied icsp update",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "uid123",
+					Kind: metav1.GroupVersionKind{
+						Group:   operatorv1alpha1.GroupName,
+						Version: operatorv1alpha1.GroupVersion.Version,
+						Kind:    "ImageContentSourcePolicy",
+					},
+					RequestKind: &metav1.GroupVersionKind{
+						Group:   operatorv1alpha1.GroupName,
+						Version: operatorv1alpha1.GroupVersion.Version,
+						Kind:    "ImageContentSourcePolicy",
+					},
+					Name:      "test",
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+				    	"apiVersion": "operator.openshift.io/v1alpha1",
+				    	"kind": "ImageContentSourcePolicy",
+				    	"metadata": {
+					        "name": "test"
+					    },
+					    "spec": {
+					        "repositoryDigestMirrors": [
+				        	    {
+				    	            "source": "registry.access.redhat.com"
+					            }
+					        ]
+					    }
+					}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+				    	"apiVersion": "operator.openshift.io/v1alpha1",
+				    	"kind": "ImageContentSourcePolicy",
+				    	"metadata": {
+					        "name": "test"
+					    },
+					    "spec": {
+					        "repositoryDigestMirrors": [
+				        	    {
+				    	            "source": "example.com"
+					            }
+					        ]
+					    }
+					}`),
+					},
+				},
+			},
+			expectedAllowed: false,
+		},
+		{
+			name: "invalid",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					Name:      "test",
+					Operation: admissionv1.Update,
+					Object:    runtime.RawExtension{},
+				},
+			},
+			expectedAllowed: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			w := NewWebhook()
+			actual := admission.Response{
+				AdmissionResponse: admissionv1.AdmissionResponse{Allowed: false},
+			}
+
+			if w.Validate(test.request) {
+				actual = w.Authorized(test.request)
+			}
+			if actual.Allowed != test.expectedAllowed {
+				t.Errorf("expected: %v, got %v", test.expectedAllowed, actual.Allowed)
 			}
 		})
 	}
