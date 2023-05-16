@@ -143,13 +143,54 @@ metadata:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
   creationTimestamp: null
+  name: sre-imagecontentpolicies-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/imagecontentpolicies-validation
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: imagecontentpolicies-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - config.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - imagecontentpolicies
+    scope: Cluster
+  - apiGroups:
+    - operator.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - imagecontentsourcepolicies
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
   name: sre-namespace-validation
 webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
     url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/namespace-validation
-    caBundle: {{.config.serviceca | b64enc | toJson}}
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: namespace-validation.managed.openshift.io
@@ -180,8 +221,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
     url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/scc-validation
-    caBundle: {{.config.serviceca | b64enc | toJson}}
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: scc-validation.managed.openshift.io
@@ -211,8 +252,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
     url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/techpreviewnoupgrade-validation
-    caBundle: {{.config.serviceca | b64enc | toJson}}
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: techpreviewnoupgrade-validation.managed.openshift.io

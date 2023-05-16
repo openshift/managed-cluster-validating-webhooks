@@ -525,7 +525,8 @@ func createPackagedValidatingWebhookConfiguration(webhook webhooks.Webhook, phas
 	webhookConfiguration.Annotations[pkoPhaseAnnotation] = phase
 	webhookConfiguration.Annotations[caBundleAnnotation] = "false"
 	webhookConfiguration.Webhooks[0].ClientConfig = admissionregv1.WebhookClientConfig{
-		URL: &url,
+		URL:      &url,
+		CABundle: []byte("{{.config.serviceca | b64enc }}"),
 	}
 	return webhookConfiguration
 }
@@ -740,7 +741,12 @@ func main() {
 				continue
 			}
 
-			packageResources = append(packageResources, runtime.RawExtension{Raw: syncset.Encode(createPackagedValidatingWebhookConfiguration(hook(), webhooksPhase))})
+			encodedWebhook, err := syncset.EncodeAndFixCA(createPackagedValidatingWebhookConfiguration(hook(), webhooksPhase))
+			if err != nil {
+				fmt.Printf("Error encoding packaged webhook: %v\n", err)
+				os.Exit(1)
+			}
+			packageResources = append(packageResources, runtime.RawExtension{Raw: encodedWebhook})
 		}
 		var rb strings.Builder
 		for _, packageResource := range packageResources {
