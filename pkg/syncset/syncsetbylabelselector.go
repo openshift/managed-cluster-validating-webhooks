@@ -8,6 +8,7 @@ package syncset
 import (
 	"encoding/json"
 	"fmt"
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	"os"
 	"reflect"
 
@@ -95,4 +96,33 @@ func Encode(obj interface{}) []byte {
 		os.Exit(1)
 	}
 	return o
+}
+
+func EncodeAndFixCA(vw admissionregv1.ValidatingWebhookConfiguration) ([]byte, error) {
+
+	// Get the existing caBundle value
+	if len(vw.Webhooks) < 1 {
+		return nil, fmt.Errorf("Require at least one webhook")
+	}
+	caBundleValue := string(vw.Webhooks[0].ClientConfig.CABundle)
+
+	// Convert to json
+	o, err := json.Marshal(vw)
+	if caBundleValue == "" {
+		return o, err
+	}
+
+	// fix broken CABundle setting here
+	var decoded interface{}
+	json.Unmarshal(o, &decoded)
+
+	// set the CA
+	decoded.(map[string]interface{})["webhooks"].([]interface{})[0].(map[string]interface{})["clientConfig"].(map[string]interface{})["caBundle"] = caBundleValue
+
+	// convert back to json
+	r, err := json.Marshal(decoded)
+	if err != nil {
+		return nil, fmt.Errorf("Error encoding %+v\n", decoded)
+	}
+	return r, nil
 }
