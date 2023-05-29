@@ -14,17 +14,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func Test_authorizeImageContentPolicy(t *testing.T) {
+func Test_authorizeImageDigestMirrorSet(t *testing.T) {
 	tests := []struct {
 		name     string
-		icp      configv1.ImageContentPolicy
+		idms     configv1.ImageDigestMirrorSet
 		expected bool
 	}{
 		{
 			name: "quay.io",
-			icp: configv1.ImageContentPolicy{
-				Spec: configv1.ImageContentPolicySpec{
-					RepositoryDigestMirrors: []configv1.RepositoryDigestMirrors{
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
 						{
 							Source: "quay.io",
 						},
@@ -38,9 +38,9 @@ func Test_authorizeImageContentPolicy(t *testing.T) {
 		},
 		{
 			name: "registry.redhat.io",
-			icp: configv1.ImageContentPolicy{
-				Spec: configv1.ImageContentPolicySpec{
-					RepositoryDigestMirrors: []configv1.RepositoryDigestMirrors{
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
 						{
 							Source: "registry.redhat.io",
 						},
@@ -51,9 +51,9 @@ func Test_authorizeImageContentPolicy(t *testing.T) {
 		},
 		{
 			name: "registry.access.redhat.com",
-			icp: configv1.ImageContentPolicy{
-				Spec: configv1.ImageContentPolicySpec{
-					RepositoryDigestMirrors: []configv1.RepositoryDigestMirrors{
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
 						{
 							Source: "registry.access.redhat.com",
 						},
@@ -67,9 +67,9 @@ func Test_authorizeImageContentPolicy(t *testing.T) {
 		},
 		{
 			name: "example.com",
-			icp: configv1.ImageContentPolicy{
-				Spec: configv1.ImageContentPolicySpec{
-					RepositoryDigestMirrors: []configv1.RepositoryDigestMirrors{
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
 						{
 							Source: "registry.redhat.io/something",
 						},
@@ -85,7 +85,85 @@ func Test_authorizeImageContentPolicy(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if actual := authorizeImageContentPolicy(test.icp); actual != test.expected {
+			if actual := authorizeImageDigestMirrorSet(test.idms); actual != test.expected {
+				t.Errorf("expected %v, got %v", test.expected, actual)
+			}
+		})
+	}
+}
+
+func Test_authorizeImageTagMirrorSet(t *testing.T) {
+	tests := []struct {
+		name     string
+		itms     configv1.ImageTagMirrorSet
+		expected bool
+	}{
+		{
+			name: "quay.io",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "quay.io",
+						},
+						{
+							Source: "quay.io/something",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "registry.redhat.io",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "registry.redhat.io",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "registry.access.redhat.com",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "registry.access.redhat.com",
+						},
+						{
+							Source: "registry.access.redhat.com/something",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "example.com",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "registry.redhat.io/something",
+						},
+						{
+							Source: "example.com",
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if actual := authorizeImageTagMirrorSet(test.itms); actual != test.expected {
 				t.Errorf("expected %v, got %v", test.expected, actual)
 			}
 		})
@@ -171,14 +249,28 @@ func Test_authorizeImageContentSourcePolicy(t *testing.T) {
 }
 
 const (
-	rawImageContentPolicy string = `{
+	rawImageDigestMirrorSet string = `{
 	"apiVersion": "config.openshift.io/v1",
-	"kind": "ImageContentPolicy",
+	"kind": "ImageDigestMirrorSet",
 	"metadata": {
-        "name": "test"
+		"name": "test"
 	},
 	"spec": {
-		"repositoryDigestMirrors": [
+		"imageDigestMirrors": [
+			{
+				"source": "%s"
+			}
+		]
+	}
+}`
+	rawImageTagMirrorSet string = `{
+	"apiVersion": "config.openshift.io/v1",
+	"kind": "ImageTagMirrorSet",
+	"metadata": {
+		"name": "test"
+	},
+	"spec": {
+		"imageTagMirrors": [
 			{
 				"source": "%s"
 			}
@@ -189,7 +281,7 @@ const (
 	"apiVersion": "operator.openshift.io/v1alpha1",
 	"kind": "ImageContentSourcePolicy",
 	"metadata": {
-        "name": "test"
+		"name": "test"
 	},
 	"spec": {
 		"repositoryDigestMirrors": [
@@ -202,15 +294,25 @@ const (
 )
 
 func TestImageContentPolicy(t *testing.T) {
-	icpgvk := metav1.GroupVersionKind{
+	idmsgvk := metav1.GroupVersionKind{
 		Group:   configv1.GroupName,
 		Version: configv1.GroupVersion.Version,
-		Kind:    "ImageContentPolicy",
+		Kind:    "ImageDigestMirrorSet",
 	}
-	icpgvr := metav1.GroupVersionResource{
+	idmsgvr := metav1.GroupVersionResource{
 		Group:    configv1.GroupName,
 		Version:  configv1.GroupVersion.Version,
-		Resource: "imagecontentpolicies",
+		Resource: "imagedigestmirrorsets",
+	}
+	itmsgvk := metav1.GroupVersionKind{
+		Group:   configv1.GroupName,
+		Version: configv1.GroupVersion.Version,
+		Kind:    "ImageTagMirrorSet",
+	}
+	itmsgvr := metav1.GroupVersionResource{
+		Group:    configv1.GroupName,
+		Version:  configv1.GroupVersion.Version,
+		Resource: "imagetagmirrorset",
 	}
 	icspgvk := metav1.GroupVersionKind{
 		Group:   operatorv1alpha1.GroupName,
@@ -232,49 +334,95 @@ func TestImageContentPolicy(t *testing.T) {
 		allowed bool
 	}{
 		{
-			name: "allowed-creation-icp",
+			name: "allowed-creation-idms",
 			op:   admissionv1.Create,
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "example.com")),
+				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "example.com")),
 			},
-			gvk:     icpgvk,
-			gvr:     icpgvr,
+			gvk:     idmsgvk,
+			gvr:     idmsgvr,
 			allowed: true,
 		},
 		{
-			name: "authorized-update-icp",
+			name: "authorized-update-idms",
 			op:   admissionv1.Create,
 			oldObj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "registry.access.redhat.com")),
+				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "registry.access.redhat.com")),
 			},
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "example.com")),
+				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "example.com")),
 			},
-			gvk:     icpgvk,
-			gvr:     icpgvr,
+			gvk:     idmsgvk,
+			gvr:     idmsgvr,
 			allowed: true,
 		},
 		{
-			name: "unauthorized-creation-icp",
+			name: "unauthorized-creation-idms",
 			op:   admissionv1.Create,
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "quay.io")),
+				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "quay.io")),
 			},
-			gvk:     icpgvk,
-			gvr:     icpgvr,
+			gvk:     idmsgvk,
+			gvr:     idmsgvr,
 			allowed: false,
 		},
 		{
-			name: "unauthorized-update-icp",
+			name: "unauthorized-update-idms",
 			op:   admissionv1.Create,
 			oldObj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "example.com")),
+				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "example.com")),
 			},
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentPolicy, "registry.redhat.io")),
+				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "registry.redhat.io")),
 			},
-			gvk:     icpgvk,
-			gvr:     icpgvr,
+			gvk:     idmsgvk,
+			gvr:     idmsgvr,
+			allowed: false,
+		},
+		{
+			name: "allowed-creation-itms",
+			op:   admissionv1.Create,
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "example.com")),
+			},
+			gvk:     itmsgvk,
+			gvr:     itmsgvr,
+			allowed: true,
+		},
+		{
+			name: "authorized-update-itms",
+			op:   admissionv1.Create,
+			oldObj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "registry.access.redhat.com")),
+			},
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "example.com")),
+			},
+			gvk:     itmsgvk,
+			gvr:     itmsgvr,
+			allowed: true,
+		},
+		{
+			name: "unauthorized-creation-itms",
+			op:   admissionv1.Create,
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "quay.io")),
+			},
+			gvk:     itmsgvk,
+			gvr:     itmsgvr,
+			allowed: false,
+		},
+		{
+			name: "unauthorized-update-itms",
+			op:   admissionv1.Create,
+			oldObj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "example.com")),
+			},
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "registry.redhat.io")),
+			},
+			gvk:     itmsgvk,
+			gvr:     itmsgvr,
 			allowed: false,
 		},
 		{
@@ -366,36 +514,36 @@ func TestAuthorized(t *testing.T) {
 		expectedAllowed bool
 	}{
 		{
-			name: "denied icp create",
+			name: "denied idms create",
 			request: admission.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
 					UID: "uid123",
 					Kind: metav1.GroupVersionKind{
 						Group:   configv1.GroupName,
 						Version: configv1.GroupVersion.Version,
-						Kind:    "ImageContentPolicy",
+						Kind:    "ImageDigestMirrorSet",
 					},
 					RequestKind: &metav1.GroupVersionKind{
 						Group:   configv1.GroupName,
 						Version: configv1.GroupVersion.Version,
-						Kind:    "ImageContentPolicy",
+						Kind:    "ImageDigestMirrorSet",
 					},
 					Name:      "test",
 					Operation: admissionv1.Create,
 					Object: runtime.RawExtension{
 						Raw: []byte(`{
-				    	"apiVersion": "config.openshift.io/v1",
-				    	"kind": "ImageContentPolicy",
-				    	"metadata": {
-					        "name": "test"
-					    },
-					    "spec": {
-					        "repositoryDigestMirrors": [
-				        	    {
-				    	            "source": "registry.redhat.io"
-					            }
-					        ]
-					    }
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "ImageDigestMirrorSet",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"imageDigestMirrors": [
+								{
+									"source": "registry.redhat.io"
+								}
+							]
+						}
 					}`),
 					},
 				},
@@ -403,36 +551,110 @@ func TestAuthorized(t *testing.T) {
 			expectedAllowed: false,
 		},
 		{
-			name: "allowed icp create",
+			name: "allowed idms create",
 			request: admission.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
 					UID: "uid123",
 					Kind: metav1.GroupVersionKind{
 						Group:   configv1.GroupName,
 						Version: configv1.GroupVersion.Version,
-						Kind:    "ImageContentPolicy",
+						Kind:    "ImageDigestMirrorSet",
 					},
 					RequestKind: &metav1.GroupVersionKind{
 						Group:   configv1.GroupName,
 						Version: configv1.GroupVersion.Version,
-						Kind:    "ImageContentPolicy",
+						Kind:    "ImageDigestMirrorSet",
 					},
 					Name:      "test",
 					Operation: admissionv1.Create,
 					Object: runtime.RawExtension{
 						Raw: []byte(`{
-				    	"apiVersion": "config.openshift.io/v1",
-				    	"kind": "ImageContentPolicy",
-				    	"metadata": {
-					        "name": "test"
-					    },
-					    "spec": {
-					        "repositoryDigestMirrors": [
-				        	    {
-				    	            "source": "example.com"
-					            }
-					        ]
-					    }
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "ImageDigestMirrorSet",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"imageDigestMirrors": [
+								{
+									"source": "example.com"
+								}
+							]
+						}
+					}`),
+					},
+				},
+			},
+			expectedAllowed: true,
+		},
+		{
+			name: "denied itms create",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "uid123",
+					Kind: metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageTagMirrorSet",
+					},
+					RequestKind: &metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageTagMirrorSet",
+					},
+					Name:      "test",
+					Operation: admissionv1.Create,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "ImageTagMirrorSet",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"imageTagMirrors": [
+								{
+									"source": "registry.redhat.io"
+								}
+							]
+						}
+					}`),
+					},
+				},
+			},
+			expectedAllowed: false,
+		},
+		{
+			name: "allowed itms create",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "uid123",
+					Kind: metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageTagMirrorSet",
+					},
+					RequestKind: &metav1.GroupVersionKind{
+						Group:   configv1.GroupName,
+						Version: configv1.GroupVersion.Version,
+						Kind:    "ImageTagMirrorSet",
+					},
+					Name:      "test",
+					Operation: admissionv1.Create,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "ImageTagMirrorSet",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"imageTagMirrors": [
+								{
+									"source": "example.com"
+								}
+							]
+						}
 					}`),
 					},
 				},
@@ -458,39 +680,113 @@ func TestAuthorized(t *testing.T) {
 					Operation: admissionv1.Update,
 					Object: runtime.RawExtension{
 						Raw: []byte(`{
-				    	"apiVersion": "operator.openshift.io/v1alpha1",
-				    	"kind": "ImageContentSourcePolicy",
-				    	"metadata": {
-					        "name": "test"
-					    },
-					    "spec": {
-					        "repositoryDigestMirrors": [
-				        	    {
-				    	            "source": "registry.access.redhat.com"
-					            }
-					        ]
-					    }
+						"apiVersion": "operator.openshift.io/v1alpha1",
+						"kind": "ImageContentSourcePolicy",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"repositoryDigestMirrors": [
+								{
+									"source": "registry.access.redhat.com"
+								}
+							]
+						}
 					}`),
 					},
 					OldObject: runtime.RawExtension{
 						Raw: []byte(`{
-				    	"apiVersion": "operator.openshift.io/v1alpha1",
-				    	"kind": "ImageContentSourcePolicy",
-				    	"metadata": {
-					        "name": "test"
-					    },
-					    "spec": {
-					        "repositoryDigestMirrors": [
-				        	    {
-				    	            "source": "example.com"
-					            }
-					        ]
-					    }
+						"apiVersion": "operator.openshift.io/v1alpha1",
+						"kind": "ImageContentSourcePolicy",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"repositoryDigestMirrors": [
+								{
+									"source": "example.com"
+								}
+							]
+						}
 					}`),
 					},
 				},
 			},
 			expectedAllowed: false,
+		},
+		{
+			name: "denied icsp create",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "uid123",
+					Kind: metav1.GroupVersionKind{
+						Group:   operatorv1alpha1.GroupName,
+						Version: operatorv1alpha1.GroupVersion.Version,
+						Kind:    "ImageContentSourcePolicy",
+					},
+					RequestKind: &metav1.GroupVersionKind{
+						Group:   operatorv1alpha1.GroupName,
+						Version: operatorv1alpha1.GroupVersion.Version,
+						Kind:    "ImageContentSourcePolicy",
+					},
+					Name:      "test",
+					Operation: admissionv1.Create,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "operator.openshift.io/v1alpha1",
+						"kind": "ImageContentSourcePolicy",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"repositoryDigestMirrors": [
+								{
+									"source": "registry.access.redhat.com"
+								}
+							]
+						}
+					}`),
+					},
+				},
+			},
+			expectedAllowed: false,
+		},
+		{
+			name: "allowed icsp create",
+			request: admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "uid123",
+					Kind: metav1.GroupVersionKind{
+						Group:   operatorv1alpha1.GroupName,
+						Version: operatorv1alpha1.GroupVersion.Version,
+						Kind:    "ImageContentSourcePolicy",
+					},
+					RequestKind: &metav1.GroupVersionKind{
+						Group:   operatorv1alpha1.GroupName,
+						Version: operatorv1alpha1.GroupVersion.Version,
+						Kind:    "ImageContentSourcePolicy",
+					},
+					Name:      "test",
+					Operation: admissionv1.Create,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "operator.openshift.io/v1alpha1",
+						"kind": "ImageContentSourcePolicy",
+						"metadata": {
+							"name": "test"
+						},
+						"spec": {
+							"repositoryDigestMirrors": [
+								{
+									"source": "example.com"
+								}
+							]
+						}
+					}`),
+					},
+				},
+			},
+			expectedAllowed: true,
 		},
 		{
 			name: "invalid",

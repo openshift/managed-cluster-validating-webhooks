@@ -17,7 +17,7 @@ import (
 
 const (
 	WebhookName = "imagecontentpolicies-validation"
-	WebhookDoc  = "Managed OpenShift customers may not create ImageContentPolicy or ImageContentSourcePolicy resources that configure mirrors for quay.io, registry.redhat.io, nor registry.access.redhat.com."
+	WebhookDoc  = "Managed OpenShift customers may not create ImageContentSourcePolicy, ImageDigestMirrorSet, or ImageTagMirrorSet resources that configure mirrors for quay.io, registry.redhat.io, nor registry.access.redhat.com."
 	// unauthorizedRepositoryMirrors is a regex that is used to reject certain specified repository mirrors.
 	// Only registry.redhat.io exactly is blocked, while all other contained regexes
 	// follow a similar pattern, i.e. rejecting quay.io or quay.io/.*
@@ -43,15 +43,26 @@ func (w *ImageContentPoliciesWebhook) Authorized(request admission.Request) admi
 	}
 
 	switch request.RequestKind.Kind {
-	case "ImageContentPolicy":
-		icp := configv1.ImageContentPolicy{}
-		if err := decoder.Decode(request, &icp); err != nil {
-			w.log.Error(err, "failed to render an ImageContentPolicy from request")
+	case "ImageDigestMirrorSet":
+		idms := configv1.ImageDigestMirrorSet{}
+		if err := decoder.Decode(request, &idms); err != nil {
+			w.log.Error(err, "failed to render an ImageDigestMirrorSet from request")
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		if !authorizeImageContentPolicy(icp) {
-			w.log.Info("denying ImageContentPolicy", "name", icp.Name)
+		if !authorizeImageDigestMirrorSet(idms) {
+			w.log.Info("denying ImageDigestMirrorSet", "name", idms.Name)
+			return utils.WebhookResponse(request, false, WebhookDoc)
+		}
+	case "ImageTagMirrorSet":
+		itms := configv1.ImageTagMirrorSet{}
+		if err := decoder.Decode(request, &itms); err != nil {
+			w.log.Error(err, "failed to render an ImageTagMirrorSet from request")
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+
+		if !authorizeImageTagMirrorSet(itms) {
+			w.log.Info("denying ImageTagMirrorSet", "name", itms.Name)
 			return utils.WebhookResponse(request, false, WebhookDoc)
 		}
 	case "ImageContentSourcePolicy":
@@ -81,7 +92,9 @@ func (w *ImageContentPoliciesWebhook) Validate(request admission.Request) bool {
 	}
 
 	switch request.Kind.Kind {
-	case "ImageContentPolicy":
+	case "ImageDigestMirrorSet":
+		fallthrough
+	case "ImageTagMirrorSet":
 		fallthrough
 	case "ImageContentSourcePolicy":
 		return true
@@ -116,7 +129,7 @@ func (w *ImageContentPoliciesWebhook) Rules() []admissionregv1.RuleWithOperation
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{configv1.GroupName},
 				APIVersions: []string{"*"},
-				Resources:   []string{"imagecontentpolicies"},
+				Resources:   []string{"imagedigestmirrorsets", "imagetagmirrorsets"},
 				Scope:       &clusterScope,
 			},
 		},
@@ -156,13 +169,10 @@ func (w *ImageContentPoliciesWebhook) HypershiftEnabled() bool {
 	return true
 }
 
-// authorizeImageContentPolicy should reject an ImageContentPolicy that sets .spec.repositoryDigestMirrors to any of:
-// quay.io or quay.io/*
-// registry.redhat.io or registry.redhat.io/*
-// registry.access.redhat.com or registry.access.redhat.com/*
-func authorizeImageContentPolicy(icp configv1.ImageContentPolicy) bool {
+// authorizeImageDigestMirrorSet should reject an ImageDigestMirrorSet that matches an unauthorized mirror list
+func authorizeImageDigestMirrorSet(idms configv1.ImageDigestMirrorSet) bool {
 	unauthorizedRepositoryMirrorsRe := regexp.MustCompile(unauthorizedRepositoryMirrors)
-	for _, mirror := range icp.Spec.RepositoryDigestMirrors {
+	for _, mirror := range idms.Spec.ImageDigestMirrors {
 		if unauthorizedRepositoryMirrorsRe.Match([]byte(mirror.Source)) {
 			return false
 		}
@@ -171,11 +181,19 @@ func authorizeImageContentPolicy(icp configv1.ImageContentPolicy) bool {
 	return true
 }
 
-// authorizeImageContentSourcePolicy should reject an ImageContentSourcePolicy that sets
-// .spec.repositoryDigestMirrors to any of:
-// quay.io or quay.io/*
-// registry.redhat.io or registry.redhat.io/*
-// registry.access.redhat.com or registry.access.redhat.com/*
+// authorizeImageTagMirrorSet should reject an ImageTagMirrorSet that matches an unauthorized mirror list
+func authorizeImageTagMirrorSet(itms configv1.ImageTagMirrorSet) bool {
+	unauthorizedRepositoryMirrorsRe := regexp.MustCompile(unauthorizedRepositoryMirrors)
+	for _, mirror := range itms.Spec.ImageTagMirrors {
+		if unauthorizedRepositoryMirrorsRe.Match([]byte(mirror.Source)) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// authorizeImageContentSourcePolicy should reject an ImageContentSourcePolicy that matches an unauthorized mirror list
 func authorizeImageContentSourcePolicy(icsp operatorv1alpha1.ImageContentSourcePolicy) bool {
 	unauthorizedRepositoryMirrorsRe := regexp.MustCompile(unauthorizedRepositoryMirrors)
 	for _, mirror := range icsp.Spec.RepositoryDigestMirrors {
