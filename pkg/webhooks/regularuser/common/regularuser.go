@@ -1,4 +1,4 @@
-package regularuser
+package common
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 
 const (
 	WebhookName       string = "regular-user-validation"
-	docString         string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Node, Proxy or SubjectPermission objects.`
+	docString         string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
 	mustGatherKind    string = "MustGather"
 	mustGatherGroup   string = "managed.openshift.io"
 	customDomainKind  string = "CustomDomain"
@@ -100,15 +100,6 @@ var (
 				APIGroups:   []string{"operator.openshift.io"},
 				APIVersions: []string{"*"},
 				Resources:   []string{"kubeapiservers", "openshiftapiservers"},
-				Scope:       &scope,
-			},
-		},
-		{
-			Operations: []admissionregv1.OperationType{"*"},
-			Rule: admissionregv1.Rule{
-				APIGroups:   []string{""},
-				APIVersions: []string{"*"},
-				Resources:   []string{"nodes", "nodes/*"},
 				Scope:       &scope,
 			},
 		},
@@ -250,14 +241,6 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		}
 	}
 
-	if isProtectedActionOnNode(request) {
-		ret = admissionctl.Denied(`Prevented from accessing Red Hat managed resources. This is an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support.
-
-To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool.`)
-		ret.UID = request.AdmissionRequest.UID
-		return ret
-	}
-
 	if request.Kind.Kind == "ConfigMap" && shouldAllowConfigMapChange(s, request) {
 		ret = admissionctl.Allowed("Modification of Config Maps that are not user-ca-bundle are allowed")
 		ret.UID = request.AdmissionRequest.UID
@@ -268,11 +251,6 @@ To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool
 	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
-}
-
-// isProtectedActionOnNode checks if the request is to update a node
-func isProtectedActionOnNode(request admissionctl.Request) bool {
-	return request.Kind.Kind == "Node" && request.Operation == admissionv1.Update
 }
 
 // isMustGatherAuthorized check if request is authorized for MustGather CR
@@ -350,7 +328,7 @@ func (s *RegularuserWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
-func (s *RegularuserWebhook) HypershiftEnabled() bool { return false }
+func (s *RegularuserWebhook) HypershiftEnabled() bool { return true }
 
 // NewWebhook creates a new webhook
 func NewWebhook() *RegularuserWebhook {
