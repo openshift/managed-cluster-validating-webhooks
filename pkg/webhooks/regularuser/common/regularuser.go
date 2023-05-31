@@ -19,6 +19,13 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// This webhook is intended for performing any webhook protection that is
+// common across all Managed OpenShift platforms (OSD, ROSA and HyperShift).
+//
+// Regular user actions that should NOT be prevented in HyperShift hosted clusters
+// should instead be placed in the 'regular-user-validation-osd' webhook situated
+// in the 'osd' package.
+
 const (
 	WebhookName       string = "regular-user-validation"
 	docString         string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
