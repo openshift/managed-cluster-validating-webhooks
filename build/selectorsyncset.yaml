@@ -223,7 +223,8 @@ objects:
           - CREATE
           - UPDATE
           resources:
-          - imagecontentpolicies
+          - imagedigestmirrorsets
+          - imagetagmirrorsets
           scope: Cluster
         - apiGroups:
           - operator.openshift.io
