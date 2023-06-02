@@ -293,21 +293,31 @@ End to End testing is managed by the [osde2e repo](https://github.com/openshift/
 List the webhooks (if you don't know them already):
 
 ```shell
-# go run build/resources.go -showhooks
-group-validation
-identity-validation
+# go run build/resources.go -syncsetfile tmp -showhooks
+clusterlogging-validation
+hiveownership-validation
+imagecontentpolicies-validation
 namespace-validation
+pod-validation
+prometheusrule-validation
 regular-user-validation
-user-validation
+regular-user-validation-osd
+scc-validation
+techpreviewnoupgrade-validation
 ```
 
 At this point, we have:
 
-* group-validation
-* identity-validation
+* clusterlogging-validation
+* hiveownership-validation
+* imagecontentpolicies-validation
 * namespace-validation
+* pod-validation
+* prometheusrule-validation
 * regular-user-validation
-* user-validation
+* regular-user-validation-osd
+* scc-validation
+* techpreviewnoupgrade-validation
 
 In the [Makefile](/Makefile), the `SELECTOR_SYNC_SET_HOOK_EXCLUDES` variable is used to control which are excluded. By default, it is set to `debug-hook`, in case one should come to appear at some time in the future.
 

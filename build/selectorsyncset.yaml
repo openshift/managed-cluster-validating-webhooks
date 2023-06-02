@@ -423,16 +423,6 @@ objects:
           - openshiftapiservers
           scope: '*'
         - apiGroups:
-          - ""
-          apiVersions:
-          - '*'
-          operations:
-          - '*'
-          resources:
-          - nodes
-          - nodes/*
-          scope: '*'
-        - apiGroups:
           - managed.openshift.io
           apiVersions:
           - '*'
@@ -451,6 +441,37 @@ objects:
           resources:
           - netnamespaces
           - netnamespaces/*
+          scope: '*'
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
+        name: sre-regular-user-validation-osd
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /regularuser-validation-osd
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: regular-user-validation-osd.managed.openshift.io
+        rules:
+        - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - '*'
+          resources:
+          - nodes
+          - nodes/*
           scope: '*'
         sideEffects: None
         timeoutSeconds: 2
