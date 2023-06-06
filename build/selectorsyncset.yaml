@@ -29,38 +29,6 @@ objects:
       spec: {}
       status: {}
     - apiVersion: v1
-      kind: ServiceAccount
-      metadata:
-        creationTimestamp: null
-        name: validation-webhook
-        namespace: openshift-validation-webhook
-    - apiVersion: rbac.authorization.k8s.io/v1
-      kind: ClusterRole
-      metadata:
-        creationTimestamp: null
-        name: webhook-validation-cr
-      rules:
-      - apiGroups:
-        - user.openshift.io
-        resources:
-        - groups
-        verbs:
-        - list
-        - get
-    - apiVersion: rbac.authorization.k8s.io/v1
-      kind: ClusterRoleBinding
-      metadata:
-        creationTimestamp: null
-        name: webhook-validation
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: webhook-validation-cr
-      subjects:
-      - kind: ServiceAccount
-        name: validation-webhook
-        namespace: openshift-validation-webhook
-    - apiVersion: v1
       kind: ConfigMap
       metadata:
         annotations:
@@ -140,7 +108,6 @@ objects:
                 name: service-ca
                 readOnly: true
             restartPolicy: Always
-            serviceAccountName: validation-webhook
             tolerations:
             - effect: NoSchedule
               key: node-role.kubernetes.io/master

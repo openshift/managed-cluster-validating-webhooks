@@ -15,7 +15,6 @@ import (
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,70 +65,6 @@ var (
 	}
 )
 
-func createServiceAccount() *corev1.ServiceAccount {
-	return &corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceAccount",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "validation-webhook",
-			Namespace: *namespace,
-		},
-	}
-}
-
-func createPackagedServiceAccount(phase string) *corev1.ServiceAccount {
-	sa := createServiceAccount()
-	sa.SetAnnotations(map[string]string{
-		pkoPhaseAnnotation: phase,
-	})
-	sa.Namespace = ""
-	return sa
-}
-
-func createClusterRole() *rbacv1.ClusterRole {
-	return &rbacv1.ClusterRole{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterRole",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "webhook-validation-cr",
-		},
-		Rules: []rbacv1.PolicyRule{
-			// (user-validation): List Groups and read their member names
-			{
-				APIGroups: []string{"user.openshift.io"},
-				Resources: []string{"groups"},
-				Verbs:     []string{"list", "get"},
-			},
-		},
-	}
-}
-func createClusterRoleBinding() *rbacv1.ClusterRoleBinding {
-	return &rbacv1.ClusterRoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterRoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "webhook-validation",
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     "webhook-validation-cr",
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      "validation-webhook",
-				Namespace: *namespace,
-			},
-		},
-	}
-}
 func createNamespace() *corev1.Namespace {
 	return &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
@@ -284,8 +219,7 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 							Effect:   corev1.TaintEffectNoSchedule,
 						},
 					},
-					ServiceAccountName: "validation-webhook",
-					RestartPolicy:      corev1.RestartPolicyAlways,
+					RestartPolicy: corev1.RestartPolicyAlways,
 					Volumes: []corev1.Volume{
 						{
 							Name: "service-certs",
@@ -411,8 +345,7 @@ func createDaemonSet() *appsv1.DaemonSet {
 							Effect: corev1.TaintEffectNoExecute,
 						},
 					},
-					ServiceAccountName: "validation-webhook",
-					RestartPolicy:      corev1.RestartPolicyAlways,
+					RestartPolicy: corev1.RestartPolicyAlways,
 					Volumes: []corev1.Volume{
 						{
 							Name: "service-certs",
@@ -605,9 +538,6 @@ func main() {
 	if buildSelectorSyncSet {
 		templateResources := syncset.SyncSetResourcesByLabelSelector{}
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createNamespace()})
-		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createServiceAccount()})
-		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterRole()})
-		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterRoleBinding()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createCACertConfigMap()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createService()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createDaemonSet()})
@@ -704,7 +634,6 @@ func main() {
 		// packageResources contains all resources intended for a package-operator package, with the key
 		// being the associated filename to generate
 		packageResources := make([]runtime.RawExtension, 0)
-		packageResources = append(packageResources, runtime.RawExtension{Object: createPackagedServiceAccount(rbacPhase)})
 		packageResources = append(packageResources, runtime.RawExtension{Object: createPackagedCACertConfigMap(configPhase)})
 		packageResources = append(packageResources, runtime.RawExtension{Object: createPackagedService(deployPhase)})
 		packageResources = append(packageResources, runtime.RawExtension{Object: createPackagedDeployment(int32(*replicas), deployPhase)})
