@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/apps/v1"
 	"os"
 	"reflect"
 
@@ -96,6 +97,30 @@ func Encode(obj interface{}) []byte {
 		os.Exit(1)
 	}
 	return o
+}
+
+// This is needed to override the omitempty on serviceAccount and serviceAccountName
+// which otherwise means we can't nullify them in the SelectorSyncSet
+func EncodeAndFixDaemonset(ds *v1.DaemonSet) ([]byte, error) {
+
+	// Convert to json
+	o, err := json.Marshal(ds)
+
+	// explicitly set serviceAccount / serviceAccountName to emptystring
+	var decoded interface{}
+	json.Unmarshal(o, &decoded)
+
+	// set the serviceAccount/serviceAccountName to emptystring
+	decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccountName"] = ""
+	decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccount"] = ""
+
+	// convert back to json
+	r, err := json.Marshal(decoded)
+	if err != nil {
+		return nil, fmt.Errorf("Error encoding %+v\n", decoded)
+	}
+	return r, nil
+
 }
 
 func EncodeAndFixCA(vw admissionregv1.ValidatingWebhookConfiguration) ([]byte, error) {
