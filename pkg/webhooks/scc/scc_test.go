@@ -143,6 +143,14 @@ func TestUserPositive(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			targetSCC:       "hostaccess",
+			testID:          "allowed-system-admin-can-modify-default",
+			username:        "system:admin",
+			operation:       admissionv1.Update,
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			shouldBeAllowed: true,
+		},
+		{
 			targetSCC:       "testscc",
 			testID:          "user-can-delete-normal",
 			username:        "user1",
