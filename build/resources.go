@@ -345,7 +345,9 @@ func createDaemonSet() *appsv1.DaemonSet {
 							Effect: corev1.TaintEffectNoExecute,
 						},
 					},
-					RestartPolicy: corev1.RestartPolicyAlways,
+					RestartPolicy:            corev1.RestartPolicyAlways,
+					ServiceAccountName:       "",
+					DeprecatedServiceAccount: "",
 					Volumes: []corev1.Volume{
 						{
 							Name: "service-certs",
@@ -540,7 +542,12 @@ func main() {
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createNamespace()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createCACertConfigMap()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createService()})
-		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createDaemonSet()})
+
+		encodedDaemonSet, err := syncset.EncodeAndFixDaemonset(createDaemonSet())
+		if err != nil {
+			panic(fmt.Sprintf("couldn't marshal: %s\n", err.Error()))
+		}
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Raw: encodedDaemonSet})
 
 		// Collect all of our webhook names and prepare to sort them all so the
 		// resulting SelectorSyncSet is always sorted.

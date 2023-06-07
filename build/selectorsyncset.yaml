@@ -108,6 +108,8 @@ objects:
                 name: service-ca
                 readOnly: true
             restartPolicy: Always
+            serviceAccount: ""
+            serviceAccountName: ""
             tolerations:
             - effect: NoSchedule
               key: node-role.kubernetes.io/master
