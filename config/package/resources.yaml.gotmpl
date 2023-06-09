@@ -54,6 +54,7 @@ spec:
       labels:
         app: validation-webhook
     spec:
+      automountServiceAccountToken: "false"
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -95,7 +96,7 @@ spec:
         - -cacert
         - /service-ca/service-ca.crt
         - -tls
-        image: REPLACED_BY_PIPELINE
+        image: quay.io/app-sre/managed-cluster-validating-webhooks:4c7a8ed
         imagePullPolicy: IfNotPresent
         name: webhooks
         ports:
