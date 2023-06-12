@@ -6,14 +6,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	responsehelper "github.com/openshift/managed-cluster-validating-webhooks/pkg/helpers"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 )
 
 // Webhook interface
@@ -54,7 +55,7 @@ func CanCanNot(b bool) string {
 func CreateFakeRequestJSON(uid string,
 	gvk metav1.GroupVersionKind, gvr metav1.GroupVersionResource,
 	operation admissionv1.Operation,
-	username string, userGroups []string,
+	username string, userGroups []string, namespace string,
 	obj, oldObject *runtime.RawExtension) ([]byte, error) {
 
 	req := admissionv1.AdmissionReview{
@@ -64,6 +65,7 @@ func CreateFakeRequestJSON(uid string,
 			RequestKind: &gvk,
 			Resource:    gvr,
 			Operation:   operation,
+			Namespace:   namespace,
 			UserInfo: authenticationv1.UserInfo{
 				Username: username,
 				Groups:   userGroups,
@@ -96,9 +98,9 @@ func CreateFakeRequestJSON(uid string,
 func CreateHTTPRequest(uri, uid string,
 	gvk metav1.GroupVersionKind, gvr metav1.GroupVersionResource,
 	operation admissionv1.Operation,
-	username string, userGroups []string,
+	username string, userGroups []string, namespace string,
 	obj, oldObject *runtime.RawExtension) (*http.Request, error) {
-	req, err := CreateFakeRequestJSON(uid, gvk, gvr, operation, username, userGroups, obj, oldObject)
+	req, err := CreateFakeRequestJSON(uid, gvk, gvr, operation, username, userGroups, namespace, obj, oldObject)
 	if err != nil {
 		return nil, err
 	}

@@ -67,7 +67,7 @@ func runTests(t *testing.T, tests []hiveOwnershipTestSuites) {
 		hook := NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
 			test.testID,
-			gvk, gvr, test.operation, test.username, test.userGroups, obj, test.oldObject)
+			gvk, gvr, test.operation, test.username, test.userGroups, "", obj, test.oldObject)
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}

@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/clusterlogging"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/clusterlogging"
 )
 
 type clusterloggingTestSuite struct {
@@ -128,7 +129,7 @@ func runTests(t *testing.T, tests []clusterloggingTestSuite) {
 		hook := clusterlogging.NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
 			test.testID,
-			metav1.GroupVersionKind{}, metav1.GroupVersionResource{}, test.operation, test.username, test.userGroups, obj, test.oldObject)
+			metav1.GroupVersionKind{}, metav1.GroupVersionResource{}, test.operation, test.username, test.userGroups, "", obj, test.oldObject)
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}

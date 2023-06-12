@@ -90,7 +90,7 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
 			test.testID,
-			gvk, gvr, test.operation, test.username, test.userGroups, &obj, test.oldObject)
+			gvk, gvr, test.operation, test.username, test.userGroups, test.targetNamespace, &obj, test.oldObject)
 		if err != nil {
 			t.Fatalf("%s Expected no error, got %s", test.testID, err.Error())
 		}

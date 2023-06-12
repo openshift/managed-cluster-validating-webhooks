@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"sync"
 
-	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +14,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 )
 
 const (

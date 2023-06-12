@@ -318,7 +318,7 @@
         "scope": "*"
       }
     ],
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [addons.managed.openshift.io cloudingress.managed.openshift.io upgrade.managed.openshift.io autoscaling.openshift.io config.openshift.io operator.openshift.io machine.openshift.io managed.openshift.io ocmagent.managed.openshift.io machineconfiguration.openshift.io network.openshift.io cloudcredential.openshift.io admissionregistration.k8s.io splunkforwarder.managed.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [addons.managed.openshift.io ocmagent.managed.openshift.io operator.openshift.io network.openshift.io admissionregistration.k8s.io cloudingress.managed.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io config.openshift.io cloudcredential.openshift.io machine.openshift.io managed.openshift.io autoscaling.openshift.io machineconfiguration.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
   },
   {
     "webhookName": "regular-user-validation-osd",
@@ -363,6 +363,27 @@
       }
     ],
     "documentString": "Managed OpenShift Customers may not modify the following default SCCs: [anyuid hostaccess hostmount-anyuid hostnetwork hostnetwork-v2 node-exporter nonroot nonroot-v2 privileged restricted restricted-v2]"
+  },
+  {
+    "webhookName": "serviceaccount-validation",
+    "rules": [
+      {
+        "operations": [
+          "DELETE"
+        ],
+        "apiGroups": [
+          ""
+        ],
+        "apiVersions": [
+          "v1"
+        ],
+        "resources": [
+          "serviceaccounts"
+        ],
+        "scope": "Namespaced"
+      }
+    ],
+    "documentString": "Managed OpenShift Customers may not delete the service accounts under the managed namespaces。"
   },
   {
     "webhookName": "techpreviewnoupgrade-validation",
