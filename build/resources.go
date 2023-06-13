@@ -144,6 +144,7 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 					},
 				},
 				Spec: corev1.PodSpec{
+					AutomountServiceAccountToken: &[]bool{false}[0],
 					Affinity: &corev1.Affinity{
 						NodeAffinity: &corev1.NodeAffinity{
 							PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{

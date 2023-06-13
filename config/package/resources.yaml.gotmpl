@@ -85,6 +85,7 @@ spec:
               matchLabels:
                 app: validation-webhook
             topologyKey: topology.kubernetes.io/zone
+      automountServiceAccountToken: false
       containers:
       - command:
         - webhooks
