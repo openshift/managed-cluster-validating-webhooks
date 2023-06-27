@@ -15,7 +15,7 @@ IMG_ORG ?= app-sre
 IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
 PKG_IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_PKG_IMG}
 
-SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.18
+SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.19
 
 BINARY_FILE ?= build/_output/webhooks
 
@@ -28,9 +28,9 @@ unexport GOFLAGS
 GOOS?=linux
 GOARCH?=amd64
 GOFLAGS_MOD?=-mod=mod
-GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOFLAGS=${GOFLAGS_MOD}
+GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOEXPERIMENT=boringcrypto GOFLAGS=${GOFLAGS_MOD}
 
-GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPATH}"
+GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPATH}" -tags="fips_enabled"
 
 # do not include this comma-separated list of hooks into the syncset
 SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
