@@ -1,12 +1,14 @@
 reviewers:
 - robotmaxtron
 - lisa
-- wanghaoran1988
 - rogbas
 - tnierman
 approvers:
+- wanghaoran1988
 - NautiluX
 - robotmaxtron
 - rogbas
 - tnierman
+- bmeng
+- ravitri
 maintainers:
