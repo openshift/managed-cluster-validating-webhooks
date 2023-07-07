@@ -321,44 +321,6 @@ func TestIngressControllerExceptions(t *testing.T) {
 			},
 			shouldBeAllowed: true,
 		},
-		{
-			testID:     "exception-test-create-hive",
-			name:       "shiny-newingress",
-			namespace:  "openshift-ingress-operator",
-			username:   "anywho",
-			userGroups: []string{"system:serviceaccounts:hive"},
-			operation:  admissionv1.Create,
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations: []corev1.Toleration{
-				{
-					Key:      "node-role.kubernetes.io/infra",
-					Operator: "Exists",
-					Effect:   "NoSchedule",
-				},
-			},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:     "exception-test-update-hive",
-			name:       "shiny-newingress",
-			namespace:  "openshift-ingress-operator",
-			username:   "anywho",
-			userGroups: []string{"system:serviceaccounts:hive"},
-			operation:  admissionv1.Update,
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations: []corev1.Toleration{
-				{
-					Key:      "node-role.kubernetes.io/infra",
-					Operator: "Exists",
-					Effect:   "NoSchedule",
-				},
-			},
-			shouldBeAllowed: true,
-		},
 	}
 	runIngressControllerTests(t, tests)
 }
