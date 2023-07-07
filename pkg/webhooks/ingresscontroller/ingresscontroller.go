@@ -19,7 +19,7 @@ import (
 const (
 	WebhookName   string = "ingresscontroller-validation"
 	docString     string = `Managed OpenShift Customer may create IngressControllers without necessary taints. This can cause those workloads to be provisioned on infra or master nodes.`
-	allowedGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
+	allowedGroups string = `^system:serviceaccounts:*`
 )
 
 var (
