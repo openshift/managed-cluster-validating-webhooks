@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -37,7 +38,9 @@ var (
 			},
 		},
 	}
-	allowedUsers  []string
+	allowedUsers = []string{
+		"backplane-cluster-admin",
+	}
 	allowedGroups = []string{
 		"system:serviceaccounts:openshift-backplane-srep",
 	}
@@ -83,6 +86,25 @@ func (s *serviceAccountWebhook) Authorized(request admissionctl.Request) admissi
 
 func (s *serviceAccountWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
+
+	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
+		// This could highlight a significant problem with RBAC since an
+		// unauthenticated user should have no permissions.
+		log.Info("system:unauthenticated made a webhook request. Check RBAC rules", "request", request.AdmissionRequest)
+		ret = admissionctl.Denied("Unauthenticated")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") {
+		ret = admissionctl.Allowed("authenticated system: users are allowed")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "kube:") {
+		ret = admissionctl.Allowed("kube: users are allowed")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
 
 	sa, err := s.renderServiceAccount(request)
 	if err != nil {

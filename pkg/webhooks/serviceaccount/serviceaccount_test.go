@@ -127,6 +127,24 @@ func TestSADeletion(t *testing.T) {
 			namespace:       "openshift-ingress-operator",
 			shouldBeAllowed: true,
 		},
+		{
+			targetSA:        "whatever",
+			testID:          "elevated-sre-can-delete-sa-in-protected-ns",
+			username:        "backplane-cluster-admin",
+			operation:       admissionv1.Delete,
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			namespace:       "openshift-ingress-operator",
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "whatever",
+			testID:          "kube-account-can-delete-sa-in-protected-ns",
+			username:        "kube:admin",
+			operation:       admissionv1.Delete,
+			userGroups:      []string{"system:authenticated"},
+			namespace:       "openshift-ingress-operator",
+			shouldBeAllowed: true,
+		},
 	}
 	runServiceAccountTests(t, tests)
 }
