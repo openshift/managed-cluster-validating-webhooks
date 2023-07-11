@@ -135,6 +135,36 @@ metadata:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
   creationTimestamp: null
+  name: sre-clusterrolebindings-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/clusterrolebindings-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: clusterrolebindings-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    apiVersions:
+    - v1
+    operations:
+    - DELETE
+    resources:
+    - clusterrolebindings
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
   name: sre-imagecontentpolicies-validation
 webhooks:
 - admissionReviewVersions:
