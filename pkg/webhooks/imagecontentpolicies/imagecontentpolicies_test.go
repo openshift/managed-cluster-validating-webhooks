@@ -7,11 +7,12 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 )
 
 func Test_authorizeImageDigestMirrorSet(t *testing.T) {
@@ -476,7 +477,7 @@ func TestImageContentPolicy(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			hook := NewWebhook()
-			req, err := testutils.CreateHTTPRequest(hook.GetURI(), test.name, test.gvk, test.gvr, test.op, "", []string{}, test.obj, test.oldObj)
+			req, err := testutils.CreateHTTPRequest(hook.GetURI(), test.name, test.gvk, test.gvr, test.op, "", []string{}, "", test.obj, test.oldObj)
 			if err != nil {
 				t.Errorf("failed to create test HTTP request: %v", err)
 			}

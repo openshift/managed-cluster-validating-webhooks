@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -60,7 +61,7 @@ func runSCCTests(t *testing.T, tests []sccTestSuites) {
 
 		hook := NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
-			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, &obj, &oldObj)
+			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, "", &obj, &oldObj)
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}

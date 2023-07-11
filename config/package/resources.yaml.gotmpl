@@ -382,6 +382,36 @@ metadata:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
   creationTimestamp: null
+  name: sre-serviceaccount-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/serviceaccount-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: serviceaccount-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - DELETE
+    resources:
+    - serviceaccounts
+    scope: Namespaced
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
   name: sre-techpreviewnoupgrade-validation
 webhooks:
 - admissionReviewVersions:

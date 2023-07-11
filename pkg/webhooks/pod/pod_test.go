@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 )
 
 func createRawPodJSON(name string, tolerations []corev1.Toleration, uid string, namespace string) (string, error) {
@@ -68,7 +69,7 @@ func runPodTests(t *testing.T, tests []podTestSuites) {
 
 		hook := NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
-			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, &obj, nil)
+			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, test.namespace, &obj, nil)
 		if err != nil {
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
