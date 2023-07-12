@@ -191,6 +191,36 @@ func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 				},
 			},
 		},
+		{
+			targetClusterRoleBinding: "whatever",
+			testID:                   "elevated-sre-can-delete-cluster-role-binding-in-protected-ns",
+			username:                 "backplane-cluster-admin",
+			operation:                admissionv1.Delete,
+			userGroups:               []string{"system:authenticated", "system:authenticated:oauth"},
+			subjects: []rbacv1.Subject{
+				{
+					Kind:      "ServiceAccount",
+					Name:      "whatever",
+					Namespace: "openshift-operators",
+				},
+			},
+			shouldBeAllowed: true,
+		},
+		{
+			targetClusterRoleBinding: "whatever",
+			testID:                   "kube-account-can-delete-cluster-role-binding-in-protected-ns",
+			username:                 "kube:admin",
+			operation:                admissionv1.Delete,
+			userGroups:               []string{"system:authenticated"},
+			subjects: []rbacv1.Subject{
+				{
+					Kind:      "ServiceAccount",
+					Name:      "whatever",
+					Namespace: "openshift-operators",
+				},
+			},
+			shouldBeAllowed: true,
+		},
 	}
 	runClusterRoleBindingTests(t, tests)
 }
