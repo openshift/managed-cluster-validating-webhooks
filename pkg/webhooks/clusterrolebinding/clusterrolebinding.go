@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -45,6 +46,14 @@ var (
 		"openshift-logging",
 		"openshift-user-workload-monitoring",
 		"openshift-operators",
+		"openshift-backplane-managed-scripts",
+	}
+
+	allowedUsers = []string{
+		"backplane-cluster-admin",
+	}
+	allowedGroups = []string{
+		"system:serviceaccounts:openshift-backplane-srep",
 	}
 )
 
@@ -79,6 +88,23 @@ func (s *ClusterRoleBindingWebHook) Authorized(request admissionctl.Request) adm
 func (s *ClusterRoleBindingWebHook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
+	if request.AdmissionRequest.UserInfo.Username == "system:unauthenticated" {
+		log.Info("system:unauthenticated made a webhook request. Check RBAC rules", "request", request.AdmissionRequest)
+		ret = admissionctl.Denied("Unauthenticated")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") {
+		ret = admissionctl.Allowed("authenticated system: users are allowed")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "kube:") {
+		ret = admissionctl.Allowed("kube: users are allowed")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+
 	clusterRoleBinding, err := s.renderClusterRoleBinding(request)
 	if err != nil {
 		log.Error(err, "Couldn't render a ClusterRoleBinding from the incoming request")
@@ -87,7 +113,7 @@ func (s *ClusterRoleBindingWebHook) authorized(request admissionctl.Request) adm
 
 	log.Info(fmt.Sprintf("Found clusterrolebinding: %v", clusterRoleBinding.Name))
 
-	if isProtectedNamespace(clusterRoleBinding) {
+	if isProtectedNamespace(clusterRoleBinding) && !isAllowedUserGroup(request) {
 		switch request.Operation {
 		case admissionv1.Delete:
 			log.Info(fmt.Sprintf("Deleting operation detected on ClusterRoleBinding: %v", clusterRoleBinding.Name))
@@ -118,6 +144,19 @@ func (s *ClusterRoleBindingWebHook) renderClusterRoleBinding(request admissionct
 	}
 
 	return clusterRoleBinding, nil
+}
+
+// isAllowedUserGroup checks if the user or group is allowed to perform the action
+func isAllowedUserGroup(request admissionctl.Request) bool {
+	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
+		return true
+	}
+	for _, group := range allowedGroups {
+		if utils.SliceContains(group, request.UserInfo.Groups) {
+			return true
+		}
+	}
+	return false
 }
 
 // isProtectedNamespace returns true if clusterRoleBinding subject link
