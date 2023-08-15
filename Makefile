@@ -28,7 +28,7 @@ unexport GOFLAGS
 GOOS?=linux
 GOARCH?=amd64
 GOFLAGS_MOD?=-mod=mod
-GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOEXPERIMENT=boringcrypto GOFLAGS=${GOFLAGS_MOD}
+GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOFLAGS=${GOFLAGS_MOD}
 
 GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPATH}" -tags="fips_enabled"
 
