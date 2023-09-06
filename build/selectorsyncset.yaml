@@ -621,6 +621,59 @@ objects:
         sideEffects: None
         timeoutSeconds: 1
   status: {}
+- apiVersion: hive.openshift.io/v1
+  kind: SelectorSyncSet
+  metadata:
+    creationTimestamp: null
+    labels:
+      managed.openshift.io/gitHash: ${IMAGE_TAG}
+      managed.openshift.io/gitRepoName: ${REPO_NAME}
+      managed.openshift.io/osd: "true"
+    name: managed-cluster-validating-webhooks-2
+  spec:
+    clusterDeploymentSelector:
+      matchExpressions:
+      - key: ext-managed.openshift.io/legacy-ingress-support
+        operator: In
+        values:
+        - "false"
+      matchLabels:
+        api.openshift.com/managed: "true"
+    resourceApplyMode: Sync
+    resources:
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
+        name: sre-ingresscontroller-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /ingresscontroller-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: ingresscontroller-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - operator.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - CREATE
+          - UPDATE
+          resources:
+          - ingresscontroller
+          - ingresscontrollers
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 1
+  status: {}
 parameters:
 - name: IMAGE_TAG
   required: true
