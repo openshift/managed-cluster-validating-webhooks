@@ -146,6 +146,15 @@ func (s *networkpoliciesruleWebhook) GetURI() string {
 	return "/" + WebhookName
 }
 
+// Validate implements Webhook interface
+func (s *networkpoliciesruleWebhook) Validate(request admissionctl.Request) bool {
+	valid := true
+	valid = valid && (request.UserInfo.Username != "")
+	valid = valid && (request.Kind.Kind == "NetworkPolicy")
+
+	return valid
+}
+
 // Name implements Webhook interface
 func (s *networkpoliciesruleWebhook) Name() string {
 	return WebhookName
