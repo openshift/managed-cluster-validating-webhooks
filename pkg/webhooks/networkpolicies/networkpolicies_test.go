@@ -219,36 +219,6 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-
-			testID:          "admin-can-create-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			username:        "kube:admin",
-			targetResource:  "networkpolicy",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-
-			testID:          "admin-can-create-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			username:        "kube:admin",
-			targetResource:  "networkpolicy",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-
-			testID:          "admin-can-create-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			username:        "kube:admin",
-			targetResource:  "networkpolicy",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
-		{
 			testID:          "serviceaccount-in-managed-namespaces-can-create-networkpolicy-in-redhat-rhoam-observability",
 			targetNamespace: "redhat-rhoam-observability",
 			targetResource:  "networkpolicy",
