@@ -39,7 +39,7 @@ var (
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"networking.k8s.io"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"networkpolicy"},
+				Resources:   []string{"networkpolicies"},
 				Scope:       &scope,
 			},
 		},
