@@ -297,7 +297,7 @@ objects:
           - UPDATE
           - DELETE
           resources:
-          - networkpolicy
+          - networkpolicies
           scope: Namespaced
         sideEffects: None
         timeoutSeconds: 2
