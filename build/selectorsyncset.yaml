@@ -275,6 +275,38 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
+        name: sre-networkpolicies-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /networkpolicies-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: networkpolicies-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - networking.k8s.io
+          apiVersions:
+          - '*'
+          operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+          resources:
+          - networkpolicy
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
         name: sre-pod-validation
       webhooks:
       - admissionReviewVersions:
