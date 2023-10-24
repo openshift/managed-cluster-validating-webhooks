@@ -47,12 +47,14 @@ type IngressConfigWebhook struct {
 
 // Authorized will determine if the request is allowed
 func (w *IngressConfigWebhook) Authorized(request admissionctl.Request) (ret admissionctl.Response) {
+	ret = admissionctl.Denied("Only privileged service accounts may access")
+	ret.UID = request.AdmissionRequest.UID
+
 	// deny unless modified by an allowlist-ed service account
 	for _, group := range request.UserInfo.Groups {
 		if privilegedServiceAccountsRe.Match([]byte(group)) {
 			ret = admissionctl.Allowed("Privileged service accounts may access")
 			ret.UID = request.AdmissionRequest.UID
-			return ret
 		}
 	}
 
