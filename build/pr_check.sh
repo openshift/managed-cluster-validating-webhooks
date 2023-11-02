@@ -7,8 +7,8 @@ echo "Using go version $(go version)"
 
 CURRENT_DIR=$(dirname "$0")
 
-#BUILD_CMD="build-base" make lint test build-sss build-base
-make -C $(dirname $0)/../ container-test syncset package build-base
+#BUILD_CMD="build-base" make lint test build-sss validate-build
+make -C $(dirname $0)/../ container-test syncset package validate-build
 
 # make sure nothing changed (i.e. SSS templates being invalid)
 git diff --exit-code

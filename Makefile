@@ -36,8 +36,9 @@ GOBUILDFLAGS=-gcflags="all=-trimpath=${GOPATH}" -asmflags="all=-trimpath=${GOPAT
 SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook
 SELECTOR_SYNC_SET_DESTINATION = build/selectorsyncset.yaml
 
-PACKAGE_RESOURCE_DESTINATION = config/package/resources.yaml.gotmpl
+PACKAGE_RESOURCE_DESTINATION = config/package/manifest.yaml
 PACKAGE_RESOURCE_MANIFEST = config/package/manifest.yaml
+PKO_CLI_IMAGE = quay.io/app-sre/package-operator-cli:d2e3523
 
 CONTAINER_ENGINE ?= $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
 #eg, -v
@@ -91,10 +92,19 @@ build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 build-package-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 	# Change image placeholder in deployment template to the real image
 	$(shell sed -i -e "s#REPLACED_BY_PIPELINE#$(IMG):$(IMAGETAG)#g" $(PACKAGE_RESOURCE_DESTINATION))
-	$(CONTAINER_ENGINE) build -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/config/package/managed-cluster-validating-webhooks-package.Containerfile) . && \
+	$(CONTAINER_ENGINE) run --rm -v $(CURDIR):/code:z $(PKO_CLI_IMAGE) update ./code/config/package
+	$(CONTAINER_ENGINE) run --rm -v $(CURDIR):/code:z $(PKO_CLI_IMAGE) build ./code/config/package -t $(PKG_IMG):$(IMAGETAG) -o /code/config/package/validating-webhooks-package.oci
+	$(CONTAINER_ENGINE) import $(join $(CURDIR),/config/package/validating-webhooks-package.oci) $(PKG_IMG):$(IMAGETAG)
 	$(CONTAINER_ENGINE) tag $(PKG_IMG):$(IMAGETAG) $(PKG_IMG):latest
 	# Restore the template file modified for the package build
 	git checkout $(PACKAGE_RESOURCE_DESTINATION)
+
+.PHONY: validate-build
+validate-build: build-image validate-package-image
+
+.PHONY: validate-package-image
+validate-package-image:
+	$(CONTAINER_ENGINE) run --rm -v $(CURDIR):/code:z $(PKO_CLI_IMAGE) validate ./code/config/package
 
 .PHONY: build-push
 build-push:
