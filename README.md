@@ -318,6 +318,7 @@ At this point, we have:
 * regular-user-validation-osd
 * scc-validation
 * techpreviewnoupgrade-validation
+* ingress-config-validation
 
 In the [Makefile](/Makefile), the `SELECTOR_SYNC_SET_HOOK_EXCLUDES` variable is used to control which are excluded. By default, it is set to `debug-hook`, in case one should come to appear at some time in the future.
 
