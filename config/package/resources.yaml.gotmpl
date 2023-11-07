@@ -112,6 +112,10 @@ spec:
       restartPolicy: Always
       tolerations:
       - effect: NoSchedule
+        key: hypershift.openshift.io/control-plane
+        operator: Equal
+        value: "true"
+      - effect: NoSchedule
         key: hypershift.openshift.io/hosted-control-plane
         operator: Equal
         value: "true"

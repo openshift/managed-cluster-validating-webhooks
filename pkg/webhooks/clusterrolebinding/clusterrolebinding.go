@@ -47,6 +47,7 @@ var (
 		"openshift-user-workload-monitoring",
 		"openshift-operators",
 		"openshift-backplane-managed-scripts",
+		"openshift-gitops",
 	}
 
 	allowedUsers = []string{

@@ -37,6 +37,8 @@ const (
 	configPhase string = "config"
 	// Defines the 'webhooks' package-operator phase for any resources related to MCVW configuration
 	webhooksPhase string = "webhooks"
+	// Defines the label for targeting control plane taints/tolerations
+	controlPlaneLabel = "hypershift.openshift.io/control-plane"
 	// Defines the label for targeting hypershift cluster taints/tolerations
 	hsControlPlaneLabel = "hypershift.openshift.io/hosted-control-plane"
 	// Defines the label for targeting hypershift control plane taints/tolerations
@@ -207,6 +209,12 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 						},
 					},
 					Tolerations: []corev1.Toleration{
+						{
+							Key:      controlPlaneLabel,
+							Operator: corev1.TolerationOpEqual,
+							Value:    "true",
+							Effect:   corev1.TaintEffectNoSchedule,
+						},
 						{
 							Key:      hsControlPlaneLabel,
 							Operator: corev1.TolerationOpEqual,
