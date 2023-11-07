@@ -270,6 +270,52 @@ $ oc describe pod -n openshift-validation-webhook | grep '^ *Image:'
     Image:         quay.io/my-user/managed-cluster-validating-webhooks:latest
 ```
 
+### Create the ValidatingWebhookConfiguration
+Once the image is pulled to your cluster, you will need to create the ValidatingWebhookConfiguration.  You should notice that the `build/selectorysyncset.yaml` file will have a new section containing your webhook's ValidatingWebhookConfiguration.  It should look something similar to this.
+```
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+  creationTimestamp: null
+  name: sre-new-webhook
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: new-webhook
+      namespace: openshift-validation-webhook
+      path: /networkpolicies-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: new-webhook-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - networking.k8s.io
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    resources:
+    - networkpolicies
+    scope: Namespaced
+  sideEffects: None
+  timeoutSeconds: 2
+```
+
+Save this part of the selectorsyncset.yaml as a its own yaml file and apply it to your cluster.
+
+```
+oc apply -f my_webhook.yaml
+```
+
+Now you can view that your webhook is registered and running with:
+```
+oc get validatingwebhookconfigurations -A
+```
+
 #### Update Other Resources
 If your changes resulted in a delta to [selectorsyncset.yaml](build/selectorsyncset.yaml), you must manually edit the corresponding resources to apply those changes.
 
