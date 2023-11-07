@@ -32,6 +32,17 @@ func TestAuthorized(t *testing.T) {
 			ExpectAllowed: true,
 		},
 		{
+			Name: "system admin should be allowed",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "system:admin",
+					},
+				},
+			},
+			ExpectAllowed: true,
+		},
+		{
 			Name: "non-privileged account should be denied",
 			Request: admissionctl.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
