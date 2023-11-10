@@ -104,7 +104,7 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 		return ret
 	}
 
-	log.Info("Allowing access", "request", request.AdmissionRequest)
+	log.Info("Allowing access")
 	ret = admissionctl.Allowed("Non managed namespace")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
