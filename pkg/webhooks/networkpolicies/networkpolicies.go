@@ -77,7 +77,6 @@ func (s *networkpoliciesruleWebhook) authorized(request admissionctl.Request) ad
 	var ret admissionctl.Response
 
 	np, err := s.renderNetworkPolicy(request)
-
 	if err != nil {
 		log.Error(err, "Could not render a NetworkPolicy from the incoming request")
 		return admissionctl.Errored(http.StatusBadRequest, err)
