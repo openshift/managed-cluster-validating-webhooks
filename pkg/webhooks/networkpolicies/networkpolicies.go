@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -85,19 +86,19 @@ func (s *networkpoliciesruleWebhook) authorized(request admissionctl.Request) ad
 	if hookconfig.IsPrivilegedNamespace(np.GetNamespace()) {
 		log.Info(fmt.Sprintf("%s operation detected on managed namespace: %s", request.Operation, np.GetNamespace()))
 		if isAllowedUser(request) {
-			ret = admissionctl.Allowed(fmt.Sprintf("User can do operations on NetworkPolicies"))
+			ret = admissionctl.Allowed(fmt.Sprintf("User '%s' in group(s) '%s' can operate on NetworkPolicies", request.UserInfo.Username, strings.Join(request.UserInfo.Groups, ", ")))
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 		for _, group := range request.UserInfo.Groups {
 			if privilegedServiceAccountGroupsRe.Match([]byte(group)) {
-				ret = admissionctl.Allowed("Privileged service accounts do operations on NetworkPolicies")
+				ret = admissionctl.Allowed(fmt.Sprintf("Privileged service accounts in group(s) '%s' can operate on NetworkPolicies", strings.Join(request.UserInfo.Groups, ", ")))
 				ret.UID = request.AdmissionRequest.UID
 				return ret
 			}
 		}
 
-		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Mat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support"))
+		ret = admissionctl.Denied(fmt.Sprintf("User '%s' prevented from accessing Red Mat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support", request.UserInfo.Username))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
