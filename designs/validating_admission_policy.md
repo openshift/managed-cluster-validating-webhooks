@@ -2,7 +2,7 @@
 
 Author: @mjlshen
 
-Last Updated: 11/26/2023
+Last Updated: 12/04/2023
 
 ## Summary
 
@@ -35,6 +35,7 @@ This proposal will allow us to:
 
 ## Relevant Links
 
+- [SD-ADR-0184: Migrating ValidatingWebhooks to ValidatingAdmissionPolicy](https://docs.google.com/document/d/1bgUr2CE6Al68uIU7bUDXszPiTefRQe3nSHoR3_rIwm4)
 - [ValidatingAdmissionPolicy Documentation](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy)
 - [API-1609](https://issues.redhat.com/browse/API-1609) Validating Admission Policies
 - [KEP-3488: CEL for Admission Control](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/3488-cel-admission-control/README.md)
