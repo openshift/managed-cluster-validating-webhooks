@@ -189,6 +189,33 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			testID:          "ocm-agent-operator-can-create-networkpolicy-in-managed-namespaces",
+			targetNamespace: "openshift-ocm-agent-operator",
+			targetResource:  "networkpolicy",
+			username:        "system:serviceaccount:openshift-ocm-agent-operator:ocm-agent-operator",
+			userGroups:      []string{"system:serviceaccounts:openshift-ocm-agent-operator:ocm-agent-operator"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "ocm-agent-operator-can-update-networkpolicy-in-managed-namespaces",
+			targetNamespace: "openshift-ocm-agent-operator",
+			targetResource:  "networkpolicy",
+			username:        "system:serviceaccounts:openshift-ocm-agent-operator:ocm-agent-operator",
+			userGroups:      []string{"system:serviceaccounts:openshift-ocm-agent-operator:ocm-agent-operator"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "ocm-agent-operator-can-delete-networkpolicy-in-managed-namespaces",
+			targetNamespace: "openshift-ocm-agent-operator",
+			targetResource:  "networkpolicy",
+			username:        "system:serviceaccounts:openshift-ocm-agent-operator:ocm-agent-operator",
+			userGroups:      []string{"system:serviceaccounts:openshift-ocm-agent-operator:ocm-agent-operator"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
 
 			testID:          "Allowed-can-create-networkpolicy-in-managed-namespaces",
 			targetNamespace: "openshift-kube-apiserver",

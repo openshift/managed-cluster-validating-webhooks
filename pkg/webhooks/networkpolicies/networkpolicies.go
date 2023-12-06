@@ -26,7 +26,7 @@ const (
 
 var (
 	timeout                          int32 = 2
-	allowedUsers                           = []string{"system:admin", "backplane-cluster-admin"}
+	allowedUsers                           = []string{"system:admin", "backplane-cluster-admin", "system:serviceaccounts:openshift-ocm-agent-operator:ocm-agent-operator"}
 	sreAdminGroups                         = []string{"system:serviceaccounts:openshift-backplane-srep"}
 	privilegedServiceAccountGroupsRe       = regexp.MustCompile(privilegedServiceAccountGroups)
 	scope                                  = admissionregv1.NamespacedScope
