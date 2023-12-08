@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -134,12 +135,12 @@ func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.Securi
 
 // isAllowedUserGroup checks if the user or group is allowed to perform the action
 func isAllowedUserGroup(request admissionctl.Request) bool {
-	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
+	if slices.Contains(allowedUsers, request.UserInfo.Username) {
 		return true
 	}
 
 	for _, group := range allowedGroups {
-		if utils.SliceContains(group, request.UserInfo.Groups) {
+		if slices.Contains(request.UserInfo.Groups, group) {
 			return true
 		}
 	}

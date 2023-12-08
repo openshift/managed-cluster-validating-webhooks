@@ -3,6 +3,7 @@ package ingresscontroller
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
@@ -157,7 +158,7 @@ func (wh *IngressControllerWebhook) authorized(request admissionctl.Request) adm
 // isAllowedUser checks if the user is allowed to perform the action
 func isAllowedUser(request admissionctl.Request) bool {
 	log.Info(fmt.Sprintf("Checking username %s on whitelist", request.UserInfo.Username))
-	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
+	if slices.Contains(allowedUsers, request.UserInfo.Username) {
 		log.Info(fmt.Sprintf("%s is listed in whitelist", request.UserInfo.Username))
 		return true
 	}

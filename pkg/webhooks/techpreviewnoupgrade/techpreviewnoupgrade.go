@@ -6,7 +6,7 @@ import (
 	"os"
 
 	configv1 "github.com/openshift/api/config/v1"
-	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,9 +17,8 @@ import (
 )
 
 const (
-	WebhookName           string = "techpreviewnoupgrade-validation"
-	unprivilegedNamespace string = `(openshift-logging|openshift-operators)`
-	docString             string = `Managed OpenShift Customers may not use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters.`
+	WebhookName string = "techpreviewnoupgrade-validation"
+	docString   string = `Managed OpenShift Customers may not use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters.`
 )
 
 var (
@@ -132,10 +131,6 @@ func (s *TechPreviewNoUpgradeWebhook) authorized(request admissionctl.Request) a
 	ret.UID = request.AdmissionRequest.UID
 
 	return ret
-}
-
-func hasTechPreviewNoUpgrade(features []string) bool {
-	return (utils.SliceContains("TechPreviewNoUpgrade", features))
 }
 
 func NewWebhook() *TechPreviewNoUpgradeWebhook {

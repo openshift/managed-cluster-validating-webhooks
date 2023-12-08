@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	networkv1 "github.com/openshift/api/network/v1"
@@ -28,7 +29,7 @@ import (
 
 const (
 	WebhookName       string = "regular-user-validation"
-	docString         string = `Managed OpenShift customers may not manage any objects in the following APIgroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
+	docString         string = `Managed OpenShift customers may not manage any objects in the following APIGroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
 	mustGatherKind    string = "MustGather"
 	mustGatherGroup   string = "managed.openshift.io"
 	customDomainKind  string = "CustomDomain"
@@ -235,13 +236,13 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, adminUsers) {
+	if slices.Contains(adminUsers, request.AdmissionRequest.UserInfo.Username) {
 		ret = admissionctl.Allowed("Specified admin users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 	for _, userGroup := range request.UserInfo.Groups {
-		if utils.SliceContains(userGroup, adminGroups) {
+		if slices.Contains(adminGroups, userGroup) {
 			ret = admissionctl.Allowed("Members of admin groups are allowed")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
@@ -262,26 +263,26 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 
 // isMustGatherAuthorized check if request is authorized for MustGather CR
 func isMustGatherAuthorized(request admissionctl.Request) bool {
-	return (utils.SliceContains(ceeGroup, request.UserInfo.Groups) &&
+	return slices.Contains(request.UserInfo.Groups, ceeGroup) &&
 		request.Kind.Kind == mustGatherKind &&
-		request.Kind.Group == mustGatherGroup)
+		request.Kind.Group == mustGatherGroup
 }
 
 // isCustomDomainAuthorized check if request is authorized for CustomDomain CR
 func isCustomDomainAuthorized(request admissionctl.Request) bool {
-	return ((utils.SliceContains("cluster-admins", request.UserInfo.Groups) ||
-		utils.SliceContains("dedicated-admins", request.UserInfo.Groups)) &&
+	return (slices.Contains(request.UserInfo.Groups, "cluster-admins") ||
+		slices.Contains(request.UserInfo.Groups, "dedicated-admins")) &&
 		request.Kind.Kind == customDomainKind &&
-		request.Kind.Group == customDomainGroup)
+		request.Kind.Group == customDomainGroup
 }
 
 // isNetNamespaceAuthorized check if request is authorized for NetNamespace CR
 func isNetNamespaceAuthorized(s *RegularuserWebhook, request admissionctl.Request) bool {
-	return ((utils.SliceContains("cluster-admins", request.UserInfo.Groups) ||
-		utils.SliceContains("dedicated-admins", request.UserInfo.Groups)) &&
+	return (slices.Contains(request.UserInfo.Groups, "cluster-admins") ||
+		slices.Contains(request.UserInfo.Groups, "dedicated-admins")) &&
 		request.Kind.Kind == netNamespaceKind &&
 		request.Kind.Group == netNamespaceGroup &&
-		isNetNamespaceValid(s, request))
+		isNetNamespaceValid(s, request)
 }
 
 // isNetNamespaceValid check if the NetNamespace is valid

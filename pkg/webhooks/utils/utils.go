@@ -30,15 +30,6 @@ func DefaultLabelSelector() metav1.LabelSelector {
 	}
 }
 
-func SliceContains(needle string, haystack []string) bool {
-	for _, check := range haystack {
-		if needle == check {
-			return true
-		}
-	}
-	return false
-}
-
 func RegexSliceContains(needle string, haystack []string) bool {
 	for _, check := range haystack {
 		checkRe := regexp.MustCompile(check)

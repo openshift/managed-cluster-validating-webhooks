@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"sync"
 
 	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
@@ -14,9 +15,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 const (
@@ -203,7 +203,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		}
 	}
 	// This must be prior to privileged namespace check
-	if utils.SliceContains(layeredProductAdminGroupName, request.UserInfo.Groups) &&
+	if slices.Contains(request.UserInfo.Groups, layeredProductAdminGroupName) &&
 		layeredProductNamespaceRe.Match([]byte(ns.GetName())) {
 		ret = admissionctl.Allowed("Layered product admins may access")
 		ret.UID = request.AdmissionRequest.UID
@@ -341,19 +341,15 @@ func NewWebhook() *NamespaceWebhook {
 }
 
 func amIAdmin(request admissionctl.Request) bool {
-	amISREAdmin := false
-	amIClusterAdmin := false
-
-	if utils.SliceContains(request.UserInfo.Username, clusterAdminUsers) || utils.SliceContains(clusterAdminGroup, request.UserInfo.Groups) {
-		amIClusterAdmin = true
+	if slices.Contains(clusterAdminUsers, request.UserInfo.Username) || slices.Contains(request.UserInfo.Groups, clusterAdminGroup) {
+		return true
 	}
 
 	for _, group := range sreAdminGroups {
-		if utils.SliceContains(group, request.UserInfo.Groups) {
-			amISREAdmin = true
-			break
+		if slices.Contains(request.UserInfo.Groups, group) {
+			return true
 		}
 	}
 
-	return (amIClusterAdmin || amISREAdmin)
+	return false
 }

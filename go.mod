@@ -1,6 +1,6 @@
 module github.com/openshift/managed-cluster-validating-webhooks
 
-go 1.18
+go 1.21
 
 require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
