@@ -84,14 +84,14 @@ $(BINARY_FILE): test $(GO_SOURCES)
 build-base: build-image build-package-image
 .PHONY: build-image
 build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
-	$(CONTAINER_ENGINE) build -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
+	$(CONTAINER_ENGINE) build --platform=linux/amd64 -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
 	$(CONTAINER_ENGINE) tag $(IMG):$(IMAGETAG) $(IMG):latest
 
 .PHONY: build-package-image
 build-package-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 	# Change image placeholder in deployment template to the real image
 	$(shell sed -i -e "s#REPLACED_BY_PIPELINE#$(IMG):$(IMAGETAG)#g" $(PACKAGE_RESOURCE_DESTINATION))
-	$(CONTAINER_ENGINE) build -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/config/package/managed-cluster-validating-webhooks-package.Containerfile) . && \
+	$(CONTAINER_ENGINE) build --platform=linux/amd64 -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/config/package/managed-cluster-validating-webhooks-package.Containerfile) . && \
 	$(CONTAINER_ENGINE) tag $(PKG_IMG):$(IMAGETAG) $(PKG_IMG):latest
 	# Restore the template file modified for the package build
 	git checkout $(PACKAGE_RESOURCE_DESTINATION)
