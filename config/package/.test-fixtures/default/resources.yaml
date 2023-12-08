@@ -69,14 +69,14 @@ spec:
               - key: hypershift.openshift.io/cluster
                 operator: In
                 values:
-                - '{{.package.metadata.namespace}}'
+                - 'ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3'
             weight: 100
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - podAffinityTerm:
               labelSelector:
                 matchLabels:
-                  hypershift.openshift.io/hosted-control-plane: '{{.package.metadata.namespace}}'
+                  hypershift.openshift.io/hosted-control-plane: 'ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3'
               topologyKey: kubernetes.io/hostname
             weight: 100
         podAntiAffinity:
@@ -96,7 +96,7 @@ spec:
         - -cacert
         - /service-ca/service-ca.crt
         - -tls
-        image: {{ index .images "validating-webhooks-server" }}
+        image: registry.package-operator.run/static-image
         imagePullPolicy: IfNotPresent
         name: webhooks
         ports:
@@ -122,7 +122,7 @@ spec:
       - effect: NoSchedule
         key: hypershift.openshift.io/cluster
         operator: Equal
-        value: '{{.package.metadata.namespace}}'
+        value: 'ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3'
       volumes:
       - name: service-certs
         secret:
@@ -144,8 +144,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/clusterrolebindings-validation
+    caBundle: 'SSBvd2UgeW91IGEgc2VydmljZSBDQSAucGVt'
+    url: https://validation-webhook.ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3.svc.cluster.local/clusterrolebindings-validation
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: clusterrolebindings-validation.managed.openshift.io
@@ -174,8 +174,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/imagecontentpolicies-validation
+    caBundle: 'SSBvd2UgeW91IGEgc2VydmljZSBDQSAucGVt'
+    url: https://validation-webhook.ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3.svc.cluster.local/imagecontentpolicies-validation
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: imagecontentpolicies-validation.managed.openshift.io
@@ -216,8 +216,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/namespace-validation
+    caBundle: 'SSBvd2UgeW91IGEgc2VydmljZSBDQSAucGVt'
+    url: https://validation-webhook.ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3.svc.cluster.local/namespace-validation
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: namespace-validation.managed.openshift.io
@@ -248,8 +248,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/regularuser-validation
+    caBundle: 'SSBvd2UgeW91IGEgc2VydmljZSBDQSAucGVt'
+    url: https://validation-webhook.ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3.svc.cluster.local/regularuser-validation
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: regular-user-validation.managed.openshift.io
@@ -360,8 +360,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/scc-validation
+    caBundle: 'SSBvd2UgeW91IGEgc2VydmljZSBDQSAucGVt'
+    url: https://validation-webhook.ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3.svc.cluster.local/scc-validation
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: scc-validation.managed.openshift.io
@@ -391,8 +391,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/serviceaccount-validation
+    caBundle: 'SSBvd2UgeW91IGEgc2VydmljZSBDQSAucGVt'
+    url: https://validation-webhook.ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3.svc.cluster.local/serviceaccount-validation
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: serviceaccount-validation.managed.openshift.io
@@ -421,8 +421,8 @@ webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/techpreviewnoupgrade-validation
+    caBundle: 'SSBvd2UgeW91IGEgc2VydmljZSBDQSAucGVt'
+    url: https://validation-webhook.ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3.svc.cluster.local/techpreviewnoupgrade-validation
   failurePolicy: Ignore
   matchPolicy: Equivalent
   name: techpreviewnoupgrade-validation.managed.openshift.io

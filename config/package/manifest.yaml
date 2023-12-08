@@ -32,3 +32,18 @@ spec:
         kind:
           group: apps
           kind: Deployment
+  images:
+  - name: validating-webhooks-server
+    image: REPLACED_BY_PIPELINE
+test:
+  kubeconform:
+    kubernetesVersion: v1.28.2
+  template:
+  - name: default
+    context:
+      package:
+        metadata:
+          name: validating-webhooks
+          namespace: ocm-staging-27856078sqvcknaeamh6hunqmu6eorv3-linnguye-hcp-3
+      config:
+        serviceca: I owe you a service CA .pem
