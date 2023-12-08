@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -146,12 +147,12 @@ func (s *serviceAccountWebhook) renderServiceAccount(request admissionctl.Reques
 
 // isAllowedUserGroup checks if the user or group is allowed to perform the action
 func isAllowedUserGroup(request admissionctl.Request) bool {
-	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
+	if slices.Contains(allowedUsers, request.UserInfo.Username) {
 		return true
 	}
 
 	for _, group := range allowedGroups {
-		if utils.SliceContains(group, request.UserInfo.Groups) {
+		if slices.Contains(request.UserInfo.Groups, group) {
 			return true
 		}
 	}
@@ -164,7 +165,7 @@ func isAllowedUserGroup(request admissionctl.Request) bool {
 func isProtectedNamespace(request admissionctl.Request) bool {
 	ns := request.Namespace
 
-	if config.IsPrivilegedNamespace(ns) && !utils.SliceContains(ns, exceptionNamespaces) {
+	if config.IsPrivilegedNamespace(ns) && !slices.Contains(exceptionNamespaces, ns) {
 		return true
 	}
 	return false

@@ -3,6 +3,7 @@ package osd
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	networkv1 "github.com/openshift/api/network/v1"
@@ -138,13 +139,13 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, adminUsers) {
+	if slices.Contains(adminUsers, request.AdmissionRequest.UserInfo.Username) {
 		ret = admissionctl.Allowed("Specified admin users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 	for _, userGroup := range request.UserInfo.Groups {
-		if utils.SliceContains(userGroup, adminGroups) {
+		if slices.Contains(adminGroups, userGroup) {
 			ret = admissionctl.Allowed("Members of admin groups are allowed")
 			ret.UID = request.AdmissionRequest.UID
 			return ret

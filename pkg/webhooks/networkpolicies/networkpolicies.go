@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 
 	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
@@ -12,16 +13,14 @@ import (
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 const (
 	WebhookName                    string = "networkpolicies-validation"
 	docString                      string = `Managed OpenShift Customers may not create NetworkPolicies in namespaces managed by Red Hat.`
 	privilegedServiceAccountGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
-	managedNamespaces              string = `(^openshift-.*|kube-system)`
 )
 
 var (
@@ -108,14 +107,14 @@ func (s *networkpoliciesruleWebhook) authorized(request admissionctl.Request) ad
 	return ret
 }
 
-// isclusterAdminUsers checks if the user or group is allowed to perform the action
+// isAllowedUser checks if the user or group is allowed to perform the action
 func isAllowedUser(request admissionctl.Request) bool {
-	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
+	if slices.Contains(allowedUsers, request.UserInfo.Username) {
 		return true
 	}
 
 	for _, group := range sreAdminGroups {
-		if utils.SliceContains(group, request.UserInfo.Groups) {
+		if slices.Contains(request.UserInfo.Groups, group) {
 			return true
 		}
 	}

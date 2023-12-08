@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 
 	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -110,14 +111,14 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 	return ret
 }
 
-// isclusterAdminUsers checks if the user or group is allowed to perform the action
+// isAllowedUser checks if the user or group is allowed to perform the action
 func isAllowedUser(request admissionctl.Request) bool {
-	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
+	if slices.Contains(allowedUsers, request.UserInfo.Username) {
 		return true
 	}
 
 	for _, group := range sreAdminGroups {
-		if utils.SliceContains(group, request.UserInfo.Groups) {
+		if slices.Contains(request.UserInfo.Groups, group) {
 			return true
 		}
 	}

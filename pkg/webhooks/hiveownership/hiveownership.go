@@ -2,6 +2,7 @@ package hiveownership
 
 import (
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -100,14 +101,14 @@ func (s *HiveOwnershipWebhook) authorized(request admissionctl.Request) admissio
 	var ret admissionctl.Response
 
 	// Admin users
-	if utils.SliceContains(request.AdmissionRequest.UserInfo.Username, privilegedUsers) {
+	if slices.Contains(privilegedUsers, request.AdmissionRequest.UserInfo.Username) {
 		ret = admissionctl.Allowed("Admin users may edit managed resources")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 	// Users in admin groups
 	for _, group := range request.AdmissionRequest.UserInfo.Groups {
-		if utils.SliceContains(group, adminGroups) {
+		if slices.Contains(adminGroups, group) {
 			ret = admissionctl.Allowed("Members of admin group may edit managed resources")
 			ret.UID = request.AdmissionRequest.UID
 			return ret

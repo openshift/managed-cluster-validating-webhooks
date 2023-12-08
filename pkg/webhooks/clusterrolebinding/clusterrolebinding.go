@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -149,11 +150,11 @@ func (s *ClusterRoleBindingWebHook) renderClusterRoleBinding(request admissionct
 
 // isAllowedUserGroup checks if the user or group is allowed to perform the action
 func isAllowedUserGroup(request admissionctl.Request) bool {
-	if utils.SliceContains(request.UserInfo.Username, allowedUsers) {
+	if slices.Contains(allowedUsers, request.UserInfo.Username) {
 		return true
 	}
 	for _, group := range allowedGroups {
-		if utils.SliceContains(group, request.UserInfo.Groups) {
+		if slices.Contains(request.UserInfo.Groups, group) {
 			return true
 		}
 	}
@@ -163,18 +164,15 @@ func isAllowedUserGroup(request admissionctl.Request) bool {
 // isProtectedNamespace returns true if clusterRoleBinding subject link
 // to ServiceAccount and openshift-*|kube-system ns
 func isProtectedNamespace(clusterRoleBinding *rbacv1.ClusterRoleBinding) bool {
-	isProtectNs := false
-
 	for _, subject := range clusterRoleBinding.Subjects {
 		if subject.Kind == "ServiceAccount" {
-			ns := subject.Namespace
-			if protectedNamespaces.Match([]byte(ns)) && !utils.SliceContains(ns, exceptionNamespaces) {
-				isProtectNs = true
+			if protectedNamespaces.Match([]byte(subject.Namespace)) && !slices.Contains(exceptionNamespaces, subject.Namespace) {
+				return true
 			}
 		}
 	}
 
-	return isProtectNs
+	return false
 }
 
 // GetURI implements Webhook interface
