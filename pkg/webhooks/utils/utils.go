@@ -22,6 +22,10 @@ var (
 	admissionCodecs = serializer.NewCodecFactory(admissionScheme)
 )
 
+func RequestMatchesGroupKind(req admissionctl.Request, kind, group string) bool {
+	return req.Kind.Kind == kind && req.Kind.Group == group
+}
+
 func DefaultLabelSelector() metav1.LabelSelector {
 	return metav1.LabelSelector{
 		MatchLabels: map[string]string{

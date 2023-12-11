@@ -15,9 +15,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // This webhook is intended for performing any webhook protection that is
@@ -28,20 +27,26 @@ import (
 // in the 'osd' package.
 
 const (
-	WebhookName       string = "regular-user-validation"
-	docString         string = `Managed OpenShift customers may not manage any objects in the following APIGroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
-	mustGatherKind    string = "MustGather"
-	mustGatherGroup   string = "managed.openshift.io"
-	customDomainKind  string = "CustomDomain"
-	customDomainGroup string = "managed.openshift.io"
-	netNamespaceKind  string = "NetNamespace"
-	netNamespaceGroup string = "network.openshift.io"
+	WebhookName         = "regular-user-validation"
+	docString           = `Managed OpenShift customers may not manage any objects in the following APIGroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
+	mustGatherKind      = "MustGather"
+	mustGatherGroup     = "managed.openshift.io"
+	clusterVersionKind  = "ClusterVersion"
+	clusterVersionGroup = "config.openshit.io"
+	customDomainKind    = "CustomDomain"
+	customDomainGroup   = "managed.openshift.io"
+	netNamespaceKind    = "NetNamespace"
+	netNamespaceGroup   = "network.openshift.io"
 )
 
 var (
-	adminGroups = []string{"system:serviceaccounts:openshift-backplane-srep"}
-	adminUsers  = []string{"backplane-cluster-admin"}
-	ceeGroup    = "system:serviceaccounts:openshift-backplane-cee"
+	adminGroups         = []string{"system:serviceaccounts:openshift-backplane-srep"}
+	adminUsers          = []string{"backplane-cluster-admin"}
+	clusterVersionUsers = []string{
+		"system:serviceaccount:openshift-managed-upgrade-operator:managed-upgrade-operator",
+		"system:serviceaccount:openshift-cluster-version:default",
+	}
+	ceeGroup = "system:serviceaccounts:openshift-backplane-cee"
 
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
@@ -211,36 +216,55 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") {
-		ret = admissionctl.Allowed("authenticated system: users are allowed")
-		ret.UID = request.AdmissionRequest.UID
-		return ret
-	}
+
 	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "kube:") {
 		ret = admissionctl.Allowed("kube: users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if isCustomDomainAuthorized(request) {
-		ret = admissionctl.Allowed("Management of CustomDomain CR is authorized")
+
+	switch {
+	case utils.RequestMatchesGroupKind(request, mustGatherKind, mustGatherGroup):
+		if isMustGatherAuthorized(request) {
+			ret = admissionctl.Allowed("Management of MustGather CR is authorized")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+	case utils.RequestMatchesGroupKind(request, customDomainKind, customDomainGroup):
+		if isCustomDomainAuthorized(request) {
+			ret = admissionctl.Allowed("Management of CustomDomain CR is authorized")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+	case utils.RequestMatchesGroupKind(request, clusterVersionKind, clusterVersionGroup):
+		if isClusterVersionAuthorized(request) {
+			return utils.WebhookResponse(request, true, "")
+		} else {
+			log.Info("Denying access", "request", request.AdmissionRequest)
+			return utils.WebhookResponse(request, false, "Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+		}
+	case utils.RequestMatchesGroupKind(request, netNamespaceKind, netNamespaceGroup):
+		if isNetNamespaceAuthorized(s, request) {
+			ret = admissionctl.Allowed("Management of NetNamespace CR is authorized")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+	}
+
+	// TODO: Do not allow all system:serviceaccount:* users or belong to system:serviceaccounts:* groups
+	// https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") {
+		ret = admissionctl.Allowed("authenticated system: users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	if isMustGatherAuthorized(request) {
-		ret = admissionctl.Allowed("Management of MustGather CR is authorized")
-		ret.UID = request.AdmissionRequest.UID
-		return ret
-	}
-	if isNetNamespaceAuthorized(s, request) {
-		ret = admissionctl.Allowed("Management of NetNamespace CR is authorized")
-		ret.UID = request.AdmissionRequest.UID
-		return ret
-	}
+
 	if slices.Contains(adminUsers, request.AdmissionRequest.UserInfo.Username) {
 		ret = admissionctl.Allowed("Specified admin users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
+
 	for _, userGroup := range request.UserInfo.Groups {
 		if slices.Contains(adminGroups, userGroup) {
 			ret = admissionctl.Allowed("Members of admin groups are allowed")
@@ -263,26 +287,43 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 
 // isMustGatherAuthorized check if request is authorized for MustGather CR
 func isMustGatherAuthorized(request admissionctl.Request) bool {
-	return slices.Contains(request.UserInfo.Groups, ceeGroup) &&
-		request.Kind.Kind == mustGatherKind &&
-		request.Kind.Group == mustGatherGroup
+	return slices.Contains(request.UserInfo.Groups, ceeGroup)
 }
 
 // isCustomDomainAuthorized check if request is authorized for CustomDomain CR
 func isCustomDomainAuthorized(request admissionctl.Request) bool {
-	return (slices.Contains(request.UserInfo.Groups, "cluster-admins") ||
-		slices.Contains(request.UserInfo.Groups, "dedicated-admins")) &&
-		request.Kind.Kind == customDomainKind &&
-		request.Kind.Group == customDomainGroup
+	return slices.Contains(request.UserInfo.Groups, "cluster-admins") ||
+		slices.Contains(request.UserInfo.Groups, "dedicated-admins")
 }
 
 // isNetNamespaceAuthorized check if request is authorized for NetNamespace CR
 func isNetNamespaceAuthorized(s *RegularuserWebhook, request admissionctl.Request) bool {
 	return (slices.Contains(request.UserInfo.Groups, "cluster-admins") ||
 		slices.Contains(request.UserInfo.Groups, "dedicated-admins")) &&
-		request.Kind.Kind == netNamespaceKind &&
-		request.Kind.Group == netNamespaceGroup &&
 		isNetNamespaceValid(s, request)
+}
+
+// isClusterVersionAuthorized only allows specific K8s serviceaccounts to modify ClusterVersion resources
+func isClusterVersionAuthorized(request admissionctl.Request) bool {
+	if slices.Contains(clusterVersionUsers, request.UserInfo.Username) {
+		return true
+	}
+
+	if slices.Contains(adminUsers, request.AdmissionRequest.UserInfo.Username) {
+		return true
+	}
+
+	for _, userGroup := range request.UserInfo.Groups {
+		if slices.Contains(adminGroups, userGroup) {
+			return true
+		}
+	}
+
+	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") && !strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:serviceaccount:") {
+		return true
+	}
+
+	return false
 }
 
 // isNetNamespaceValid check if the NetNamespace is valid
@@ -315,7 +356,7 @@ func shouldAllowConfigMapChange(s *RegularuserWebhook, request admissionctl.Requ
 		return false
 	}
 	configMap := &corev1.ConfigMap{}
-	if admissionregv1.OperationType(request.Operation) == admissionregv1.OperationType("DELETE") {
+	if admissionregv1.OperationType(request.Operation) == admissionregv1.Delete {
 		err = decoder.DecodeRaw(request.OldObject, configMap)
 	} else {
 		err = decoder.DecodeRaw(request.Object, configMap)
@@ -354,7 +395,7 @@ func NewWebhook() *RegularuserWebhook {
 		os.Exit(1)
 	}
 
-	err = networkv1.AddToScheme(scheme)
+	err = networkv1.Install(scheme)
 	if err != nil {
 		log.Error(err, "Fail adding networkv1 scheme to RegularuserWebhook")
 		os.Exit(1)
