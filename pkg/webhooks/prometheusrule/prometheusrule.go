@@ -28,6 +28,7 @@ var (
 	allowedUsers                           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
 	sreAdminGroups                         = []string{"system:serviceaccounts:openshift-backplane-srep"}
 	privilegedServiceAccountGroupsRe       = regexp.MustCompile(privilegedServiceAccountGroups)
+	privilegedLabels                       = map[string]string{"app.kubernetes.io/name": "stackrox"}
 	scope                                  = admissionregv1.NamespacedScope
 	rules                                  = []admissionregv1.RuleWithOperations{
 		{
@@ -100,6 +101,13 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 			}
 		}
 
+		// TODO: [OSD-20025] Remove this exception after MON-3518 is completed
+		if hasPrivilegedLabel(pr) {
+			ret = admissionctl.Allowed("PrometheusRules with privileged labels can be modified")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+
 		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support"))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
@@ -123,6 +131,16 @@ func isAllowedUser(request admissionctl.Request) bool {
 		}
 	}
 
+	return false
+}
+
+// hasPrivilegedLabel checks if the rendered rule's labels match one of the privilegedLabels
+func hasPrivilegedLabel(rule *prometheusRule) bool {
+	for key, val := range privilegedLabels {
+		if rule.Labels[key] == val {
+			return true
+		}
+	}
 	return false
 }
 
