@@ -537,7 +537,7 @@
           "*"
         ],
         "resources": [
-          "kubelet"
+          "featuregates"
         ],
         "scope": "Cluster"
       }
@@ -560,7 +560,7 @@
           "*"
         ],
         "resources": [
-          "featuregates"
+          "kubelet"
         ],
         "scope": "Cluster"
       }
