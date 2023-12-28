@@ -537,11 +537,34 @@
           "*"
         ],
         "resources": [
-          "featuregates"
+          "kubelet"
         ],
         "scope": "Cluster"
       }
     ],
     "documentString": "Managed OpenShift Customers may not use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters."
+  },
+  {
+    "webhookName": "kubeletconfig-validation",
+    "rules": [
+      {
+        "operations": [
+          "CREATE",
+          "UPDATE",
+          "DELETE"
+        ],
+        "apiGroups": [
+          "config.openshift.io"
+        ],
+        "apiVersions": [
+          "*"
+        ],
+        "resources": [
+          "featuregates"
+        ],
+        "scope": "Cluster"
+      }
+    ],
+    "documentString": "Managed OpenShift customers may not modify kubelet config resources because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring."
   }
 ]

@@ -70,5 +70,9 @@
   {
     "webhookName": "techpreviewnoupgrade-validation",
     "documentString": "Managed OpenShift Customers may not use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters."
+  },
+  {
+    "webhookName": "kubeletconfig-validation",
+    "documentString": "Managed OpenShift customers may not modify kubelet config resources because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring."
   }
 ]
