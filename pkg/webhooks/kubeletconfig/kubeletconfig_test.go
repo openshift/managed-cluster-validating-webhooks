@@ -137,7 +137,7 @@ func TestValidate(t *testing.T) {
 func TestName(t *testing.T) {
 	name := NewWebhook().Name()
 
-	if name != "ingress-config-validation" {
+	if name != "kubeletconfig-validation" {
 		t.Errorf("Name(): expected \"kubeletconfig-validation\", got \"%s\"\n", name)
 	}
 }
