@@ -17,7 +17,6 @@ import (
 )
 
 var namespaceFiles = []string{
-	"addons-namespaces.ConfigMap.yaml",
 	"managed-namespaces.ConfigMap.yaml",
 	"ocp-namespaces.ConfigMap.yaml",
 }
