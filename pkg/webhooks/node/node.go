@@ -14,6 +14,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/localmetrics"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 )
 
@@ -132,6 +133,8 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 	}
 
 	if isProtectedActionOnNode(request) {
+		localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+
 		ret = admissionctl.Denied(`Prevented from accessing Red Hat managed resources. This is an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support.
 
 To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool.`)

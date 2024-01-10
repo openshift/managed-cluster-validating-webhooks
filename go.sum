@@ -275,12 +275,16 @@ github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 h
 github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298/go.mod h1:6dxhWPY3Wr/0b0eGrFpV7gcyeS+ne48Mo9OQ9dxrLNI=
 github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5 h1:adHXZ1WFqCvXpargpTa6divneeUuvV2xr/D6NWgbqS8=
 github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5/go.mod h1:VIxA5HhvBmsqVn7aUVQYs004B9K4U5A+HrFwvRq2nK8=
+github.com/openshift/operator-custom-metrics v0.5.1 h1:1pk4YMUV+cmqfV0f2fyxY62cl7Gc76kwudJT+EdcfYM=
+github.com/openshift/operator-custom-metrics v0.5.1/go.mod h1:0dYDHi/ubKRWzsC9MmW6bRMdBgo1QSOuAh3GupTe0Sw=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1 h1:IIEF5Sp5jDnqRNoHH5fPLNOsScMhmfyWmFP7m04jokc=
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1/go.mod h1:/xf16Bu3krDP6G5WhrJL9avDnLW/AN0g7hAIK63mbes=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
 github.com/prometheus/client_golang v1.7.1/go.mod h1:PY5Wy2awLA44sXw4AOSfFBetzPP4j5+D6mVACh+pe2M=

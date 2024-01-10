@@ -1,19 +1,25 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"flag"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 
+	"github.com/openshift/operator-custom-metrics/pkg/metrics"
 	klog "k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/openshift/managed-cluster-validating-webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/dispatcher"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/k8sutil"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/localmetrics"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
 )
 
@@ -28,9 +34,15 @@ var (
 	tlsKey  = flag.String("tlskey", "", "TLS Key for TLS")
 	tlsCert = flag.String("tlscert", "", "TLS Certificate")
 	caCert  = flag.String("cacert", "", "CA Cert file")
+
+	metricsPath = "/metrics"
+	metricsPort = "8080"
+	hours       = 4
 )
 
 func main() {
+	var metricsAddr string
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":"+metricsPort, "The address the metric endpoint binds to.")
 	flag.Parse()
 	klog.SetOutput(os.Stdout)
 
@@ -54,6 +66,28 @@ func main() {
 	}
 	if *testHooks {
 		os.Exit(0)
+	}
+
+	// start metrics server
+	metricsServer := metrics.NewBuilder(config.OperatorNamespace, config.OperatorName).
+		WithPort(metricsPort).
+		WithPath(metricsPath).
+		WithCollectors(localmetrics.MetricsList).
+		GetConfig()
+
+	// get the namespace we're running in to confirm if running in a cluster
+	if _, err := k8sutil.GetOperatorNamespace(); err != nil {
+		if errors.Is(err, k8sutil.ErrRunLocal) {
+			log.Info("Skipping metrics server creation; not running in a cluster.")
+		} else {
+			log.Error(err, "Failed to get operator namespace")
+		}
+	} else {
+		if err := metrics.ConfigureMetrics(context.TODO(), *metricsServer); err != nil {
+			log.Error(err, "Failed to configure metrics")
+			os.Exit(1)
+		}
+		log.Info("Successfully configured metrics")
 	}
 
 	server := &http.Server{
