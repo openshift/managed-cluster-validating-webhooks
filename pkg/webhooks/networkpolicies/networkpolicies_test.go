@@ -80,6 +80,15 @@ func runNetworkPolicyTests(t *testing.T, tests []networkPolicyTestSuites) {
 func TestUsers(t *testing.T) {
 	tests := []networkPolicyTestSuites{
 		{
+			// osde2e-related things can delete a networkpolicy
+			testID:          "osde2e-oao-delete-networkpolicy",
+			targetNamespace: "openshift-ocm-agent-operator",
+			username:        "system:serviceaccount:osde2e-h-9a47q:cluster-admin",
+			userGroups:      []string{"system:serviceaccounts:osde2e-h-9a47q", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
 			testID:          "regular-user-cant-create-networkpolicy-in-managed-namespaces",
 			targetNamespace: "openshift-kube-apiserver",
 			targetResource:  "networkpolicy",

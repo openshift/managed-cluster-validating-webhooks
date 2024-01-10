@@ -15,7 +15,14 @@ import (
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-const validContentType string = "application/json"
+const (
+	validContentType string = "application/json"
+	// PrivilegedServiceAccountGroups is a regex string of serviceaccounts that our webhooks should commonly allow to
+	// perform restricted actions.
+	// Centralized osde2e tests have a serviceaccount like "system:serviceaccounts:osde2e-abcde"
+	// Decentralized osde2e tests have a serviceaccount like "system:serviceaccounts:osde2e-h-abcde"
+	PrivilegedServiceAccountGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-(h-)?[a-z0-9]{5})`
+)
 
 var (
 	admissionScheme = runtime.NewScheme()
