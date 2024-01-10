@@ -18,16 +18,15 @@ import (
 )
 
 const (
-	WebhookName                    string = "networkpolicies-validation"
-	docString                      string = `Managed OpenShift Customers may not create NetworkPolicies in namespaces managed by Red Hat.`
-	privilegedServiceAccountGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
+	WebhookName string = "networkpolicies-validation"
+	docString   string = `Managed OpenShift Customers may not create NetworkPolicies in namespaces managed by Red Hat.`
 )
 
 var (
 	timeout                          int32 = 2
 	allowedUsers                           = []string{"system:admin", "backplane-cluster-admin"}
 	sreAdminGroups                         = []string{"system:serviceaccounts:openshift-backplane-srep"}
-	privilegedServiceAccountGroupsRe       = regexp.MustCompile(privilegedServiceAccountGroups)
+	privilegedServiceAccountGroupsRe       = regexp.MustCompile(utils.PrivilegedServiceAccountGroups)
 	scope                                  = admissionregv1.NamespacedScope
 	rules                                  = []admissionregv1.RuleWithOperations{
 		{

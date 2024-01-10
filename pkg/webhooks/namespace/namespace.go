@@ -22,7 +22,6 @@ import (
 const (
 	WebhookName                  string = "namespace-validation"
 	badNamespace                 string = `(^com$|^io$|^in$)`
-	privilegedServiceAccounts    string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
 	layeredProductNamespace      string = `^redhat.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
 	docString                    string = `Managed OpenShift Customers may not modify namespaces specified in the %v ConfigMaps because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels %s.`
@@ -37,7 +36,7 @@ var (
 var (
 	clusterAdminUsers           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
 	sreAdminGroups              = []string{"system:serviceaccounts:openshift-backplane-srep"}
-	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
+	privilegedServiceAccountsRe = regexp.MustCompile(utils.PrivilegedServiceAccountGroups)
 	layeredProductNamespaceRe   = regexp.MustCompile(layeredProductNamespace)
 	// protectedLabels are labels which managed customers should not be allowed
 	// change by dedicated-admins.
