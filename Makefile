@@ -138,7 +138,7 @@ $(PACKAGE_RESOURCE_DESTINATION):
 .PHONY: container-test
 container-test:
 	$(CONTAINER_ENGINE) run \
-		-v $(CURDIR):$(CURDIR):z \
+		-v $(CURDIR):$(CURDIR) \
 		-w $(CURDIR) \
 		-e GOFLAGS=$(GOFLAGS) \
 		--rm \
