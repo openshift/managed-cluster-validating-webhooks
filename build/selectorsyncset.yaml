@@ -339,6 +339,37 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
+        name: sre-node-validation-osd
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /node-validation-osd
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: node-validation-osd.managed.openshift.io
+        rules:
+        - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - '*'
+          resources:
+          - nodes
+          - nodes/*
+          scope: '*'
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
         name: sre-pod-validation
       webhooks:
       - admissionReviewVersions:
