@@ -1,6 +1,7 @@
 package customresourcedefinitions
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -17,8 +18,8 @@ const testObjectRaw string = `
 	"kind": "CustomResourceDefinition",
 	"metadata": {
         "name": "test",
-		"namespace": "%s",
-		"uid": "1234"
+		"uid": "1234",
+		"labels": %s
 	}
 }`
 
@@ -26,15 +27,15 @@ type customResourceDefinitionTestSuites struct {
 	testID          string
 	username        string
 	userGroups      []string
-	targetNamespace string
 	targetResource  string
 	operation       admissionv1.Operation
+	labels          map[string]string
 	shouldBeAllowed bool
 }
 
-func createRawJSONString(namespace string) string {
-	s := fmt.Sprintf(testObjectRaw, namespace)
-	return s
+func createRawJSONString(labels map[string]string) string {
+	labelsMarshaled, _ := json.Marshal(labels)
+	return fmt.Sprintf(testObjectRaw, labelsMarshaled)
 }
 
 func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefinitionTestSuites) {
@@ -50,7 +51,7 @@ func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefini
 	}
 
 	for _, test := range tests {
-		rawObjString := createRawJSONString(test.targetNamespace)
+		rawObjString := createRawJSONString(test.labels)
 
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
@@ -80,8 +81,8 @@ func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefini
 func TestUsers(t *testing.T) {
 	tests := []customResourceDefinitionTestSuites{
 		{
-			testID:          "regular-user-cant-create-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "regular-user-cant-create-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user1",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -89,8 +90,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "regular-user-cant-delete-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "regular-user-cant-delete-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user2",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -98,8 +99,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "regular-user-cant-update-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "regular-user-cant-update-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user3",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -107,8 +108,7 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "regular-user-can-create-customresourcedefinition-in-user-managed-namespaces",
-			targetNamespace: "my-monitoring",
+			testID:          "regular-user-can-create-customresourcedefinitions",
 			targetResource:  "customresourcedefinition",
 			username:        "user4",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -116,17 +116,7 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "regular-user-can-update-customresourcedefinition-in-user-managed-namespaces",
-			targetNamespace: "my-monitoring",
-			targetResource:  "customresourcedefinition",
-			username:        "user5",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "regular-user-can-delete-customresourcedefinition-in-user-managed-namespaces",
-			targetNamespace: "my-monitoring",
+			testID:          "regular-user-can-delete-customresourcedefinitions",
 			targetResource:  "customresourcedefinition",
 			username:        "user6",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -134,8 +124,16 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "regular-user-cant-create-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "regular-user-can-update-customresourcedefinitions",
+			targetResource:  "customresourcedefinition",
+			username:        "user5",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "unprivileged-serviceaccounts-cant-create-protected--customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -143,8 +141,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "regular-user-cant-delete-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "unprivileged-serviceaccounts-cant-delete-protected--customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -152,18 +150,17 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "regular-user-cant-update-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "unprivileged-serviceaccounts-cant-update-protected--customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
-
 		{
-			testID:          "blackplane-admin-can-create-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "blackplane-admin-can-create-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -171,8 +168,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "blackplane-admin-can-delete-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "blackplane-admin-can-delete-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -180,8 +177,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "blackplane-admin-can-update-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "blackplane-admin-can-update-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -189,9 +186,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-
-			testID:          "Allowed-can-create-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "Allowed-can-create-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -199,9 +195,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-
-			testID:          "Allowed-can-delete-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "Allowed-can-delete-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -209,9 +204,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-
-			testID:          "Allowed-can-update-customresourcedefinition-in-managed-namespaces",
-			targetNamespace: "openshift-monitoring",
+			testID:          "Allowed-can-update-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			username:        "system:serviceaccounts:openshift-test-ns",
 			targetResource:  "customresourcedefinition",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -219,8 +213,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "serviceaccount-in-managed-namespaces-can-create-customresourcedefinition-in-unmanaged-namespace",
-			targetNamespace: "unmanaged-namespace",
+			testID:          "serviceaccount-in-managed-namespaces-can-create-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:redhat-ns:test-operator",
 			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
@@ -228,17 +222,17 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "serviceaccount-in-managed-namespaces-can-create-customresourcedefinition-in-unmanaged-namespace",
-			targetNamespace: "unmanaged-namespace",
+			testID:          "serviceaccount-in-managed-namespaces-can-delete-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:redhat-ns:test-operator",
 			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
+			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "regular-user-can-delete-customresourcedefinition-in-unmanaged-namespace",
-			targetNamespace: "unmanaged-namespace",
+			testID:          "serviceaccount-in-managed-namespaces-can-update-protected-customresourcedefinitions",
+			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:redhat-ns:test-operator",
 			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},

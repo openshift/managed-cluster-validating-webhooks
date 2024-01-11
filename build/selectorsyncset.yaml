@@ -190,7 +190,7 @@ objects:
           - DELETE
           resources:
           - customresourcedefinitions
-          scope: Namespaced
+          scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
     - apiVersion: admissionregistration.k8s.io/v1

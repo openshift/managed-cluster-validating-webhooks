@@ -41,6 +41,10 @@ func DefaultLabelSelector() metav1.LabelSelector {
 	}
 }
 
+func IsProtectedByLabel(labels map[string]string) bool {
+	return labels["managed.openshift.io/protected"] == "true"
+}
+
 func RegexSliceContains(needle string, haystack []string) bool {
 	for _, check := range haystack {
 		checkRe := regexp.MustCompile(check)

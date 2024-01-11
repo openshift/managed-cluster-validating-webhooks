@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -19,7 +18,7 @@ import (
 
 const (
 	WebhookName                    string = "customresourcedefinitions-validation"
-	docString                      string = `Managed OpenShift Customers may not change CustomResourceDefinitions in namespaces managed by Red Hat.`
+	docString                      string = `Managed OpenShift Customers may not change CustomResourceDefinitions managed by Red Hat.`
 	privilegedServiceAccountGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
 )
 
@@ -28,7 +27,7 @@ var (
 	allowedUsers                           = []string{"system:admin", "backplane-cluster-admin"}
 	sreAdminGroups                         = []string{"system:serviceaccounts:openshift-backplane-srep"}
 	privilegedServiceAccountGroupsRe       = regexp.MustCompile(privilegedServiceAccountGroups)
-	scope                                  = admissionregv1.NamespacedScope
+	scope                                  = admissionregv1.ClusterScope
 	rules                                  = []admissionregv1.RuleWithOperations{
 		{
 			Operations: []admissionregv1.OperationType{
@@ -52,7 +51,7 @@ type customresourcedefinitionsruleWebhook struct {
 	s runtime.Scheme
 }
 
-// We just need a runtime object to get the namespace
+// We just need a runtime object to get the labels
 type customResourceDefinition struct {
 	runtime.Object
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
@@ -81,8 +80,8 @@ func (s *customresourcedefinitionsruleWebhook) authorized(request admissionctl.R
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if hookconfig.IsPrivilegedNamespace(np.GetNamespace()) {
-		log.Info(fmt.Sprintf("%s operation detected on managed namespace: %s", request.Operation, np.GetNamespace()))
+	if utils.IsProtectedByLabel(np.GetLabels()) {
+		log.Info(fmt.Sprintf("%s operation detected on protected CustomResourceDefinition: %s", request.Operation, np.Name))
 		if isAllowedUser(request) {
 			ret = admissionctl.Allowed(fmt.Sprintf("User '%s' in group(s) '%s' can operate on CustomResourceDefinitions", request.UserInfo.Username, strings.Join(request.UserInfo.Groups, ", ")))
 			ret.UID = request.AdmissionRequest.UID
@@ -102,7 +101,7 @@ func (s *customresourcedefinitionsruleWebhook) authorized(request admissionctl.R
 	}
 
 	log.Info("Allowing access", "request", request.AdmissionRequest)
-	ret = admissionctl.Allowed("Non managed namespace")
+	ret = admissionctl.Allowed("Non managed CustomResourceDefinition")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }
