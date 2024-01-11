@@ -17,7 +17,7 @@ const testObjectRaw string = `
 	"apiVersion": "apiextensions.k8s.io/v1",
 	"kind": "CustomResourceDefinition",
 	"metadata": {
-        "name": "test",
+        "name": "%s",
 		"uid": "1234",
 		"labels": %s
 	}
@@ -29,13 +29,14 @@ type customResourceDefinitionTestSuites struct {
 	userGroups      []string
 	targetResource  string
 	operation       admissionv1.Operation
+	name            string
 	labels          map[string]string
 	shouldBeAllowed bool
 }
 
-func createRawJSONString(labels map[string]string) string {
+func createRawJSONString(name string, labels map[string]string) string {
 	labelsMarshaled, _ := json.Marshal(labels)
-	return fmt.Sprintf(testObjectRaw, labelsMarshaled)
+	return fmt.Sprintf(testObjectRaw, name, labelsMarshaled)
 }
 
 func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefinitionTestSuites) {
@@ -51,7 +52,7 @@ func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefini
 	}
 
 	for _, test := range tests {
-		rawObjString := createRawJSONString(test.labels)
+		rawObjString := createRawJSONString(test.name, test.labels)
 
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
@@ -81,7 +82,7 @@ func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefini
 func TestUsers(t *testing.T) {
 	tests := []customResourceDefinitionTestSuites{
 		{
-			testID:          "regular-user-cant-create-protected-customresourcedefinitions",
+			testID:          "regular-user-cant-create-customresourcedefinitions-protected-bylabel",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user1",
@@ -90,7 +91,7 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "regular-user-cant-delete-protected-customresourcedefinitions",
+			testID:          "regular-user-cant-delete-customresourcedefinitions-protected-bylabel",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user2",
@@ -99,13 +100,48 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "regular-user-cant-update-protected-customresourcedefinitions",
+			testID:          "regular-user-cant-update-customresourcedefinitions-protected-bylabel",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user3",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
+		},
+		{
+			testID:          "regular-user-cant-create-customresourcedefinitions-protected-byname",
+			name:            "prometheusrules.monitoring.coreos.com",
+			targetResource:  "customresourcedefinition",
+			username:        "user1",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "regular-user-cant-delete-customresourcedefinitions-protected-byname",
+			name:            "prometheusrules.monitoring.coreos.com",
+			targetResource:  "customresourcedefinition",
+			username:        "user2",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "regular-user-cant-update-customresourcedefinitions-protected-byname",
+			name:            "prometheusrules.monitoring.coreos.com",
+			targetResource:  "customresourcedefinition",
+			username:        "user3",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "regular-user-can-create-customresourcedefinitions",
+			targetResource:  "customresourcedefinition",
+			username:        "user4",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "regular-user-can-create-customresourcedefinitions",

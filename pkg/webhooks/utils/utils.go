@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"slices"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +44,13 @@ func DefaultLabelSelector() metav1.LabelSelector {
 
 func IsProtectedByLabel(labels map[string]string) bool {
 	return labels["managed.openshift.io/protected"] == "true"
+}
+
+func IsProtectedByResourceName(name string) bool {
+	protectedNames := []string{
+		"prometheusrules.monitoring.coreos.com",
+	}
+	return slices.Contains(protectedNames, name)
 }
 
 func RegexSliceContains(needle string, haystack []string) bool {
