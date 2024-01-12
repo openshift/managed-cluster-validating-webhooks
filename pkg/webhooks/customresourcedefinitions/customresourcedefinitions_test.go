@@ -17,7 +17,7 @@ const testObjectRaw string = `
 	"apiVersion": "apiextensions.k8s.io/v1",
 	"kind": "CustomResourceDefinition",
 	"metadata": {
-        "name": "%s",
+		"name": "%s",
 		"uid": "1234",
 		"labels": %s
 	}

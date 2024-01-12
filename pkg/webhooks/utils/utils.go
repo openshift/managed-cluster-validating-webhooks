@@ -42,10 +42,6 @@ func DefaultLabelSelector() metav1.LabelSelector {
 	}
 }
 
-func IsProtectedByLabel(labels map[string]string) bool {
-	return labels["managed.openshift.io/protected"] == "true"
-}
-
 func IsProtectedByResourceName(name string) bool {
 	protectedNames := []string{
 		"alertmanagerconfigs.monitoring.coreos.com",
