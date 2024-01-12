@@ -29,6 +29,97 @@ objects:
       spec: {}
       status: {}
     - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        creationTimestamp: null
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+    - Rules:
+      - APIGroups:
+        - ""
+        NonResourceURLs: null
+        ResourceNames: null
+        Resources:
+        - services
+        Verbs:
+        - '*'
+      - APIGroups:
+        - monitoring.coreos.com
+        NonResourceURLs: null
+        ResourceNames: null
+        Resources:
+        - servicemonitors
+        Verbs:
+        - '*'
+      apiVersion: rbac.authorization.k8s.io/v1
+      creationTimestamp: null
+      kind: Role
+      name: validation-webhook
+      namespace: openshift-validation-webhook
+    - RoleRef:
+        APIGroup: rbac.authorization.k8s.io
+        Kind: Role
+        Name: validation-webhook
+      Subjects:
+      - APIGroup: ""
+        Kind: ServiceAccount
+        Name: validation-webhook
+        Namespace: openshift-validation-webhook
+      apiVersion: rbac.authorization.k8s.io/v1
+      creationTimestamp: null
+      kind: RoleBinding
+      name: validation-webhook:validation-webhook
+      namespace: openshift-validation-webhook
+    - Rules:
+      - APIGroups:
+        - ""
+        NonResourceURLs: null
+        ResourceNames: null
+        Resources:
+        - services
+        - endpoints
+        - pods
+        Verbs:
+        - get
+        - list
+        - watch
+      apiVersion: rbac.authorization.k8s.io/v1
+      creationTimestamp: null
+      kind: Role
+      name: prometheus-k8s
+      namespace: openshift-validation-webhook
+    - RoleRef:
+        APIGroup: rbac.authorization.k8s.io
+        Kind: Role
+        Name: prometheus-k8s
+      Subjects:
+      - APIGroup: ""
+        Kind: ServiceAccount
+        Name: prometheus-k8s
+        Namespace: openshift-monitoring
+      apiVersion: rbac.authorization.k8s.io/v1
+      creationTimestamp: null
+      kind: RoleBinding
+      name: prometheus-k8s
+      namespace: openshift-validation-webhook
+    - apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        creationTimestamp: null
+        name: validating-webhook-metrics
+        namespace: openshift-validation-webhook
+      spec:
+        endpoints:
+        - bearerTokenSecret:
+            key: ""
+          port: metrics
+        namespaceSelector:
+          matchNames:
+          - openshift-validation-webhook
+        selector:
+          matchLabels:
+            name: validation-webhook
+    - apiVersion: v1
       kind: ConfigMap
       metadata:
         annotations:
@@ -109,7 +200,7 @@ objects:
                 readOnly: true
             restartPolicy: Always
             serviceAccount: ""
-            serviceAccountName: ""
+            serviceAccountName: validation-webhook
             tolerations:
             - effect: NoSchedule
               key: node-role.kubernetes.io/master

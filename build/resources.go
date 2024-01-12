@@ -9,13 +9,16 @@ import (
 	"strings"
 
 	templatev1 "github.com/openshift/api/template/v1"
+	"github.com/openshift/managed-cluster-validating-webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/syncset"
 	webhooks "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
 	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rbac "k8s.io/kubernetes/pkg/apis/rbac"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -25,8 +28,11 @@ import (
 )
 
 const (
-	serviceName string = "validation-webhook"
-	repoName    string = "managed-cluster-validating-webhooks"
+	serviceName        string = "validation-webhook"
+	serviceAccountName string = "validation-webhook"
+	roleName           string = "validation-webhook"
+	prometheusRoleName string = "prometheus-k8s"
+	repoName           string = "managed-cluster-validating-webhooks"
 	// Used to define what phase a resource should be deployed in by package-operator
 	pkoPhaseAnnotation string = "package-operator.run/phase"
 	// Defines the 'rbac' package-operator phase for any resources related to RBAC
@@ -81,6 +87,170 @@ func createNamespace() *corev1.Namespace {
 		},
 	}
 }
+
+func createServiceAccount() *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: *namespace,
+		},
+	}
+}
+
+func createRole() *rbac.Role {
+	return &rbac.Role{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Role",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleName,
+			Namespace: *namespace,
+		},
+		Rules: []rbac.PolicyRule{
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"services",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+			{
+				APIGroups: []string{
+					"monitoring.coreos.com",
+				},
+				Resources: []string{
+					"servicemonitors",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+		},
+	}
+}
+
+func createRoleBinding() *rbac.RoleBinding {
+	return &rbac.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s:%s", roleName, serviceAccountName),
+			Namespace: *namespace,
+		},
+		Subjects: []rbac.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: *namespace,
+			},
+		},
+		RoleRef: rbac.RoleRef{
+			Name:     roleName,
+			Kind:     "Role",
+			APIGroup: rbac.GroupName,
+		},
+	}
+}
+
+func createPrometheusRole() *rbac.Role {
+	return &rbac.Role{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Role",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      prometheusRoleName,
+			Namespace: *namespace,
+		},
+		Rules: []rbac.PolicyRule{
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"services",
+					"endpoints",
+					"pods",
+				},
+				Verbs: []string{
+					"get",
+					"list",
+					"watch",
+				},
+			},
+		},
+	}
+}
+
+func createPromethusRoleBinding() *rbac.RoleBinding {
+	return &rbac.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "prometheus-k8s",
+			Namespace: *namespace,
+		},
+		Subjects: []rbac.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "prometheus-k8s",
+				Namespace: "openshift-monitoring",
+			},
+		},
+		RoleRef: rbac.RoleRef{
+			Name:     prometheusRoleName,
+			Kind:     "Role",
+			APIGroup: rbac.GroupName,
+		},
+	}
+}
+
+func createServiceMonitor() *monitoringv1.ServiceMonitor {
+	return &monitoringv1.ServiceMonitor{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceMonitor",
+			APIVersion: "monitoring.coreos.com/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "validating-webhook-metrics",
+			Namespace: *namespace,
+		},
+		Spec: monitoringv1.ServiceMonitorSpec{
+			Endpoints: []monitoringv1.Endpoint{
+				{
+					BearerTokenSecret: corev1.SecretKeySelector{
+						Key: "",
+					},
+					Port: "metrics",
+				},
+			},
+			NamespaceSelector: monitoringv1.NamespaceSelector{
+				MatchNames: []string{
+					*namespace,
+				},
+			},
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"name": config.OperatorName,
+				},
+			},
+		},
+	}
+}
+
 func createCACertConfigMap() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -146,7 +316,8 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 					},
 				},
 				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: &[]bool{false}[0],
+					ServiceAccountName:           serviceAccountName,
+					AutomountServiceAccountToken: &[]bool{true}[0],
 					Affinity: &corev1.Affinity{
 						NodeAffinity: &corev1.NodeAffinity{
 							PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
@@ -354,9 +525,8 @@ func createDaemonSet() *appsv1.DaemonSet {
 							Effect: corev1.TaintEffectNoExecute,
 						},
 					},
-					RestartPolicy:            corev1.RestartPolicyAlways,
-					ServiceAccountName:       "",
-					DeprecatedServiceAccount: "",
+					RestartPolicy:      corev1.RestartPolicyAlways,
+					ServiceAccountName: serviceAccountName,
 					Volumes: []corev1.Volume{
 						{
 							Name: "service-certs",
@@ -549,6 +719,12 @@ func main() {
 	if buildSelectorSyncSet {
 		templateResources := syncset.SyncSetResourcesByLabelSelector{}
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createNamespace()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createServiceAccount()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createRole()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createRoleBinding()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createPrometheusRole()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createPromethusRoleBinding()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createServiceMonitor()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createCACertConfigMap()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createService()})
 
