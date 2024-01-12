@@ -17,15 +17,15 @@ import (
 )
 
 const (
-	WebhookName                    string = "customresourcedefinitions-validation"
-	docString                      string = `Managed OpenShift Customers may not change CustomResourceDefinitions managed by Red Hat.`
+	WebhookName string = "customresourcedefinitions-validation"
+	docString   string = `Managed OpenShift Customers may not change CustomResourceDefinitions managed by Red Hat.`
 )
 
 var (
 	timeout                          int32 = 2
 	allowedUsers                           = []string{"system:admin", "backplane-cluster-admin"}
 	sreAdminGroups                         = []string{"system:serviceaccounts:openshift-backplane-srep"}
-	privilegedServiceAccountGroupsRe       = regexp.MustCompile(privilegedServiceAccountGroups)
+	privilegedServiceAccountGroupsRe       = regexp.MustCompile(utils.PrivilegedServiceAccountGroups)
 	scope                                  = admissionregv1.ClusterScope
 	rules                                  = []admissionregv1.RuleWithOperations{
 		{
@@ -79,8 +79,8 @@ func (s *customresourcedefinitionsruleWebhook) authorized(request admissionctl.R
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if utils.IsProtectedByResourceName(np.GetName()) {
-		log.Info(fmt.Sprintf("%s operation detected on protected CustomResourceDefinition: %s", request.Operation, np.Name))
+	if utils.IsProtectedByResourceName(crd.GetName()) {
+		log.Info(fmt.Sprintf("%s operation detected on protected CustomResourceDefinition: %s", request.Operation, crd.Name))
 		if isAllowedUser(request) {
 			ret = admissionctl.Allowed(fmt.Sprintf("User '%s' in group(s) '%s' can operate on CustomResourceDefinitions", request.UserInfo.Username, strings.Join(request.UserInfo.Groups, ", ")))
 			ret.UID = request.AdmissionRequest.UID

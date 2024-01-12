@@ -168,7 +168,7 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "unprivileged-serviceaccounts-cant-create-protected--customresourcedefinitions",
+			testID:          "unprivileged-serviceaccounts-cant-create-protected-customresourcedefinitions",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
@@ -177,7 +177,7 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "unprivileged-serviceaccounts-cant-delete-protected--customresourcedefinitions",
+			testID:          "unprivileged-serviceaccounts-cant-delete-protected-customresourcedefinitions",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
@@ -186,7 +186,7 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "unprivileged-serviceaccounts-cant-update-protected--customresourcedefinitions",
+			testID:          "unprivileged-serviceaccounts-cant-update-protected-customresourcedefinitions",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
