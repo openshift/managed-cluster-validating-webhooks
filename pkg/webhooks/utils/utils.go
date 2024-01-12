@@ -48,7 +48,16 @@ func IsProtectedByLabel(labels map[string]string) bool {
 
 func IsProtectedByResourceName(name string) bool {
 	protectedNames := []string{
+		"alertmanagerconfigs.monitoring.coreos.com",
+		"alertmanagers.monitoring.coreos.com",
+		"prometheuses.monitoring.coreos.com",
+		"thanosrulers.monitoring.coreos.com",
+		"podmonitors.monitoring.coreos.com",
+		"probes.monitoring.coreos.com",
 		"prometheusrules.monitoring.coreos.com",
+		"servicemonitors.monitoring.coreos.com",
+		"prometheusagents.monitoring.coreos.com",
+		"scrapeconfigs.monitoring.coreos.com",
 	}
 	return slices.Contains(protectedNames, name)
 }
