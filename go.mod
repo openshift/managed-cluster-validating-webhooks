@@ -9,6 +9,7 @@ require (
 	github.com/openshift/cluster-logging-operator v0.0.0-20230328172346-05f4f8be54d5
 	github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5
 	k8s.io/api v0.26.2
+	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.2
 	k8s.io/klog/v2 v2.90.1
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2

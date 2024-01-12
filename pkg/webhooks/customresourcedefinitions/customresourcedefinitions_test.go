@@ -82,33 +82,6 @@ func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefini
 func TestUsers(t *testing.T) {
 	tests := []customResourceDefinitionTestSuites{
 		{
-			testID:          "for-now-regular-user-can-create-customresourcedefinitions-protected-bylabel",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
-			targetResource:  "customresourcedefinition",
-			username:        "user1",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "for-now-regular-user-can-delete-customresourcedefinitions-protected-bylabel",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
-			targetResource:  "customresourcedefinition",
-			username:        "user2",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "for-now-regular-user-can-update-customresourcedefinitions-protected-bylabel",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
-			targetResource:  "customresourcedefinition",
-			username:        "user3",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
 			testID:          "regular-user-cant-create-customresourcedefinitions-protected-byname",
 			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",

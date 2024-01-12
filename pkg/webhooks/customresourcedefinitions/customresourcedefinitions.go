@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -48,12 +49,6 @@ var (
 // customresourcedefinitionsruleWebhook validates a customresourcedefinition change
 type customresourcedefinitionsruleWebhook struct {
 	s runtime.Scheme
-}
-
-// We just need a runtime object to get the labels
-type customResourceDefinition struct {
-	runtime.Object
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 }
 
 // NewWebhook creates the new webhook
@@ -120,12 +115,12 @@ func isAllowedUser(request admissionctl.Request) bool {
 	return false
 }
 
-func (s *customresourcedefinitionsruleWebhook) renderCustomResourceDefinition(req admissionctl.Request) (*customResourceDefinition, error) {
+func (s *customresourcedefinitionsruleWebhook) renderCustomResourceDefinition(req admissionctl.Request) (*apiextensionsv1.CustomResourceDefinition, error) {
 	decoder, err := admissionctl.NewDecoder(&s.s)
 	if err != nil {
 		return nil, err
 	}
-	customResourceDefinition := &customResourceDefinition{}
+	customResourceDefinition := &apiextensionsv1.CustomResourceDefinition{}
 
 	if len(req.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(req.OldObject, customResourceDefinition)
