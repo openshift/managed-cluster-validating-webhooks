@@ -74,7 +74,7 @@ func (s *customresourcedefinitionsruleWebhook) Authorized(request admissionctl.R
 func (s *customresourcedefinitionsruleWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
-	np, err := s.renderCustomResourceDefinition(request)
+	crd, err := s.renderCustomResourceDefinition(request)
 	if err != nil {
 		log.Error(err, "Could not render a CustomResourceDefinition from the incoming request")
 		return admissionctl.Errored(http.StatusBadRequest, err)
