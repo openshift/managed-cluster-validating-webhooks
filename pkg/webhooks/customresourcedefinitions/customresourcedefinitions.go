@@ -80,7 +80,7 @@ func (s *customresourcedefinitionsruleWebhook) authorized(request admissionctl.R
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if utils.IsProtectedByLabel(np.GetLabels()) || utils.IsProtectedByResourceName(np.GetName()) {
+	if utils.IsProtectedByResourceName(np.GetName()) {
 		log.Info(fmt.Sprintf("%s operation detected on protected CustomResourceDefinition: %s", request.Operation, np.Name))
 		if isAllowedUser(request) {
 			ret = admissionctl.Allowed(fmt.Sprintf("User '%s' in group(s) '%s' can operate on CustomResourceDefinitions", request.UserInfo.Username, strings.Join(request.UserInfo.Groups, ", ")))
