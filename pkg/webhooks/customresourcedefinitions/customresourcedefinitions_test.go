@@ -82,31 +82,31 @@ func runCustomResourceDefinitionTests(t *testing.T, tests []customResourceDefini
 func TestUsers(t *testing.T) {
 	tests := []customResourceDefinitionTestSuites{
 		{
-			testID:          "regular-user-cant-create-customresourcedefinitions-protected-bylabel",
+			testID:          "for-now-regular-user-can-create-customresourcedefinitions-protected-bylabel",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user1",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
-			testID:          "regular-user-cant-delete-customresourcedefinitions-protected-bylabel",
+			testID:          "for-now-regular-user-can-delete-customresourcedefinitions-protected-bylabel",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user2",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
-			testID:          "regular-user-cant-update-customresourcedefinitions-protected-bylabel",
+			testID:          "for-now-regular-user-can-update-customresourcedefinitions-protected-bylabel",
 			labels:          map[string]string{"managed.openshift.io/protected": "true"},
 			targetResource:  "customresourcedefinition",
 			username:        "user3",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "regular-user-cant-create-customresourcedefinitions-protected-byname",
@@ -169,7 +169,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "unprivileged-serviceaccounts-cant-create-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -178,7 +178,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "unprivileged-serviceaccounts-cant-delete-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -187,7 +187,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "unprivileged-serviceaccounts-cant-update-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:unpriv-ns",
 			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
@@ -196,7 +196,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "blackplane-admin-can-create-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -205,7 +205,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "blackplane-admin-can-delete-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -214,7 +214,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "blackplane-admin-can-update-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "backplane-cluster-admin",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
@@ -223,7 +223,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "Allowed-can-create-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -232,7 +232,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "Allowed-can-delete-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -241,7 +241,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "Allowed-can-update-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			username:        "system:serviceaccounts:openshift-test-ns",
 			targetResource:  "customresourcedefinition",
 			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
@@ -250,7 +250,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "serviceaccount-in-managed-namespaces-can-create-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:redhat-ns:test-operator",
 			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
@@ -259,7 +259,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "serviceaccount-in-managed-namespaces-can-delete-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:redhat-ns:test-operator",
 			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
@@ -268,7 +268,7 @@ func TestUsers(t *testing.T) {
 		},
 		{
 			testID:          "serviceaccount-in-managed-namespaces-can-update-protected-customresourcedefinitions",
-			labels:          map[string]string{"managed.openshift.io/protected": "true"},
+			name:            "prometheusrules.monitoring.coreos.com",
 			targetResource:  "customresourcedefinition",
 			username:        "system:serviceaccounts:redhat-ns:test-operator",
 			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
