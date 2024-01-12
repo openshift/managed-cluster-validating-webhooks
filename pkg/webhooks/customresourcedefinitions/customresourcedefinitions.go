@@ -19,7 +19,6 @@ import (
 const (
 	WebhookName                    string = "customresourcedefinitions-validation"
 	docString                      string = `Managed OpenShift Customers may not change CustomResourceDefinitions managed by Red Hat.`
-	privilegedServiceAccountGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
 )
 
 var (
