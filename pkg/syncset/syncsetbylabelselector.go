@@ -8,10 +8,11 @@ package syncset
 import (
 	"encoding/json"
 	"fmt"
-	admissionregv1 "k8s.io/api/admissionregistration/v1"
-	v1 "k8s.io/api/apps/v1"
 	"os"
 	"reflect"
+
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/apps/v1"
 
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,7 +112,11 @@ func EncodeAndFixDaemonset(ds *v1.DaemonSet) ([]byte, error) {
 	json.Unmarshal(o, &decoded)
 
 	// set the serviceAccount/serviceAccountName to emptystring
-	decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccountName"] = ""
+	// only empty-set serviceAccountName if it's not already defined
+	if len(ds.Spec.Template.Spec.ServiceAccountName) == 0 {
+		decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccountName"] = ""
+	}
+	// serviceAccount is deprecated
 	decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccount"] = ""
 
 	// convert back to json
