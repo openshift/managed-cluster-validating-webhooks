@@ -31,7 +31,11 @@ var (
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{"*"},
+			Operations: []admissionregv1.OperationType{
+				admissionregv1.OperationType(admissionv1.Create),
+				admissionregv1.OperationType(admissionv1.Update),
+				admissionregv1.OperationType(admissionv1.Delete),
+			},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{""},
 				APIVersions: []string{"*"},
@@ -129,7 +133,7 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 		}
 	}
 
-	if isProtectedActionOnNode(request) {
+	if request.Kind.Kind == "Node" {
 		localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
 
 		ret = admissionctl.Denied(`Prevented from accessing Red Hat managed resources. This is an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support.
@@ -143,12 +147,6 @@ To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool
 	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
-}
-
-// isProtectedActionOnNode checks if the request is to update a node
-func isProtectedActionOnNode(request admissionctl.Request) bool {
-	return request.Kind.Kind == "Node" &&
-		(request.Operation == admissionv1.Update || request.Operation == admissionv1.Create || request.Operation == admissionv1.Delete)
 }
 
 // SyncSetLabelSelector returns the label selector to use in the SyncSet.
