@@ -23,7 +23,7 @@ import (
 
 const (
 	WebhookName string = "node-validation-osd"
-	docString   string = `Managed OpenShift customers may not alter the Node objects.`
+	docString   string = `Managed OpenShift customers may not alter Node objects.`
 )
 
 var (
