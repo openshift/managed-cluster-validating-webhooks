@@ -162,27 +162,7 @@ func (s *NodeWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook
 func NewWebhook() *NodeWebhook {
-
-	scheme := runtime.NewScheme()
-	err := admissionv1.AddToScheme(scheme)
-	if err != nil {
-		log.Error(err, "Fail adding admissionv1 scheme to NodeWebhook")
-		os.Exit(1)
-	}
-
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		log.Error(err, "Fail adding corev1 scheme to NodeWebhook")
-		os.Exit(1)
-	}
-
-	err = networkv1.AddToScheme(scheme)
-	if err != nil {
-		log.Error(err, "Fail adding networkv1 scheme to NodeWebhook")
-		os.Exit(1)
-	}
-
 	return &NodeWebhook{
-		s: *scheme,
+		s: runtime.NewScheme()
 	}
 }
