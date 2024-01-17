@@ -17,8 +17,8 @@ import (
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	rbac "k8s.io/kubernetes/pkg/apis/rbac"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -101,17 +101,17 @@ func createServiceAccount() *corev1.ServiceAccount {
 	}
 }
 
-func createRole() *rbac.Role {
-	return &rbac.Role{
+func createRole() *rbacv1.Role {
+	return &rbacv1.Role{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Role",
-			APIVersion: "rbac.authorization.k8s.io/v1",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      roleName,
 			Namespace: *namespace,
 		},
-		Rules: []rbac.PolicyRule{
+		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{
 					"",
@@ -138,42 +138,42 @@ func createRole() *rbac.Role {
 	}
 }
 
-func createRoleBinding() *rbac.RoleBinding {
-	return &rbac.RoleBinding{
+func createRoleBinding() *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s:%s", roleName, serviceAccountName),
 			Namespace: *namespace,
 		},
-		Subjects: []rbac.Subject{
+		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				Name:      serviceAccountName,
 				Namespace: *namespace,
 			},
 		},
-		RoleRef: rbac.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			Name:     roleName,
 			Kind:     "Role",
-			APIGroup: rbac.GroupName,
+			APIGroup: rbacv1.GroupName,
 		},
 	}
 }
 
-func createPrometheusRole() *rbac.Role {
-	return &rbac.Role{
+func createPrometheusRole() *rbacv1.Role {
+	return &rbacv1.Role{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Role",
-			APIVersion: "rbac.authorization.k8s.io/v1",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      prometheusRoleName,
 			Namespace: *namespace,
 		},
-		Rules: []rbac.PolicyRule{
+		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{
 					"",
@@ -193,27 +193,27 @@ func createPrometheusRole() *rbac.Role {
 	}
 }
 
-func createPromethusRoleBinding() *rbac.RoleBinding {
-	return &rbac.RoleBinding{
+func createPromethusRoleBinding() *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "prometheus-k8s",
 			Namespace: *namespace,
 		},
-		Subjects: []rbac.Subject{
+		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				Name:      "prometheus-k8s",
 				Namespace: "openshift-monitoring",
 			},
 		},
-		RoleRef: rbac.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			Name:     prometheusRoleName,
 			Kind:     "Role",
-			APIGroup: rbac.GroupName,
+			APIGroup: rbacv1.GroupName,
 		},
 	}
 }
