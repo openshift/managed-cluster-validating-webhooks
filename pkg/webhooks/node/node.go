@@ -48,7 +48,7 @@ var (
 
 // NodeWebhook protects various objects from unauthorized manipulation
 type NodeWebhook struct {
-	s runtime.Scheme
+	s *runtime.Scheme
 }
 
 func (s *NodeWebhook) Doc() string {
