@@ -1,14 +1,11 @@
 package node
 
 import (
-	"os"
 	"slices"
 	"strings"
 
-	networkv1 "github.com/openshift/api/network/v1"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -163,6 +160,6 @@ func (s *NodeWebhook) HypershiftEnabled() bool { return false }
 // NewWebhook creates a new webhook
 func NewWebhook() *NodeWebhook {
 	return &NodeWebhook{
-		s: runtime.NewScheme()
+		s: runtime.NewScheme(),
 	}
 }
