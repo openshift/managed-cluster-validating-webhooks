@@ -147,7 +147,8 @@ To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool
 
 // isProtectedActionOnNode checks if the request is to update a node
 func isProtectedActionOnNode(request admissionctl.Request) bool {
-	return request.Kind.Kind == "Node" && request.Operation == admissionv1.Update
+	return request.Kind.Kind == "Node" &&
+		(request.Operation == admissionv1.Update || request.Operation == admissionv1.Create || request.Operation == admissionv1.Delete)
 }
 
 // SyncSetLabelSelector returns the label selector to use in the SyncSet.
