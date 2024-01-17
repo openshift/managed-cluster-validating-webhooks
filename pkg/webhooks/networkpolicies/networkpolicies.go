@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -51,12 +52,6 @@ type networkpoliciesruleWebhook struct {
 	s runtime.Scheme
 }
 
-// We just need a runtime object to get the namespace
-type networkPolicy struct {
-	runtime.Object
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-}
-
 // NewWebhook creates the new webhook
 func NewWebhook() *networkpoliciesruleWebhook {
 	scheme := runtime.NewScheme()
@@ -80,7 +75,7 @@ func (s *networkpoliciesruleWebhook) authorized(request admissionctl.Request) ad
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if hookconfig.IsPrivilegedNamespace(np.GetNamespace()) {
+	if !isAllowedNamespace(np.GetNamespace()) {
 		log.Info(fmt.Sprintf("%s operation detected on managed namespace: %s", request.Operation, np.GetNamespace()))
 		if isAllowedUser(request) {
 			ret = admissionctl.Allowed(fmt.Sprintf("User '%s' in group(s) '%s' can operate on NetworkPolicies", request.UserInfo.Username, strings.Join(request.UserInfo.Groups, ", ")))
@@ -100,10 +95,24 @@ func (s *networkpoliciesruleWebhook) authorized(request admissionctl.Request) ad
 		return ret
 	}
 
+	if np.GetNamespace() == "openshift-ingress" {
+		ingressName, labelFound := np.Spec.PodSelector.MatchLabels["ingresscontroller.operator.openshift.io/deployment-ingresscontroller"]
+		if !labelFound || ingressName == "default" {
+			ret = admissionctl.Denied(fmt.Sprintf("User '%s' prevented from creating network policy that may impact default ingress, which is managed by Red Hat. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support", request.UserInfo.Username))
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+	}
+
 	log.Info("Allowing access", "request", request.AdmissionRequest)
 	ret = admissionctl.Allowed("Non managed namespace")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
+}
+
+// isAllowedNamespace checks if the namespace is excluded from this webhook
+func isAllowedNamespace(namespace string) bool {
+	return !hookconfig.IsPrivilegedNamespace(namespace) || namespace == "openshift-ingress"
 }
 
 // isAllowedUser checks if the user or group is allowed to perform the action
@@ -121,12 +130,12 @@ func isAllowedUser(request admissionctl.Request) bool {
 	return false
 }
 
-func (s *networkpoliciesruleWebhook) renderNetworkPolicy(req admissionctl.Request) (*networkPolicy, error) {
+func (s *networkpoliciesruleWebhook) renderNetworkPolicy(req admissionctl.Request) (*networkingv1.NetworkPolicy, error) {
 	decoder, err := admissionctl.NewDecoder(&s.s)
 	if err != nil {
 		return nil, err
 	}
-	networkPolicy := &networkPolicy{}
+	networkPolicy := &networkingv1.NetworkPolicy{}
 
 	if len(req.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(req.OldObject, networkPolicy)

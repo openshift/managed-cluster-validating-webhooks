@@ -1,40 +1,141 @@
 package networkpolicies
 
 import (
-	"fmt"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 )
 
-const testObjectRaw string = `
-{
-	"apiVersion": "networking.k8s.io/v1",
-	"kind": "NetworkPolicy",
-	"metadata": {
-        "name": "test",
-		"namespace": "%s",
-		"uid": "1234"
-	}
-}`
-
 type networkPolicyTestSuites struct {
-	testID          string
-	username        string
-	userGroups      []string
-	targetNamespace string
-	targetResource  string
-	operation       admissionv1.Operation
-	shouldBeAllowed bool
+	testID            string
+	username          string
+	userGroups        []string
+	targetNamespace   string
+	targetResource    string
+	operation         admissionv1.Operation
+	shouldBeAllowed   bool
+	podSelectorLabels map[string]string
 }
 
-func createRawJSONString(namespace string) string {
-	s := fmt.Sprintf(testObjectRaw, namespace)
-	return s
+type crudTest struct {
+	name     string
+	testData networkPolicyTestSuites
+}
+
+func newCrudTest(name string) crudTest {
+	return crudTest{
+		name: name,
+		testData: networkPolicyTestSuites{
+			testID:            "regular-user-cant-update-networkpolicy-in-managed-namespaces",
+			targetNamespace:   "default",
+			targetResource:    "networkpolicy",
+			username:          "someuser",
+			userGroups:        []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
+			operation:         admissionv1.Update,
+			shouldBeAllowed:   false,
+			podSelectorLabels: map[string]string{},
+		},
+	}
+}
+
+func (t crudTest) regularUser() crudTest {
+	t.testData.username = "testregularuser"
+	t.testData.userGroups = []string{"system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+
+func (t crudTest) unprivilegedServiceAccount() crudTest {
+	t.testData.username = "system:serviceaccounts:unpriv-ns"
+	t.testData.userGroups = []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+
+func (t crudTest) backplaneClusterAdmin() crudTest {
+	t.testData.username = "backplane-cluster-admin"
+	t.testData.userGroups = []string{"system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+
+func (t crudTest) allowedServiceAccount() crudTest {
+	t.testData.username = "system:serviceaccounts:openshift-test-ns"
+	t.testData.userGroups = []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+
+func (t crudTest) redhatServiceAccount() crudTest {
+	t.testData.username = "system:serviceaccounts:redhat-ns:test-operator"
+	t.testData.userGroups = []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+
+func (t crudTest) namespace(namespace string) crudTest {
+	t.testData.targetNamespace = namespace
+	return t
+}
+
+func (t crudTest) podSelector(label, value string) crudTest {
+	t.testData.podSelectorLabels[label] = value
+	return t
+}
+
+func (t crudTest) shouldBeAllowed() []networkPolicyTestSuites {
+	return t.renderCRUDTests(true)
+}
+
+func (t crudTest) shouldBeDenied() []networkPolicyTestSuites {
+	return t.renderCRUDTests(false)
+}
+
+func (t crudTest) renderCRUDTests(allowed bool) []networkPolicyTestSuites {
+	cases := []networkPolicyTestSuites{}
+
+	for _, verb := range []admissionv1.Operation{admissionv1.Create, admissionv1.Update, admissionv1.Delete} {
+		cases = append(cases, networkPolicyTestSuites{
+			testID:            strings.ToLower(string(verb)) + "-" + t.name,
+			username:          t.testData.username,
+			targetNamespace:   t.testData.targetNamespace,
+			targetResource:    t.testData.targetResource,
+			userGroups:        t.testData.userGroups,
+			operation:         admissionv1.Create,
+			shouldBeAllowed:   allowed,
+			podSelectorLabels: t.testData.podSelectorLabels,
+		})
+	}
+
+	return cases
+
+}
+
+func createRawJSONString(namespace string, podSelectorLabels map[string]string) string {
+	networkPolicy := networkingv1.NetworkPolicy{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: namespace,
+			UID:       "1234",
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: podSelectorLabels,
+			},
+		},
+	}
+
+	rawNetworkPolicy, err := json.Marshal(networkPolicy)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(rawNetworkPolicy)
 }
 
 func runNetworkPolicyTests(t *testing.T, tests []networkPolicyTestSuites) {
@@ -50,7 +151,7 @@ func runNetworkPolicyTests(t *testing.T, tests []networkPolicyTestSuites) {
 	}
 
 	for _, test := range tests {
-		rawObjString := createRawJSONString(test.targetNamespace)
+		rawObjString := createRawJSONString(test.targetNamespace, test.podSelectorLabels)
 
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
@@ -73,7 +174,7 @@ func runNetworkPolicyTests(t *testing.T, tests []networkPolicyTestSuites) {
 		}
 
 		if response.Allowed != test.shouldBeAllowed {
-			t.Fatalf("Mismatch: %s (groups=%s) %s %s the Test's expectation is that the user %s", test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed))
+			t.Fatalf("Mismatch: %s (groups=%s) %s %s the Test's expectation is that the user %s. Test: %s, PodSelector: %v", test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed), test.testID, test.podSelectorLabels)
 		}
 	}
 }
@@ -88,172 +189,29 @@ func TestUsers(t *testing.T) {
 			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
-		{
-			testID:          "regular-user-cant-create-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "user1",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
-		},
-		{
-			testID:          "regular-user-cant-delete-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "user2",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: false,
-		},
-		{
-			testID:          "regular-user-cant-update-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "user3",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: false,
-		},
-		{
-			testID:          "regular-user-can-create-networkpolicy-in-user-managed-namespaces",
-			targetNamespace: "my-monitoring",
-			targetResource:  "networkpolicy",
-			username:        "user4",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "regular-user-can-update-networkpolicy-in-user-managed-namespaces",
-			targetNamespace: "my-monitoring",
-			targetResource:  "networkpolicy",
-			username:        "user5",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "regular-user-can-delete-networkpolicy-in-user-managed-namespaces",
-			targetNamespace: "my-monitoring",
-			targetResource:  "networkpolicy",
-			username:        "user6",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "regular-user-cant-create-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:unpriv-ns",
-			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
-		},
-		{
-			testID:          "regular-user-cant-delete-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:unpriv-ns",
-			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: false,
-		},
-		{
-			testID:          "regular-user-cant-update-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:unpriv-ns",
-			userGroups:      []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: false,
-		},
-
-		{
-			testID:          "blackplane-admin-can-create-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "backplane-cluster-admin",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "blackplane-admin-can-delete-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "backplane-cluster-admin",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "blackplane-admin-can-update-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "backplane-cluster-admin",
-			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-
-			testID:          "Allowed-can-create-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:openshift-test-ns",
-			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-
-			testID:          "Allowed-can-delete-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:openshift-test-ns",
-			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
-		{
-
-			testID:          "Allowed-can-update-networkpolicy-in-managed-namespaces",
-			targetNamespace: "openshift-kube-apiserver",
-			username:        "system:serviceaccounts:openshift-test-ns",
-			targetResource:  "networkpolicy",
-			userGroups:      []string{"system:serviceaccounts:openshift-test-ns", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "serviceaccount-in-managed-namespaces-can-create-networkpolicy-in-redhat-rhoam-observability",
-			targetNamespace: "redhat-rhoam-observability",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:redhat-ns:test-operator",
-			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "serviceaccount-in-managed-namespaces-can-create-networkpolicy-in-redhat-rhoam-observability",
-			targetNamespace: "redhat-rhoam-observability",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:redhat-ns:test-operator",
-			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "regular-user-can-delete-networkpolicy-in-redhat-rhoam-observability",
-			targetNamespace: "redhat-rhoam-observability",
-			targetResource:  "networkpolicy",
-			username:        "system:serviceaccounts:redhat-ns:test-operator",
-			userGroups:      []string{"system:serviceaccounts:redhat-ns:test-operator", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
 	}
+	tests = append(tests, newCrudTest("regular-user-networkpolicy-managed-namespaces").
+		namespace("openshift-kube-apiserver").regularUser().shouldBeDenied()...)
+	tests = append(tests, newCrudTest("regular-user-networkpolicy-user-namespaces").
+		namespace("my-monitoring").regularUser().shouldBeAllowed()...)
+	tests = append(tests, newCrudTest("unprivileged-sa-managed-namespaces").
+		namespace("openshift-kube-apiserver").unprivilegedServiceAccount().shouldBeDenied()...)
+	tests = append(tests, newCrudTest("backplane-cluster-admin-managed-namespaces").
+		namespace("openshift-kube-apiserver").backplaneClusterAdmin().shouldBeAllowed()...)
+	tests = append(tests, newCrudTest("allowed-sa-managed-namespaces").
+		namespace("openshift-kube-apiserver").allowedServiceAccount().shouldBeAllowed()...)
+	tests = append(tests, newCrudTest("serviceaccount-managed-namespace-redhat-rhoam-observability").
+		namespace("redhat-rhoam-observability").redhatServiceAccount().shouldBeAllowed()...)
+
+	tests = append(tests, newCrudTest("regular-user-openshift-ingress-no-podselector").
+		namespace("openshift-ingress").regularUser().shouldBeDenied()...)
+	tests = append(tests, newCrudTest("regular-user-openshift-ingress-default-ingress").
+		namespace("openshift-ingress").
+		podSelector("ingresscontroller.operator.openshift.io/deployment-ingresscontroller", "default").
+		regularUser().shouldBeDenied()...)
+	tests = append(tests, newCrudTest("regular-user-openshift-ingress-custom-ingress").
+		namespace("openshift-ingress").
+		podSelector("ingresscontroller.operator.openshift.io/deployment-ingresscontroller", "custom-ingresscontroller").
+		regularUser().shouldBeAllowed()...)
 	runNetworkPolicyTests(t, tests)
 }
