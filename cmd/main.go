@@ -37,7 +37,6 @@ var (
 
 	metricsPath = "/metrics"
 	metricsPort = "8080"
-	hours       = 4
 )
 
 func main() {
