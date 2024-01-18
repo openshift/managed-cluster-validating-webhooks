@@ -68,7 +68,7 @@ func main() {
 	}
 
 	// start metrics server
-	metricsServer := metrics.NewBuilder(config.OperatorNamespace, config.OperatorName).
+	metricsServer := metrics.NewBuilder(config.OperatorNamespace, fmt.Sprintf("%s-metrics", config.OperatorName)).
 		WithPort(metricsPort).
 		WithPath(metricsPath).
 		WithCollectors(localmetrics.MetricsList).

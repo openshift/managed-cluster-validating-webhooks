@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	templatev1 "github.com/openshift/api/template/v1"
-	"github.com/openshift/managed-cluster-validating-webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/syncset"
 	webhooks "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
 	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -29,6 +28,7 @@ import (
 
 const (
 	serviceName        string = "validation-webhook"
+	serviceNameMetrics string = "validation-webhook-metrics"
 	serviceAccountName string = "validation-webhook"
 	roleName           string = "validation-webhook"
 	prometheusRoleName string = "prometheus-k8s"
@@ -244,7 +244,7 @@ func createServiceMonitor() *monitoringv1.ServiceMonitor {
 			},
 			Selector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": config.OperatorName,
+					"name": serviceNameMetrics,
 				},
 			},
 		},
