@@ -19,6 +19,7 @@ type networkPolicyTestSuites struct {
 	userGroups        []string
 	targetNamespace   string
 	targetResource    string
+	oldResource       string
 	operation         admissionv1.Operation
 	shouldBeAllowed   bool
 	podSelectorLabels map[string]string
@@ -33,7 +34,7 @@ func newCrudTest(name string) crudTest {
 	return crudTest{
 		name: name,
 		testData: networkPolicyTestSuites{
-			testID:            "regular-user-cant-update-networkpolicy-in-managed-namespaces",
+			testID:            name,
 			targetNamespace:   "default",
 			targetResource:    "networkpolicy",
 			username:          "someuser",
@@ -54,6 +55,12 @@ func (t crudTest) regularUser() crudTest {
 func (t crudTest) unprivilegedServiceAccount() crudTest {
 	t.testData.username = "system:serviceaccounts:unpriv-ns"
 	t.testData.userGroups = []string{"system:serviceaccounts:unpriv-ns", "cluster-admins", "system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+func (t crudTest) osde2eadmin() crudTest {
+	t.testData.username = "system:serviceaccount:osde2e-h-9a47q:cluster-admin"
+	t.testData.userGroups = []string{"system:serviceaccounts:osde2e-h-9a47q", "system:authenticated", "system:authenticated:oauth"}
+
 	return t
 }
 
@@ -80,43 +87,65 @@ func (t crudTest) namespace(namespace string) crudTest {
 	return t
 }
 
+func (t crudTest) updateFrom(oldResource string) crudTest {
+	t.testData.oldResource = oldResource
+	return t
+}
+
+func (t crudTest) delete() crudTest {
+	t.testData.operation = admissionv1.Delete
+	return t
+}
+
 func (t crudTest) podSelector(label, value string) crudTest {
 	t.testData.podSelectorLabels[label] = value
 	return t
 }
 
-func (t crudTest) shouldBeAllowed() []networkPolicyTestSuites {
+func (t crudTest) shouldBeAllowedCRUD() []networkPolicyTestSuites {
 	return t.renderCRUDTests(true)
 }
 
-func (t crudTest) shouldBeDenied() []networkPolicyTestSuites {
+func (t crudTest) shouldBeDeniedCRUD() []networkPolicyTestSuites {
 	return t.renderCRUDTests(false)
+}
+
+func (t crudTest) shouldBeAllowed() networkPolicyTestSuites {
+	return t.renderTest(true)
 }
 
 func (t crudTest) renderCRUDTests(allowed bool) []networkPolicyTestSuites {
 	cases := []networkPolicyTestSuites{}
 
 	for _, verb := range []admissionv1.Operation{admissionv1.Create, admissionv1.Update, admissionv1.Delete} {
-		cases = append(cases, networkPolicyTestSuites{
-			testID:            strings.ToLower(string(verb)) + "-" + t.name,
-			username:          t.testData.username,
-			targetNamespace:   t.testData.targetNamespace,
-			targetResource:    t.testData.targetResource,
-			userGroups:        t.testData.userGroups,
-			operation:         admissionv1.Create,
-			shouldBeAllowed:   allowed,
-			podSelectorLabels: t.testData.podSelectorLabels,
-		})
+		t.testData.operation = verb
+		t.testData.testID = strings.ToLower(string(verb)) + "-" + t.name
+		cases = append(cases, t.renderTest(allowed))
 	}
 
 	return cases
 
 }
 
+func (t crudTest) renderTest(allowed bool) networkPolicyTestSuites {
+	return networkPolicyTestSuites{
+		testID:            t.testData.testID,
+		username:          t.testData.username,
+		targetNamespace:   t.testData.targetNamespace,
+		targetResource:    t.testData.targetResource,
+		userGroups:        t.testData.userGroups,
+		operation:         t.testData.operation,
+		oldResource:       t.testData.oldResource,
+		shouldBeAllowed:   allowed,
+		podSelectorLabels: t.testData.podSelectorLabels,
+	}
+}
+
 func createRawJSONString(namespace string, podSelectorLabels map[string]string) string {
 	networkPolicy := networkingv1.NetworkPolicy{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "networking.k8s.io/v1",
+			Kind:       "NetworkPolicy",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -152,13 +181,18 @@ func runNetworkPolicyTests(t *testing.T, tests []networkPolicyTestSuites) {
 
 	for _, test := range tests {
 		rawObjString := createRawJSONString(test.targetNamespace, test.podSelectorLabels)
+		oldObjString := test.oldResource
+		if oldObjString == "" {
+			oldObjString = rawObjString
+
+		}
 
 		obj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
 		}
 
 		oldObj := runtime.RawExtension{
-			Raw: []byte(rawObjString),
+			Raw: []byte(oldObjString),
 		}
 
 		hook := NewWebhook()
@@ -179,39 +213,37 @@ func runNetworkPolicyTests(t *testing.T, tests []networkPolicyTestSuites) {
 	}
 }
 func TestUsers(t *testing.T) {
-	tests := []networkPolicyTestSuites{
-		{
-			// osde2e-related things can delete a networkpolicy
-			testID:          "osde2e-oao-delete-networkpolicy",
-			targetNamespace: "openshift-ocm-agent-operator",
-			username:        "system:serviceaccount:osde2e-h-9a47q:cluster-admin",
-			userGroups:      []string{"system:serviceaccounts:osde2e-h-9a47q", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
-	}
+	tests := []networkPolicyTestSuites{}
+	tests = append(tests, newCrudTest("osde2e-oao-delete-networkpolicy").
+		namespace("openshift-ocm-agent-operator").osde2eadmin().delete().shouldBeAllowed())
 	tests = append(tests, newCrudTest("regular-user-networkpolicy-managed-namespaces").
-		namespace("openshift-kube-apiserver").regularUser().shouldBeDenied()...)
+		namespace("openshift-kube-apiserver").regularUser().shouldBeDeniedCRUD()...)
 	tests = append(tests, newCrudTest("regular-user-networkpolicy-user-namespaces").
-		namespace("my-monitoring").regularUser().shouldBeAllowed()...)
+		namespace("my-monitoring").regularUser().shouldBeAllowedCRUD()...)
 	tests = append(tests, newCrudTest("unprivileged-sa-managed-namespaces").
-		namespace("openshift-kube-apiserver").unprivilegedServiceAccount().shouldBeDenied()...)
+		namespace("openshift-kube-apiserver").unprivilegedServiceAccount().shouldBeDeniedCRUD()...)
 	tests = append(tests, newCrudTest("backplane-cluster-admin-managed-namespaces").
-		namespace("openshift-kube-apiserver").backplaneClusterAdmin().shouldBeAllowed()...)
+		namespace("openshift-kube-apiserver").backplaneClusterAdmin().shouldBeAllowedCRUD()...)
 	tests = append(tests, newCrudTest("allowed-sa-managed-namespaces").
-		namespace("openshift-kube-apiserver").allowedServiceAccount().shouldBeAllowed()...)
+		namespace("openshift-kube-apiserver").allowedServiceAccount().shouldBeAllowedCRUD()...)
 	tests = append(tests, newCrudTest("serviceaccount-managed-namespace-redhat-rhoam-observability").
-		namespace("redhat-rhoam-observability").redhatServiceAccount().shouldBeAllowed()...)
+		namespace("redhat-rhoam-observability").redhatServiceAccount().shouldBeAllowedCRUD()...)
 
 	tests = append(tests, newCrudTest("regular-user-openshift-ingress-no-podselector").
-		namespace("openshift-ingress").regularUser().shouldBeDenied()...)
+		namespace("openshift-ingress").regularUser().shouldBeDeniedCRUD()...)
 	tests = append(tests, newCrudTest("regular-user-openshift-ingress-default-ingress").
 		namespace("openshift-ingress").
 		podSelector("ingresscontroller.operator.openshift.io/deployment-ingresscontroller", "default").
-		regularUser().shouldBeDenied()...)
+		regularUser().shouldBeDeniedCRUD()...)
 	tests = append(tests, newCrudTest("regular-user-openshift-ingress-custom-ingress").
 		namespace("openshift-ingress").
 		podSelector("ingresscontroller.operator.openshift.io/deployment-ingresscontroller", "custom-ingresscontroller").
-		regularUser().shouldBeAllowed()...)
+		regularUser().shouldBeAllowedCRUD()...)
+	tests = append(tests, newCrudTest("regular-user-openshift-ingress-update-podselector-to-custom-ingress").
+		namespace("openshift-ingress").
+		updateFrom(createRawJSONString("openshift-ingress", map[string]string{"ingresscontroller.operator.openshift.io/deployment-ingresscontroller": "default"})).
+		podSelector("ingresscontroller.operator.openshift.io/deployment-ingresscontroller", "custom").
+		regularUser().shouldBeAllowed())
+
 	runNetworkPolicyTests(t, tests)
 }
