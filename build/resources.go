@@ -28,7 +28,6 @@ import (
 
 const (
 	serviceName        string = "validation-webhook"
-	serviceNameMetrics string = "validation-webhook-metrics"
 	serviceAccountName string = "validation-webhook"
 	roleName           string = "validation-webhook"
 	prometheusRoleName string = "prometheus-k8s"
@@ -244,7 +243,7 @@ func createServiceMonitor() *monitoringv1.ServiceMonitor {
 			},
 			Selector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": serviceNameMetrics,
+					"app": serviceName,
 				},
 			},
 		},
