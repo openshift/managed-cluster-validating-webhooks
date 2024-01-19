@@ -71,6 +71,7 @@ func main() {
 	metricsServer := metrics.NewBuilder(config.OperatorNamespace, fmt.Sprintf("%s-metrics", config.OperatorName)).
 		WithPort(metricsPort).
 		WithPath(metricsPath).
+		WithServiceLabel(map[string]string{"app": "validation-webhook"}).
 		WithCollectors(localmetrics.MetricsList).
 		GetConfig()
 

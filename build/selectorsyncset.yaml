@@ -114,7 +114,7 @@ objects:
           - openshift-validation-webhook
         selector:
           matchLabels:
-            name: validation-webhook-metrics
+            app: validation-webhook
     - apiVersion: v1
       kind: ConfigMap
       metadata:
