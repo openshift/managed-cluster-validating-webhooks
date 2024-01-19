@@ -137,15 +137,12 @@ func (s *networkpoliciesruleWebhook) renderNetworkPolicy(req admissionctl.Reques
 	}
 	networkPolicy := &networkingv1.NetworkPolicy{}
 
-	if len(req.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(req.OldObject, networkPolicy)
-	} else {
-		err = decoder.Decode(req, networkPolicy)
+	if len(req.Object.Raw) > 0 {
+		err = decoder.DecodeRaw(req.Object, networkPolicy)
+		return networkPolicy, err
 	}
-	if err != nil {
-		return nil, err
-	}
-	return networkPolicy, nil
+	err = decoder.DecodeRaw(req.OldObject, networkPolicy)
+	return networkPolicy, err
 }
 
 // GetURI implements Webhook interface
