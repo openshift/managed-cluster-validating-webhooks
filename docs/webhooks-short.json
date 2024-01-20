@@ -28,6 +28,10 @@
     "documentString": "Managed OpenShift Customer may create IngressControllers without necessary taints. This can cause those workloads to be provisioned on infra or master nodes."
   },
   {
+    "webhookName": "kubeletconfig-validation",
+    "documentString": "Managed OpenShift customers may not modify kubelet config resources because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring."
+  },
+  {
     "webhookName": "namespace-validation",
     "documentString": "Managed OpenShift Customers may not modify namespaces specified in the [openshift-monitoring/managed-namespaces openshift-monitoring/ocp-namespaces] ConfigMaps because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression (^com$|^io$|^in$) because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels [managed.openshift.io/storage-pv-quota-exempt managed.openshift.io/service-lb-quota-exempt]."
   },
@@ -38,6 +42,10 @@
   {
     "webhookName": "node-validation-osd",
     "documentString": "Managed OpenShift customers may not alter Node objects."
+  },
+  {
+    "webhookName": "networkpolicies-validation",
+    "documentString": "Managed OpenShift Customers may not create NetworkPolicies in namespaces managed by Red Hat."
   },
   {
     "webhookName": "pod-validation",
@@ -70,9 +78,5 @@
   {
     "webhookName": "techpreviewnoupgrade-validation",
     "documentString": "Managed OpenShift Customers may not use TechPreviewNoUpgrade FeatureGate that could prevent any future ability to do a y-stream upgrade to their clusters."
-  },
-  {
-    "webhookName": "kubeletconfig-validation",
-    "documentString": "Managed OpenShift customers may not modify kubelet config resources because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring."
   }
 ]
