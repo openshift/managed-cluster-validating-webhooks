@@ -26,7 +26,7 @@ EXTRA_DEPS := $(find $(CURDIR)/build -type f -print) Makefile
 # we're using modules.
 unexport GOFLAGS
 GOOS?=linux
-GOARCH?=arm64
+GOARCH?=amd64
 GOFLAGS_MOD?=-mod=mod
 GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOFLAGS=${GOFLAGS_MOD}
 
@@ -84,14 +84,14 @@ $(BINARY_FILE): test $(GO_SOURCES)
 build-base: build-image build-package-image
 .PHONY: build-image
 build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
-	$(CONTAINER_ENGINE) build --platform=darwin/arm64 -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
+	$(CONTAINER_ENGINE) build --platform=linux/amd6464 -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
 	$(CONTAINER_ENGINE) tag $(IMG):$(IMAGETAG) $(IMG):latest
 
 .PHONY: build-package-image
 build-package-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 	# Change image placeholder in deployment template to the real image
 	$(shell sed -i -e "s#REPLACED_BY_PIPELINE#$(IMG):$(IMAGETAG)#g" $(PACKAGE_RESOURCE_DESTINATION))
-	$(CONTAINER_ENGINE) build --platform=darwin/arm64 -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/config/package/managed-cluster-validating-webhooks-package.Containerfile) . && \
+	$(CONTAINER_ENGINE) build --platform=linux/amd64 -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/config/package/managed-cluster-validating-webhooks-package.Containerfile) . && \
 	$(CONTAINER_ENGINE) tag $(PKG_IMG):$(IMAGETAG) $(PKG_IMG):latest
 	# Restore the template file modified for the package build
 	git checkout $(PACKAGE_RESOURCE_DESTINATION)
@@ -110,7 +110,7 @@ render: syncset
 syncset: $(SELECTOR_SYNC_SET_DESTINATION)
 $(SELECTOR_SYNC_SET_DESTINATION):
 	$(CONTAINER_ENGINE) run \
-		-v $(CURDIR):$(CURDIR) \
+		-v $(CURDIR):$(CURDIR):z \
 		-w $(CURDIR) \
 		-e GOFLAGS=$(GOFLAGS) \
 		--rm \
