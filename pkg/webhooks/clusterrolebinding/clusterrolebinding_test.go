@@ -94,7 +94,7 @@ func runClusterRoleBindingTests(t *testing.T, tests []ClusterRoleBindingTestSuit
 			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, "", &obj, &oldObj)
 		if err != nil {
 			fmt.Print(test.testID)
-			t.Fatalf("Expected no error, got %s", err.Error())
+			t.Fatalf("Expected no error, got %s from test: %s", err.Error(), test.testID)
 		}
 
 		response, err := testutils.SendHTTPRequest(httprequest, hook)
