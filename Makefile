@@ -84,7 +84,7 @@ $(BINARY_FILE): test $(GO_SOURCES)
 build-base: build-image build-package-image
 .PHONY: build-image
 build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
-	$(CONTAINER_ENGINE) build --platform=linux/amd6464 -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
+	$(CONTAINER_ENGINE) build --platform=linux/amd64 -t $(IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile) . && \
 	$(CONTAINER_ENGINE) tag $(IMG):$(IMAGETAG) $(IMG):latest
 
 .PHONY: build-package-image
