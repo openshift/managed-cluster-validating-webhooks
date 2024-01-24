@@ -135,6 +135,8 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 		}
 	}
 
+	//Checks for non-adminGroups non-ceeGroup non-adminGroups users
+
 	if request.Kind.Kind == "Node" {
 		decoder, err := admission.NewDecoder(s.scheme)
 		if err != nil {
@@ -145,6 +147,14 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 		if err := decoder.Decode(request, &node); err != nil {
 			log.Error(err, "failed to render a Node from request")
 			return admission.Errored(http.StatusBadRequest, err)
+		}
+
+		if request.Operation == admissionv1.Delete {
+			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
+			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			return ret
+
 		}
 
 		if _, ok := node.Labels["node-role.kubernetes.io/infra"]; ok {
