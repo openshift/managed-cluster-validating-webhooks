@@ -1,18 +1,20 @@
 package node
 
 import (
+	"net/http"
 	"slices"
 	"strings"
 
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/localmetrics"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/localmetrics"
-	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 )
 
 // This webhook is intended to stop non-Hypershift Managed OpenShift (ie: OSD
@@ -49,7 +51,7 @@ var (
 
 // NodeWebhook protects various objects from unauthorized manipulation
 type NodeWebhook struct {
-	s *runtime.Scheme
+	scheme *runtime.Scheme
 }
 
 func (s *NodeWebhook) Doc() string {
@@ -134,13 +136,45 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 	}
 
 	if request.Kind.Kind == "Node" {
-		localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+		decoder, err := admission.NewDecoder(s.scheme)
+		if err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 
-		ret = admissionctl.Denied(`Prevented from accessing Red Hat managed resources. This is an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support.
+		node := corev1.Node{}
+		if err := decoder.Decode(request, &node); err != nil {
+			log.Error(err, "failed to render a Node from request")
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 
-To modify node labels or taints, use OCM or the ROSA cli to edit the MachinePool.`)
+		if _, ok := node.Labels["node-role.kubernetes.io/infra"]; ok {
+			log.Info("Denying access to infra node")
+			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
+			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			return ret
+		}
+
+		if _, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok {
+			log.Info("Denying access to control plane node")
+			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
+			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			return ret
+		}
+
+		if _, ok := node.Labels["node-role.kubernetes.io/master"]; ok {
+			log.Info("Denying access to control plane node")
+			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
+			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			return ret
+		}
+
+		ret = admissionctl.Allowed("Allowed to modify worker nodes")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
+
 	}
 
 	log.Info("Denying access", "request", request.AdmissionRequest)
@@ -159,6 +193,6 @@ func (s *NodeWebhook) HypershiftEnabled() bool { return false }
 // NewWebhook creates a new webhook
 func NewWebhook() *NodeWebhook {
 	return &NodeWebhook{
-		s: runtime.NewScheme(),
+		scheme: runtime.NewScheme(),
 	}
 }
