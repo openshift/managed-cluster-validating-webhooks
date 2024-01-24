@@ -85,7 +85,7 @@ spec:
               matchLabels:
                 app: validation-webhook
             topologyKey: topology.kubernetes.io/zone
-      automountServiceAccountToken: false
+      automountServiceAccountToken: true
       containers:
       - command:
         - webhooks
@@ -110,6 +110,7 @@ spec:
           name: service-ca
           readOnly: true
       restartPolicy: Always
+      serviceAccountName: validation-webhook
       tolerations:
       - effect: NoSchedule
         key: hypershift.openshift.io/control-plane
@@ -200,6 +201,38 @@ webhooks:
     - UPDATE
     resources:
     - imagecontentsourcepolicies
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
+  name: sre-ingress-config-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/ingressconfig-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: ingress-config-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - config.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - ingresses
     scope: Cluster
   sideEffects: None
   timeoutSeconds: 2
