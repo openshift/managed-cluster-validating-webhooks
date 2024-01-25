@@ -28,10 +28,8 @@ const (
 var (
 	adminGroups = []string{"system:serviceaccounts:openshift-backplane-srep"}
 	adminUsers  = []string{"backplane-cluster-admin"}
-	ceeGroup    = "system:serviceaccounts:openshift-backplane-cee"
-
-	scope = admissionregv1.AllScopes
-	rules = []admissionregv1.RuleWithOperations{
+	scope       = admissionregv1.AllScopes
+	rules       = []admissionregv1.RuleWithOperations{
 		{
 			Operations: []admissionregv1.OperationType{
 				admissionregv1.OperationType(admissionv1.Create),
@@ -137,15 +135,25 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 
 	//Checks for non-adminGroups non-ceeGroup non-adminGroups users
 	if request.Kind.Kind == "Node" {
+		node := corev1.Node{}
 		decoder, err := admission.NewDecoder(s.scheme)
 		if err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		node := corev1.Node{}
-		if err := decoder.Decode(request, &node); err != nil {
-			log.Error(err, "failed to render a Node from request")
-			return admission.Errored(http.StatusBadRequest, err)
+		switch request.Operation {
+		case admissionv1.Delete:
+			// request.Object is empty for the DELETE operation
+			// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#request
+			if err := decoder.DecodeRaw(request.OldObject, &node); err != nil {
+				log.Error(err, "failed to render a Node from request.OldObject")
+				return admission.Errored(http.StatusBadRequest, err)
+			}
+		default:
+			if err := decoder.Decode(request, &node); err != nil {
+				log.Error(err, "failed to render a Node from request.Object")
+				return admission.Errored(http.StatusBadRequest, err)
+			}
 		}
 		log.Info("Processing request for", "node", node.Name, "operation", request.Operation, "user", request.UserInfo.Username)
 
