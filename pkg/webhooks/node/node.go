@@ -136,7 +136,6 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 	}
 
 	//Checks for non-adminGroups non-ceeGroup non-adminGroups users
-
 	if request.Kind.Kind == "Node" {
 		decoder, err := admission.NewDecoder(s.scheme)
 		if err != nil {
@@ -148,46 +147,46 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 			log.Error(err, "failed to render a Node from request")
 			return admission.Errored(http.StatusBadRequest, err)
 		}
+		log.Info("Processing request for", "node", node.Name, "operation", request.Operation, "user", request.UserInfo.Username)
 
 		if request.Operation == admissionv1.Delete {
-			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
-			ret.UID = request.AdmissionRequest.UID
 			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			ret = admissionctl.Denied("Prevented from deleting nodes. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
 			return ret
-
 		}
 
 		if _, ok := node.Labels["node-role.kubernetes.io/infra"]; ok {
-			log.Info("Denying access to infra node")
-			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
-			ret.UID = request.AdmissionRequest.UID
 			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			log.Info("Denying access to infra node")
+			ret = admissionctl.Denied("Prevented from modifying Red Hat managed infra nodes. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 
 		if _, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok {
-			log.Info("Denying access to control plane node")
-			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
-			ret.UID = request.AdmissionRequest.UID
 			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			log.Info("Denying access to control plane node")
+			ret = admissionctl.Denied("Prevented from modifying Red Hat managed control plane nodes. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 
 		if _, ok := node.Labels["node-role.kubernetes.io/master"]; ok {
-			log.Info("Denying access to control plane node")
-			ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
-			ret.UID = request.AdmissionRequest.UID
 			localmetrics.IncrementNodeWebhookBlockedRequest(request.UserInfo.Username)
+			log.Info("Denying access to control plane node")
+			ret = admissionctl.Denied("Prevented from modifying Red Hat managed master nodes. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
 
 		ret = admissionctl.Allowed("Allowed to modify worker nodes")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
-
 	}
 
-	log.Info("Denying access", "request", request.AdmissionRequest)
+	// Should never get here
+	log.Info("Unexpectedly denying access", "request", request.AdmissionRequest)
 	ret = admissionctl.Denied("Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
