@@ -44,6 +44,12 @@ objects:
       - apiGroups:
         - ""
         resources:
+        - configmaps
+        verbs:
+        - get
+      - apiGroups:
+        - ""
+        resources:
         - services
         verbs:
         - '*'

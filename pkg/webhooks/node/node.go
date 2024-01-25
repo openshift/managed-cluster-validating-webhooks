@@ -49,7 +49,8 @@ var (
 
 // NodeWebhook protects various objects from unauthorized manipulation
 type NodeWebhook struct {
-	scheme *runtime.Scheme
+	scheme             *runtime.Scheme
+	allowCordonWorkers bool
 }
 
 func (s *NodeWebhook) Doc() string {
@@ -135,6 +136,14 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 
 	//Checks for non-adminGroups non-ceeGroup non-adminGroups users
 	if request.Kind.Kind == "Node" {
+		// If the allowCordonWorkers feature flag is off - deny all node actions
+		if !s.allowCordonWorkers {
+			log.Info("Denying access to modify nodes")
+			ret = admissionctl.Denied("Prevented from modifying Red Hat managed nodes. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+
 		node := corev1.Node{}
 		decoder, err := admission.NewDecoder(s.scheme)
 		if err != nil {
@@ -208,8 +217,9 @@ func (s *NodeWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 func (s *NodeWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook
-func NewWebhook() *NodeWebhook {
+func NewWebhook(allowCordonWorkers bool) *NodeWebhook {
 	return &NodeWebhook{
-		scheme: runtime.NewScheme(),
+		scheme:             runtime.NewScheme(),
+		allowCordonWorkers: allowCordonWorkers,
 	}
 }
