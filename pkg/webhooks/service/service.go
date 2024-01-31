@@ -3,8 +3,11 @@ package service
 import (
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
+	"gomodules.xyz/jsonpatch/v2"
 
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,10 +18,11 @@ import (
 )
 
 const (
-	WebhookName     string = "service-mutation"
-	docString       string = `LoadBalancer-type services on Managed OpenShift clusters must contain an additional annotation for managed policy compliance.`
-	annotationKey   string = "service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags"
-	annotationValue string = "red-hat-managed=true"
+	WebhookName           string = "service-mutation"
+	docString             string = `LoadBalancer-type services on Managed OpenShift clusters must contain an additional annotation for managed policy compliance.`
+	annotationKey         string = "service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags"
+	annotationValuePrefix string = "red-hat-managed="
+	annotationValueSuffix string = "true"
 )
 
 var (
@@ -75,21 +79,63 @@ func (s *ServiceWebhook) authorized(request admissionctl.Request) admissionctl.R
 		return ret
 	}
 
-	if hasRedHatManagedAnnotation(service) {
+	if hasRedHatManagedTag(service.GetAnnotations()) {
 		log.Info(fmt.Sprintf("%s operation detected on compliant service: %s", request.Operation, service.GetName()))
 		ret = admissionctl.Allowed(fmt.Sprintf("Service '%s' contains the proper compliance annotation", service.GetName()))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 
-	ret = admissionctl.Denied(fmt.Sprintf("Service '%s' is missing a necesssary compliance annotation", service.GetName()))
+	ret = admissionctl.Patched(
+		fmt.Sprintf("Added necessary compliance annotation to service '%s'", service.GetName()),
+		buildPatch(service.GetAnnotations()),
+	)
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 }
 
-// hasRedHatManagedAnnotation checks if the Service has the annotation required for managed policy compliance
-func hasRedHatManagedAnnotation(service *corev1.Service) bool {
-	return service.GetAnnotations()[annotationKey] == annotationValue
+// hasAdditionalResourceTagsAnnotation checks if a Service has an existing
+// "aws-load-balancer-additional-resource-tags" annotation at all, but does not
+// check its value
+// func hasAdditionalResourceTagsAnnotation(service *corev1.Service) bool {
+// 	_, hasAnnotation
+// 	return hasAnnotation
+// }
+
+// hasRedHatManagedTag checks if a Service's "aws-load-balancer-additional-resource-tags"
+// annotation contains the necessary value for compliance with managed policies.
+// Set serviceAnnotations param to output of service.GetAnnotations()
+func hasRedHatManagedTag(serviceAnnotations map[string]string) bool {
+	// User could theoretically specify multiple comma-separated tags in this annotation
+	tags := strings.Split(serviceAnnotations[annotationKey], ",")
+	return slices.Contains(tags, annotationValuePrefix+annotationValueSuffix)
+}
+
+// buildPatch constructs a JSONPatch that either adds the necessary annotation
+// to the Service, or replaces the existing annotation with one that contains
+// the necessary tag value (along with pre-existing tags that don't conflict).
+// Set serviceAnnotations param to output of service.GetAnnotations()
+func buildPatch(serviceAnnotations map[string]string) jsonpatch.JsonPatchOperation {
+	rfc6901Encoder := strings.NewReplacer("~", "~0", "/", "~1")
+	patchPath := "/metadata/annotations/" + rfc6901Encoder.Replace(annotationKey)
+	existingAnnotationValue, hasAnnotation := serviceAnnotations[annotationKey]
+
+	if !hasAnnotation {
+		// No pre-existing annotation, so add a new one
+		return jsonpatch.NewOperation("add", patchPath, annotationValuePrefix+annotationValueSuffix)
+	}
+
+	// Break down existing annotation and rebuild starting with required tag
+	existingTags := strings.Split(existingAnnotationValue, ",")
+	newTags := []string{annotationValuePrefix + annotationValueSuffix}
+	for _, exTag := range existingTags {
+		if !strings.HasPrefix(exTag, annotationValuePrefix) {
+			// Existing tag doesn't conflict with required tag, so add it back
+			newTags = append(newTags, exTag)
+		}
+	}
+
+	return jsonpatch.NewOperation("replace", patchPath, strings.Join(newTags, ","))
 }
 
 // isLoadBalancer checks if the Service is a LoadBalancer
