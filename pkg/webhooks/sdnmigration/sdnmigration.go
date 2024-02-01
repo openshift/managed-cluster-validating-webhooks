@@ -45,7 +45,6 @@ var (
 )
 
 type NetworkConfigWebhook struct {
-	mu sync.Mutex
 	s  runtime.Scheme
 }
 
