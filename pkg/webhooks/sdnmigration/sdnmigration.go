@@ -152,17 +152,6 @@ func (w *NetworkConfigWebhook) HypershiftEnabled() bool { return true }
 // NewWebhook creates a new webhook
 func NewWebhook() *NetworkConfigWebhook {
 	scheme := runtime.NewScheme()
-	err := admissionv1.AddToScheme(scheme)
-	if err != nil {
-		log.Error(err, "Fail adding admissionsv1 scheme to NetworkConfigWebhook")
-		os.Exit(1)
-	}
-
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		log.Error(err, "Fail adding corev1 scheme to NetworkConfigWebhook")
-		os.Exit(1)
-	}
 
 	return &NetworkConfigWebhook{
 		s: *scheme,
