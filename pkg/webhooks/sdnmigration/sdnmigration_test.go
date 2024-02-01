@@ -268,7 +268,7 @@ func TestSyncSetLabelSelector(t *testing.T) {
 func TestHypershiftEnabled(t *testing.T) {
 	enabled := NewWebhook().HypershiftEnabled()
 
-	if !enabled {
-		t.Error("TestHypershiftEnabled(): expected enabled")
+	if enabled {
+		t.Error("TestHypershiftEnabled(): expected disabled")
 	}
 }

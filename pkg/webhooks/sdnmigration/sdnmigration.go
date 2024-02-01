@@ -2,14 +2,11 @@ package sdnmigration
 
 import (
 	"net/http"
-	"os"
 	"regexp"
-	"sync"
 
 	configv1 "github.com/openshift/api/config/v1"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -45,7 +42,7 @@ var (
 )
 
 type NetworkConfigWebhook struct {
-	s  runtime.Scheme
+	s runtime.Scheme
 }
 
 // Authorized will determine if the request is allowed
