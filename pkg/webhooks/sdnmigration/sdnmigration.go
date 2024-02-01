@@ -147,7 +147,7 @@ func (w *NetworkConfigWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 }
 
 // HypershiftEnabled will return boolean value for hypershift enabled configurations
-func (w *NetworkConfigWebhook) HypershiftEnabled() bool { return true }
+func (w *NetworkConfigWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook
 func NewWebhook() *NetworkConfigWebhook {
