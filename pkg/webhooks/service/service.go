@@ -91,6 +91,7 @@ func (s *ServiceWebhook) authorized(request admissionctl.Request) admissionctl.R
 		buildPatch(service.GetAnnotations()),
 	)
 	ret.UID = request.AdmissionRequest.UID
+	ret.Complete(request)
 	return ret
 }
 
