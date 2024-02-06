@@ -30,8 +30,7 @@ const testServiceJSONString string = `
 	"kind": "Service",
 	"metadata": {
 		"name": "testservice",
-		"uid": "1234",
-		"annotations": %s
+		"uid": "1234"%s
 	},
 	"spec": {
 		"type": "LoadBalancer",
@@ -60,8 +59,17 @@ type serviceTestArgs struct {
 // createJSONByteArrayService returns a JSON byte-string of a mock Service with the given
 // annotations
 func createJSONByteArrayService(annotations map[string]string) []byte {
+	if annotations == nil {
+		// nil means no annotations key at all
+		return []byte(fmt.Sprintf(testServiceJSONString, ""))
+	}
+	if len(annotations) == 0 {
+		// empty map means annotations key exists but is empty
+		return []byte(fmt.Sprintf(testServiceJSONString, ",\n\t\t\"annotations\": {}"))
+	}
 	annotationsMarshaled, _ := json.Marshal(annotations)
-	return []byte(fmt.Sprintf(testServiceJSONString, annotationsMarshaled))
+	var annotationsByteArray []byte = append([]byte(",\n\t\t\"annotations\": "), annotationsMarshaled...)
+	return []byte(fmt.Sprintf(testServiceJSONString, annotationsByteArray))
 }
 
 func runServiceTest(t *testing.T, tArgs serviceTestArgs) {
@@ -156,6 +164,13 @@ func TestServiceMutation(t *testing.T) {
 		{
 			testID:              "create-unannotated-service",
 			operation:           admissionv1.Create,
+			originalAnnotations: nil,
+			expectedAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
+			shouldBeAllowed:     true,
+		},
+		{
+			testID:              "create-service-empty-annotations",
+			operation:           admissionv1.Create,
 			originalAnnotations: map[string]string{},
 			expectedAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
 			shouldBeAllowed:     true,
@@ -229,7 +244,18 @@ func Test_buildPatch(t *testing.T) {
 		want jsonpatchtype.JsonPatchOperation
 	}{
 		{
-			name: "no existing annotations",
+			name: "nil annotations",
+			args: args{
+				serviceAnnotations: nil,
+			},
+			want: jsonpatchtype.NewOperation(
+				"add",
+				"/metadata/annotations",
+				map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
+			),
+		},
+		{
+			name: "empty annotations",
 			args: args{
 				serviceAnnotations: map[string]string{},
 			},

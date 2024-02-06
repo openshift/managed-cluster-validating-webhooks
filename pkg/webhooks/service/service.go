@@ -110,12 +110,20 @@ func hasRedHatManagedTag(serviceAnnotations map[string]string) bool {
 // the necessary tag value (along with pre-existing tags that don't conflict).
 // Set serviceAnnotations param to output of service.GetAnnotations()
 func buildPatch(serviceAnnotations map[string]string) jsonpatch.JsonPatchOperation {
-	rfc6901Encoder := strings.NewReplacer("~", "~0", "/", "~1")
-	patchPath := "/metadata/annotations/" + rfc6901Encoder.Replace(annotationKey)
+	patchPath := "/metadata/annotations"
+	if serviceAnnotations != nil {
+		rfc6901Encoder := strings.NewReplacer("~", "~0", "/", "~1")
+		patchPath += "/" + rfc6901Encoder.Replace(annotationKey)
+	}
+
 	existingAnnotationValue, hasAnnotation := serviceAnnotations[annotationKey]
 
 	if !hasAnnotation {
-		// No pre-existing annotation, so add a new one
+		if serviceAnnotations == nil {
+			// No annotation key at all
+			return jsonpatch.NewOperation("add", patchPath, map[string]string{annotationKey: annotationValuePrefix + annotationValueSuffix})
+		}
+		// Has annotation key but is empty
 		return jsonpatch.NewOperation("add", patchPath, annotationValuePrefix+annotationValueSuffix)
 	}
 
