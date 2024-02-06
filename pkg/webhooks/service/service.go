@@ -73,35 +73,28 @@ func (s *ServiceWebhook) authorized(request admissionctl.Request) admissionctl.R
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if !isLoadBalancer(service) {
+	if service.Spec.Type != corev1.ServiceTypeLoadBalancer {
 		ret = admissionctl.Allowed("Non-LoadBalancer Services are exempt from compliance annotation requirements")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 
 	if hasRedHatManagedTag(service.GetAnnotations()) {
-		log.Info(fmt.Sprintf("%s operation detected on compliant service: %s", request.Operation, service.GetName()))
 		ret = admissionctl.Allowed(fmt.Sprintf("Service '%s' contains the proper compliance annotation", service.GetName()))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
 
+	// If we've gotten this far, then mutation is necessary
 	ret = admissionctl.Patched(
 		fmt.Sprintf("Added necessary compliance annotation to service '%s'", service.GetName()),
 		buildPatch(service.GetAnnotations()),
 	)
-	ret.UID = request.AdmissionRequest.UID
+	log.Info(fmt.Sprintf("%s operation on service %s mutated for compliance", request.Operation, service.GetName()))
+	// ret.Complete() sets the UID and finalizes the patch
 	ret.Complete(request)
 	return ret
 }
-
-// hasAdditionalResourceTagsAnnotation checks if a Service has an existing
-// "aws-load-balancer-additional-resource-tags" annotation at all, but does not
-// check its value
-// func hasAdditionalResourceTagsAnnotation(service *corev1.Service) bool {
-// 	_, hasAnnotation
-// 	return hasAnnotation
-// }
 
 // hasRedHatManagedTag checks if a Service's "aws-load-balancer-additional-resource-tags"
 // annotation contains the necessary value for compliance with managed policies.
@@ -139,11 +132,7 @@ func buildPatch(serviceAnnotations map[string]string) jsonpatch.JsonPatchOperati
 	return jsonpatch.NewOperation("replace", patchPath, strings.Join(newTags, ","))
 }
 
-// isLoadBalancer checks if the Service is a LoadBalancer
-func isLoadBalancer(service *corev1.Service) bool {
-	return service.Spec.Type == corev1.ServiceTypeLoadBalancer
-}
-
+// renderService extracts the Service from the incoming request
 func (s *ServiceWebhook) renderService(req admissionctl.Request) (*corev1.Service, error) {
 	decoder, err := admissionctl.NewDecoder(&s.s)
 	if err != nil {

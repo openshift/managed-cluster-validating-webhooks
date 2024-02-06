@@ -3,11 +3,13 @@ module github.com/openshift/managed-cluster-validating-webhooks
 go 1.21
 
 require (
+	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.2.3
 	github.com/openshift/api v0.0.0-20230228142948-d170fcdc0fa6
 	github.com/openshift/cluster-logging-operator v0.0.0-20230328172346-05f4f8be54d5
 	github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5
+	gomodules.xyz/jsonpatch/v2 v2.2.0
 	k8s.io/api v0.26.2
 	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.2
@@ -50,7 +52,6 @@ require (
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
