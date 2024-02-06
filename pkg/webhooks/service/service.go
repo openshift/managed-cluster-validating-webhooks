@@ -61,10 +61,13 @@ func NewWebhook() *ServiceWebhook {
 // Authorized implements Webhook interface
 func (s *ServiceWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
 	//Implement authorized next
-	return s.authorized(request)
+	return s.authorizeOrMutate(request)
 }
 
-func (s *ServiceWebhook) authorized(request admissionctl.Request) admissionctl.Response {
+// authorizeOrMutate decides whether the Request requires mutation before it's allowed to proceed.
+// For this webhook, this function ensures that any LoadBalancer-type Service touched by this
+// Request is annotated with the proper compliance tags
+func (s *ServiceWebhook) authorizeOrMutate(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
 	service, err := s.renderService(request)
