@@ -119,6 +119,14 @@ func (s *ClusterRoleBindingWebHook) authorized(request admissionctl.Request) adm
 		switch request.Operation {
 		case admissionv1.Delete:
 			log.Info(fmt.Sprintf("Deleting operation detected on ClusterRoleBinding: %v", clusterRoleBinding.Name))
+
+			annotations := clusterRoleBinding.GetObjectMeta().GetAnnotations()
+			if annotations["oc.openshift.io/command"] == "oc adm must-gather" && request.AdmissionRequest.UserInfo.Username == "cluster-admin" {
+				ret = admissionctl.Allowed("cluster-admin: cluster-admin may manage must-gather resources")
+				ret.UID = request.AdmissionRequest.UID
+				return ret
+			}
+
 			ret = admissionctl.Denied(fmt.Sprintf("Deleting ClusterRoleBinding %v is not allowed", clusterRoleBinding.Name))
 			ret.UID = request.AdmissionRequest.UID
 			return ret

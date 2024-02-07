@@ -29,6 +29,99 @@ objects:
       spec: {}
       status: {}
     - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        creationTimestamp: null
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        creationTimestamp: null
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+      rules:
+      - apiGroups:
+        - ""
+        resources:
+        - configmaps
+        verbs:
+        - get
+      - apiGroups:
+        - ""
+        resources:
+        - services
+        verbs:
+        - '*'
+      - apiGroups:
+        - monitoring.coreos.com
+        resources:
+        - servicemonitors
+        verbs:
+        - '*'
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        creationTimestamp: null
+        name: validation-webhook:validation-webhook
+        namespace: openshift-validation-webhook
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: validation-webhook
+      subjects:
+      - kind: ServiceAccount
+        name: validation-webhook
+        namespace: openshift-validation-webhook
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        creationTimestamp: null
+        name: prometheus-k8s
+        namespace: openshift-validation-webhook
+      rules:
+      - apiGroups:
+        - ""
+        resources:
+        - services
+        - endpoints
+        - pods
+        verbs:
+        - get
+        - list
+        - watch
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        creationTimestamp: null
+        name: prometheus-k8s
+        namespace: openshift-validation-webhook
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: prometheus-k8s
+      subjects:
+      - kind: ServiceAccount
+        name: prometheus-k8s
+        namespace: openshift-monitoring
+    - apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        creationTimestamp: null
+        name: validating-webhook-metrics
+        namespace: openshift-validation-webhook
+      spec:
+        endpoints:
+        - bearerTokenSecret:
+            key: ""
+          port: metrics
+        namespaceSelector:
+          matchNames:
+          - openshift-validation-webhook
+        selector:
+          matchLabels:
+            app: validation-webhook
+    - apiVersion: v1
       kind: ConfigMap
       metadata:
         annotations:
@@ -109,7 +202,7 @@ objects:
                 readOnly: true
             restartPolicy: Always
             serviceAccount: ""
-            serviceAccountName: ""
+            serviceAccountName: validation-webhook
             tolerations:
             - effect: NoSchedule
               key: node-role.kubernetes.io/master
@@ -371,6 +464,39 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
+        name: sre-node-validation-osd
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /node-validation-osd
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: node-validation-osd.managed.openshift.io
+        rules:
+        - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+          resources:
+          - nodes
+          - nodes/*
+          scope: '*'
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
         name: sre-pod-validation
       webhooks:
       - admissionReviewVersions:
@@ -545,37 +671,6 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
-        name: sre-regular-user-validation-osd
-      webhooks:
-      - admissionReviewVersions:
-        - v1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /regularuser-validation-osd
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: regular-user-validation-osd.managed.openshift.io
-        rules:
-        - apiGroups:
-          - ""
-          apiVersions:
-          - '*'
-          operations:
-          - '*'
-          resources:
-          - nodes
-          - nodes/*
-          scope: '*'
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-scc-validation
       webhooks:
       - admissionReviewVersions:
@@ -630,6 +725,36 @@ objects:
           resources:
           - services
           scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
+        name: sre-sdn-migration-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /sdnmigration-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: sdn-migration-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - config.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          resources:
+          - networks
+          scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
     - apiVersion: admissionregistration.k8s.io/v1

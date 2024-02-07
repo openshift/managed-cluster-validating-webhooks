@@ -18,6 +18,7 @@ type ClusterRoleBindingTestSuites struct {
 	testID                   string
 	targetClusterRoleBinding string
 	subjects                 []rbacv1.Subject
+	template                 string
 	username                 string
 	operation                admissionv1.Operation
 	userGroups               []string
@@ -35,12 +36,26 @@ const testObjectRaw string = `
 	"subjects": %s
 }`
 
+const testObjectRawWithAnnotation string = `
+{
+	"apiVersion": "rbac.authorization.k8s.io/v1",
+	"kind": "ClusterRoleBinding",
+	"metadata": {
+		"name": "%s",
+		"uid": "1234",
+		"annotations":
+			{"oc.openshift.io/command": "oc adm must-gather"}
+	},
+	"subjects": %s
+}`
+
 func createRawJSONString(
 	name string,
 	subjects []rbacv1.Subject,
+	template string,
 ) (string, error) {
 	partial, err := json.Marshal(subjects)
-	return fmt.Sprintf(testObjectRaw, name, string(partial)), err
+	return fmt.Sprintf(template, name, string(partial)), err
 }
 
 func runClusterRoleBindingTests(t *testing.T, tests []ClusterRoleBindingTestSuites) {
@@ -59,6 +74,7 @@ func runClusterRoleBindingTests(t *testing.T, tests []ClusterRoleBindingTestSuit
 		rawObjString, err := createRawJSONString(
 			test.targetClusterRoleBinding,
 			test.subjects,
+			test.template,
 		)
 
 		if err != nil {
@@ -77,7 +93,7 @@ func runClusterRoleBindingTests(t *testing.T, tests []ClusterRoleBindingTestSuit
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
 			test.testID, gvk, gvr, test.operation, test.username, test.userGroups, "", &obj, &oldObj)
 		if err != nil {
-			t.Fatalf("Expected no error, got %s", err.Error())
+			t.Fatalf("Expected no error, got %s from test: %s", err.Error(), test.testID)
 		}
 
 		response, err := testutils.SendHTTPRequest(httprequest, hook)
@@ -96,6 +112,7 @@ func runClusterRoleBindingTests(t *testing.T, tests []ClusterRoleBindingTestSuit
 func TestClusterRoleBindingDeletionNegative(t *testing.T) {
 	tests := []ClusterRoleBindingTestSuites{
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "user-cant-delete-protected-cluster-role-binding-in-protected-openshift-ns",
 			username:                 "user1",
@@ -111,6 +128,7 @@ func TestClusterRoleBindingDeletionNegative(t *testing.T) {
 			},
 		},
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "user-cant-delete-protected-cluster-role-binding-in-protected-kube-system-ns",
 			username:                 "user1",
@@ -125,6 +143,22 @@ func TestClusterRoleBindingDeletionNegative(t *testing.T) {
 				},
 			},
 		},
+		{
+			template:                 testObjectRaw,
+			targetClusterRoleBinding: "whatever",
+			testID:                   "cluster-admin-can-not-delete-cluster-role-binding-in-protected-ns-without-annotation",
+			username:                 "cluster-admin",
+			operation:                admissionv1.Delete,
+			userGroups:               []string{"system:authenticated"},
+			subjects: []rbacv1.Subject{
+				{
+					Kind:      "ServiceAccount",
+					Name:      "default",
+					Namespace: "openshift-must-gather-mm4tf",
+				},
+			},
+			shouldBeAllowed: false,
+		},
 	}
 	runClusterRoleBindingTests(t, tests)
 }
@@ -132,6 +166,7 @@ func TestClusterRoleBindingDeletionNegative(t *testing.T) {
 func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 	tests := []ClusterRoleBindingTestSuites{
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "user-can-delete-cluster-role-binding-in-non-protected-ns",
 			username:                 "user1",
@@ -147,6 +182,7 @@ func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 			},
 		},
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "user-can-delete-cluster-role-binding-in-non-namespace-subject",
 			username:                 "user1",
@@ -162,6 +198,7 @@ func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 			},
 		},
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "user-can-modify-cluster-role-binding-in-protected-ns",
 			username:                 "user1",
@@ -177,6 +214,7 @@ func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 			},
 		},
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "user-can-modify-cluster-role-binding-in-exception-ns",
 			username:                 "user1",
@@ -192,6 +230,7 @@ func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 			},
 		},
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "elevated-sre-can-delete-cluster-role-binding-in-protected-ns",
 			username:                 "backplane-cluster-admin",
@@ -207,6 +246,7 @@ func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			template:                 testObjectRaw,
 			targetClusterRoleBinding: "whatever",
 			testID:                   "kube-account-can-delete-cluster-role-binding-in-protected-ns",
 			username:                 "kube:admin",
@@ -217,6 +257,22 @@ func TestClusterRoleBindingDeletionPositive(t *testing.T) {
 					Kind:      "ServiceAccount",
 					Name:      "whatever",
 					Namespace: "openshift-operators",
+				},
+			},
+			shouldBeAllowed: true,
+		},
+		{
+			template:                 testObjectRawWithAnnotation,
+			targetClusterRoleBinding: "whatever",
+			testID:                   "cluster-admin-can-delete-cluster-role-binding-in-protected-ns-with-annotation",
+			username:                 "cluster-admin",
+			operation:                admissionv1.Delete,
+			userGroups:               []string{"system:authenticated"},
+			subjects: []rbacv1.Subject{
+				{
+					Kind:      "ServiceAccount",
+					Name:      "default",
+					Namespace: "openshift-must-gather-mm4tf",
 				},
 			},
 			shouldBeAllowed: true,

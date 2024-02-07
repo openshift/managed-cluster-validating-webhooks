@@ -112,7 +112,11 @@ func EncodeAndFixDaemonset(ds *v1.DaemonSet) ([]byte, error) {
 	json.Unmarshal(o, &decoded)
 
 	// set the serviceAccount/serviceAccountName to emptystring
-	decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccountName"] = ""
+	// only empty-set serviceAccountName if it's not already defined
+	if len(ds.Spec.Template.Spec.ServiceAccountName) == 0 {
+		decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccountName"] = ""
+	}
+	// serviceAccount is deprecated
 	decoded.(map[string]interface{})["spec"].(map[string]interface{})["template"].(map[string]interface{})["spec"].(map[string]interface{})["serviceAccount"] = ""
 
 	// convert back to json
