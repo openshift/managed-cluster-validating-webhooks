@@ -697,6 +697,36 @@ objects:
         sideEffects: None
         timeoutSeconds: 2
     - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
+        name: sre-sdn-migration-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /sdnmigration-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: sdn-migration-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - config.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - UPDATE
+          resources:
+          - networks
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
       kind: MutatingWebhookConfiguration
       metadata:
         annotations:
@@ -725,36 +755,6 @@ objects:
           resources:
           - services
           scope: Namespaced
-        sideEffects: None
-        timeoutSeconds: 2
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      metadata:
-        annotations:
-          service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
-        name: sre-sdn-migration-validation
-      webhooks:
-      - admissionReviewVersions:
-        - v1
-        clientConfig:
-          service:
-            name: validation-webhook
-            namespace: openshift-validation-webhook
-            path: /sdnmigration-validation
-        failurePolicy: Ignore
-        matchPolicy: Equivalent
-        name: sdn-migration-validation.managed.openshift.io
-        rules:
-        - apiGroups:
-          - config.openshift.io
-          apiVersions:
-          - '*'
-          operations:
-          - UPDATE
-          resources:
-          - networks
-          scope: Cluster
         sideEffects: None
         timeoutSeconds: 2
     - apiVersion: admissionregistration.k8s.io/v1

@@ -9,13 +9,14 @@ require (
 	github.com/openshift/api v0.0.0-20230228142948-d170fcdc0fa6
 	github.com/openshift/cluster-logging-operator v0.0.0-20230328172346-05f4f8be54d5
 	github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5
-	gomodules.xyz/jsonpatch/v2 v2.2.0
 	github.com/openshift/operator-custom-metrics v0.5.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
 	github.com/prometheus/client_golang v1.16.0
+	gomodules.xyz/jsonpatch/v2 v2.2.0
 	k8s.io/api v0.26.2
 	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.2
+	k8s.io/client-go v0.26.2
 	k8s.io/klog/v2 v2.110.1
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.14.6
@@ -70,7 +71,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/client-go v0.26.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect

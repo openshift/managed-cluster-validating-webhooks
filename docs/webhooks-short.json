@@ -36,6 +36,10 @@
     "documentString": "Managed OpenShift Customers may not create NetworkPolicies in namespaces managed by Red Hat."
   },
   {
+    "webhookName": "node-validation-osd",
+    "documentString": "Managed OpenShift customers may not alter Node objects."
+  },
+  {
     "webhookName": "pod-validation",
     "documentString": "Managed OpenShift Customers may use tolerations on Pods that could cause those Pods to be scheduled on infra or master nodes."
   },
@@ -45,15 +49,15 @@
   },
   {
     "webhookName": "regular-user-validation",
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [managed.openshift.io ocmagent.managed.openshift.io machine.openshift.io machineconfiguration.openshift.io operator.openshift.io network.openshift.io cloudcredential.openshift.io cloudingress.managed.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io admissionregistration.k8s.io addons.managed.openshift.io autoscaling.openshift.io config.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
-  },
-  {
-    "webhookName": "regular-user-validation-osd",
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIgroups [], nor may Managed OpenShift customers alter the Node objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [admissionregistration.k8s.io managed.openshift.io addons.managed.openshift.io ocmagent.managed.openshift.io upgrade.managed.openshift.io config.openshift.io operator.openshift.io network.openshift.io cloudcredential.openshift.io machine.openshift.io splunkforwarder.managed.openshift.io autoscaling.openshift.io cloudingress.managed.openshift.io machineconfiguration.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
   },
   {
     "webhookName": "scc-validation",
     "documentString": "Managed OpenShift Customers may not modify the following default SCCs: [anyuid hostaccess hostmount-anyuid hostnetwork hostnetwork-v2 node-exporter nonroot nonroot-v2 privileged restricted restricted-v2]"
+  },
+  {
+    "webhookName": "sdn-migration-validation",
+    "documentString": "Managed OpenShift customers may not modify the network config type because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring."
   },
   {
     "webhookName": "service-mutation",
