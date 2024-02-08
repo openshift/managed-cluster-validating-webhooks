@@ -413,6 +413,37 @@ webhooks:
   timeoutSeconds: 2
 ---
 apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  creationTimestamp: null
+  name: sre-service-mutation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/service-mutation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: service-mutation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - services
+    scope: Namespaced
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:

@@ -9,6 +9,7 @@ A framework supporting [validating admission webhooks](https://kubernetes.io/doc
   - [Development](#development)
     - [Adding New Webhooks](#adding-new-webhooks)
     - [Helper Utils](#helper-utils)
+    - [Mutating Webhooks](#mutating-webhooks)
   - [Is The Request Valid and Authorized](#is-the-request-valid-and-authorized)
     - [Building a Response](#building-a-response)
     - [Sending Responses](#sending-responses)
@@ -114,6 +115,22 @@ The signature is `Register(string, WebhookFactory)`, where a `WebhookFactory` is
 
 The [utils package](pkg/webhooks/utils/utils.go) provides a string slice content checker (`SliceContains(string, []string) bool`) since it's a common task to see if a group or username is a member of some safelisted list.
 
+### Mutating Webhooks
+
+Despite its name, this repository has basic support for deploying mutating webhooks alongside validating ones due to their similarity. The differences between the two webhook types boil down to the types of decisions (`Response`s) they're allowed to return to the API server. Just like validating webhooks, mutating webhooks can decide that a request is `Allowed`, `Denied`, or `Errored` (see *[Building a Response](#building-a-response)* below). Unlike validating webhooks, however, mutating webhooks may instead decide that a request can be allowed only if some changes are made (i.e., `Patched`). `Patched` decisions contain a RFC 6902 ([JSONPatch](https://jsonpatch.com/)) string that describes the necessary mutations. 
+
+For example, the [service-mutation webhook](pkg/webhooks/service/service.go) enforces an AWS managed policy requirement that ELBs are tagged with `red-hat-managed=true` by mutating all CREATE and UPDATE operations on LoadBalancer-type `Services` such that they contain the annotation `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: red-hat-managed=true`. For a CREATE operation on a `Service` that's missing the necessary annotation, the JSONPatch embedded within the `Patched` Response might look like:
+
+```json
+{
+    "op": "add",
+    "path": "/metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-additional-resource-tags",
+    "value": "red-hat-managed=true"
+}
+```
+
+MutatingWebhooks are indicated by their name: if your Webhook's `Name()` function returns a string ending in `-mutation`, then [resources.go](build/resources.go) will generate a MutatingWebhookConfiguration (instead of a ValidatingWebhookConfiguration) when building the [SelectorSyncSet](build/selectorsyncset.yaml) and [PKO package](docs/hypershift.md). Beyond that, this repo does not descriminate between MutatingWebhooks and ValidatingWebhooks, and you may assume any documentation in this repo applies to both Webhook types unless otherwise noted.
+
 ## Is The Request Valid and Authorized
 
 The key difference between "valid" and "authorized" is that the former is asking if the incoming request is well-formed whereas the latter is asking if the user making the request is allowed to do so. Each webhook may have a different idea of what a "valid" request looks like, but some common feature may be if the request has a username set.
@@ -127,6 +144,7 @@ To create a `Response` object (to reply to the incoming `AdmissionRequest`), one
 * `Allowed(message string)`
 * `Denied(message string) Response`
 * `Errored(error int32, message string) Response`
+* `Patched(message string, patches ...jsonpatch.JsonPatchOperation) Response` ([mutating webhooks](#mutating-webhooks) only)
 
 Use these functions once access has been determined, or in the event of some fundamental problem. A common use for `Errored` is when `Validate` fails. Refer to [Sending Responses](#sending-responses) for methods related to sending these `Response` objects back over the HTTP connection.
 
@@ -136,6 +154,15 @@ It is important to retain the UID from the incoming request with the outgoing re
   var ret admissionctl.Response
   ret = admissionctl.Allowed("Request is allowed")
   ret.UID = request.AdmissionRequest.UID
+  return ret
+```
+
+Mutating webhooks, however, should use `admissionctl.Complete()` instead of manually setting the UID when issuing `Patched` decisions. For example:
+
+```go
+  var ret admissionctl.Response
+  ret = admissionctl.Patched("Request is only allowed if mutated", jsonPatchOp)
+  ret.Complete(request)
   return ret
 ```
 

@@ -701,6 +701,63 @@ func createValidatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.
 	}
 }
 
+func createPackagedMutatingWebhookConfiguration(webhook webhooks.Webhook, phase string) admissionregv1.MutatingWebhookConfiguration {
+	webhookConfiguration := createMutatingWebhookConfiguration(webhook)
+	uri := webhook.GetURI()
+	url := "https://" + serviceName + ".{{.package.metadata.namespace}}.svc.cluster.local" + uri
+	webhookConfiguration.Annotations[pkoPhaseAnnotation] = phase
+	webhookConfiguration.Annotations[caBundleAnnotation] = "false"
+	webhookConfiguration.Webhooks[0].ClientConfig = admissionregv1.WebhookClientConfig{
+		URL:      &url,
+		CABundle: []byte("{{.config.serviceca | b64enc }}"),
+	}
+	return webhookConfiguration
+}
+
+func createMutatingWebhookConfiguration(hook webhooks.Webhook) admissionregv1.MutatingWebhookConfiguration {
+	failPolicy := hook.FailurePolicy()
+	timeout := hook.TimeoutSeconds()
+	matchPolicy := hook.MatchPolicy()
+	sideEffects := hook.SideEffects()
+
+	return admissionregv1.MutatingWebhookConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "MutatingWebhookConfiguration",
+			APIVersion: "admissionregistration.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("sre-%s", hook.Name()),
+
+			Annotations: map[string]string{
+				// service.beta.openshift.io/inject-cabundle annotation will instruct
+				// service-ca-operator to install a CA cert in the
+				// MutatingWebhookConfiguration object, which is required for
+				// Kubernetes to communicate securely to the Service.
+				"service.beta.openshift.io/inject-cabundle": "true",
+			},
+		},
+		Webhooks: []admissionregv1.MutatingWebhook{
+			{
+				AdmissionReviewVersions: []string{"v1"},
+				TimeoutSeconds:          &timeout,
+				SideEffects:             &sideEffects,
+				MatchPolicy:             &matchPolicy,
+				Name:                    fmt.Sprintf("%s.managed.openshift.io", hook.Name()),
+				ObjectSelector:          hook.ObjectSelector(),
+				FailurePolicy:           &failPolicy,
+				ClientConfig: admissionregv1.WebhookClientConfig{
+					Service: &admissionregv1.ServiceReference{
+						Namespace: *namespace,
+						Path:      pointer.StringPtr(hook.GetURI()),
+						Name:      serviceName,
+					},
+				},
+				Rules: hook.Rules(),
+			},
+		},
+	}
+}
+
 func sliceContains(needle string, haystack []string) bool {
 	for _, hay := range haystack {
 		if hay == needle {
@@ -773,6 +830,14 @@ func main() {
 			if len(onlyInclude) > 0 && !sliceContains(hook().Name(), onlyInclude) {
 				continue
 			}
+
+			// MutatingWebhookConfigurations have special names (e.g., service-mutation)
+			if strings.HasSuffix(hookName, "-mutation") {
+				templateResources.Add(hook().SyncSetLabelSelector(), runtime.RawExtension{Raw: syncset.Encode(createMutatingWebhookConfiguration(hook()))})
+				continue
+			}
+
+			// Now handle all Validating webhooks
 			templateResources.Add(hook().SyncSetLabelSelector(), runtime.RawExtension{Raw: syncset.Encode(createValidatingWebhookConfiguration(hook()))})
 		}
 
@@ -872,7 +937,19 @@ func main() {
 				continue
 			}
 
-			encodedWebhook, err := syncset.EncodeAndFixCA(createPackagedValidatingWebhookConfiguration(hook(), webhooksPhase))
+			// MutatingWebhookConfigurations have special names (e.g., service-mutation)
+			if strings.HasSuffix(hookName, "-mutation") {
+				encodedWebhook, err := syncset.EncodeMutatingAndFixCA(createPackagedMutatingWebhookConfiguration(hook(), webhooksPhase))
+				if err != nil {
+					fmt.Printf("Error encoding packaged webhook: %v\n", err)
+					os.Exit(1)
+				}
+				packageResources = append(packageResources, runtime.RawExtension{Raw: encodedWebhook})
+				continue
+			}
+
+			// Now handle all Validating webhooks
+			encodedWebhook, err := syncset.EncodeValidatingAndFixCA(createPackagedValidatingWebhookConfiguration(hook(), webhooksPhase))
 			if err != nil {
 				fmt.Printf("Error encoding packaged webhook: %v\n", err)
 				os.Exit(1)
