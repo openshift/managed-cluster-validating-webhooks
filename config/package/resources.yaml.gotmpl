@@ -85,7 +85,6 @@ spec:
               matchLabels:
                 app: validation-webhook
             topologyKey: topology.kubernetes.io/zone
-      automountServiceAccountToken: true
       containers:
       - command:
         - webhooks
@@ -110,7 +109,6 @@ spec:
           name: service-ca
           readOnly: true
       restartPolicy: Always
-      serviceAccountName: validation-webhook
       tolerations:
       - effect: NoSchedule
         key: hypershift.openshift.io/control-plane
