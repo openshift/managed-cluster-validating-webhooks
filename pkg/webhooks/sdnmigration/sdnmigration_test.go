@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -67,18 +66,22 @@ func TestAuthorized(t *testing.T) {
 					},
 					Operation: admissionv1.Update,
 					Object: runtime.RawExtension{
-						Object: &configv1.Network{
-							Spec: configv1.NetworkSpec{
-								NetworkType: "OVNKubernetes",
-							},
-						},
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"spec": {
+							"networkType": "OVNKubernetes"
+						}
+					}`),
 					},
 					OldObject: runtime.RawExtension{
-						Object: &configv1.Network{
-							Status: configv1.NetworkStatus{
-								NetworkType: "OpenShiftSDN",
-							},
-						},
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"status": {
+							"networkType": "OpenShiftSDN"
+						}
+					}`),
 					},
 				},
 			},
@@ -96,22 +99,111 @@ func TestAuthorized(t *testing.T) {
 					},
 					Operation: admissionv1.Update,
 					Object: runtime.RawExtension{
-						Object: &configv1.Network{
-							Spec: configv1.NetworkSpec{
-								NetworkType: "OpenShiftSDN",
-							},
-						},
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"spec": {
+							"networkType": "OpenshiftSDN"
+						}
+					}`),
 					},
 					OldObject: runtime.RawExtension{
-						Object: &configv1.Network{
-							Status: configv1.NetworkStatus{
-								NetworkType: "OVNKubernetes",
-							},
-						},
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"status": {
+							"networkType": "OVNKubernetes"
+						}
+					}`),
 					},
 				},
 			},
 			ExpectAllowed: false,
+		},
+		{
+			Name: "allow adding annotations",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "test",
+					},
+					Kind: metav1.GroupVersionKind{
+						Kind: "Networks",
+					},
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"metadata": {
+							"annotations": {
+								"unsupported-red-hat-internal-testing": "true"
+							},
+							"name": "cluster"
+						},
+						"spec": {
+							"networkType": "OVNKubernetes"
+						}
+					}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"metadata": {
+							"name": "cluster"
+						},
+						"status": {
+							"networkType": "OVNKubernetes"
+						}
+					}`),
+					},
+				},
+			},
+			ExpectAllowed: true,
+		},
+		{
+			Name: "allow requests to modify the networkType from SDN to OVN with override annotation",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "test",
+					},
+					Kind: metav1.GroupVersionKind{
+						Kind: "Networks",
+					},
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"metadata": {
+							"annotations": {
+								"unsupported-red-hat-internal-testing": "true"
+							}
+						},
+						"spec": {
+							"networkType": "OVNKubernetes"
+						}
+					}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+						"apiVersion": "config.openshift.io/v1",
+						"kind": "Network",
+						"metadata": {
+							"annotations": {
+								"unsupported-red-hat-internal-testing": "true"
+							}
+						},
+						"status": {
+							"networkType": "OpenShiftSDN"
+						}
+					}`),
+					},
+				},
+			},
+			ExpectAllowed: true,
 		},
 	}
 
