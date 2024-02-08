@@ -18,14 +18,13 @@ import (
 const (
 	WebhookName               string = "sdn-migration-validation"
 	privilegedServiceAccounts string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
-	privilegedUsers           string = `system:admin`
 	docString                 string = `Managed OpenShift customers may not modify the network config type because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
+	overrideAnnotation        string = "unsupported-red-hat-internal-testing"
 )
 
 var (
 	log                         = logf.Log.WithName(WebhookName)
 	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
-	privilegedUsersRe           = regexp.MustCompile(privilegedUsers)
 
 	scope = admissionregv1.ClusterScope
 	rules = []admissionregv1.RuleWithOperations{
@@ -46,47 +45,51 @@ type NetworkConfigWebhook struct {
 }
 
 // Authorized will determine if the request is allowed
-func (w *NetworkConfigWebhook) Authorized(request admissionctl.Request) (ret admissionctl.Response) {
-	ret = admissionctl.Denied("Changing the network type is not allowed")
-	ret.UID = request.AdmissionRequest.UID
-
-	// allow if modified by an allowlist-ed service account
+func (w *NetworkConfigWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	// allow if modified by an allow listed service account
 	for _, group := range request.UserInfo.Groups {
 		if privilegedServiceAccountsRe.Match([]byte(group)) {
-			ret = admissionctl.Allowed("Privileged service accounts may access")
-			ret.UID = request.AdmissionRequest.UID
+			return utils.WebhookResponse(request, true, "Privileged service accounts may access")
 		}
 	}
 
 	if request.Operation == admissionv1.Update {
 		decoder, err := admissionctl.NewDecoder(&w.s)
 		if err != nil {
-			log.Error(err, "failed to render a network config from request.Object")
-			ret = admissionctl.Errored(http.StatusBadRequest, err)
+			log.Error(err, "failed to initialize decoder")
+			ret := admissionctl.Errored(http.StatusBadRequest, err)
 			ret.UID = request.AdmissionRequest.UID
+			return ret
 		}
 
 		object := &configv1.Network{}
 		oldObject := &configv1.Network{}
 
-		if err := decoder.DecodeRaw(request.Object, object); err != nil {
+		if err := decoder.Decode(request, object); err != nil {
 			log.Error(err, "failed to render a Network from request.Object")
-			ret = admissionctl.Errored(http.StatusBadRequest, err)
+			ret := admissionctl.Errored(http.StatusBadRequest, err)
 			ret.UID = request.AdmissionRequest.UID
+			return ret
 		}
 		if err := decoder.DecodeRaw(request.OldObject, oldObject); err != nil {
 			log.Error(err, "failed to render a Network from request.OldObject")
-			ret = admissionctl.Errored(http.StatusBadRequest, err)
+			ret := admissionctl.Errored(http.StatusBadRequest, err)
 			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+
+		if v, ok := oldObject.Annotations[overrideAnnotation]; ok && v == "true" {
+			return utils.WebhookResponse(request, true, "`red-hat-internal-testing: true` annotation present")
 		}
 
 		if object.Spec.NetworkType != oldObject.Status.NetworkType {
-			ret = admissionctl.Denied("Changing the network type is not allowed")
-			ret.UID = request.AdmissionRequest.UID
+			return utils.WebhookResponse(request, false, "Changing the network type is not allowed")
 		}
+
+		return utils.WebhookResponse(request, true, "allowed action")
 	}
 
-	return
+	return utils.WebhookResponse(request, false, "Changing the network type is not allowed")
 }
 
 // GetURI returns the URI for the webhook
