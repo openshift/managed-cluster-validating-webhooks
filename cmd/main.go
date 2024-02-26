@@ -55,7 +55,7 @@ func main() {
 	for name, hook := range webhooks.Webhooks {
 		realHook := hook()
 		if seen[realHook.GetURI()] {
-			panic(fmt.Errorf("Duplicate webhook trying to lisen on %s", realHook.GetURI()))
+			panic(fmt.Errorf("Duplicate webhook trying to listen on %s", realHook.GetURI()))
 		}
 		seen[name] = true
 		if !*testHooks {
@@ -85,9 +85,9 @@ func main() {
 	} else {
 		if err := metrics.ConfigureMetrics(context.TODO(), *metricsServer); err != nil {
 			log.Error(err, "Failed to configure metrics")
-			os.Exit(1)
+		} else {
+			log.Info("Successfully configured metrics")
 		}
-		log.Info("Successfully configured metrics")
 	}
 
 	server := &http.Server{
