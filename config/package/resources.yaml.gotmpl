@@ -16,6 +16,7 @@ metadata:
     service.beta.openshift.io/serving-cert-secret-name: webhook-cert
   creationTimestamp: null
   labels:
+    hypershift.openshift.io/allow-guest-webhooks: "true"
     name: validation-webhook
   name: validation-webhook
 spec:

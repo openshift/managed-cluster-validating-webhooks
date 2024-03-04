@@ -598,6 +598,9 @@ func createService() *corev1.Service {
 			},
 			Labels: map[string]string{
 				"name": serviceName,
+				// hosted-cluster-config-operator label for HOSTEDCP-1063 compliance,
+				// i.e., adding our webhook's service to the HCP webhook allowlist
+				"hypershift.openshift.io/allow-guest-webhooks": "true",
 			},
 			Name:      serviceName,
 			Namespace: *namespace,
