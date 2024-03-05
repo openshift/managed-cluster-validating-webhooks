@@ -173,7 +173,7 @@ func TestIngressControllerTolerations(t *testing.T) {
 					Effect:   "NoSchedule",
 				},
 			},
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:     "toleration-test-create-3",
@@ -224,7 +224,7 @@ func TestIngressControllerTolerations(t *testing.T) {
 					Effect:   "NoSchedule",
 				},
 			},
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:     "toleration-test-update-3",

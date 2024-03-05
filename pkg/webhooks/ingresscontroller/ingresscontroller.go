@@ -18,7 +18,7 @@ import (
 
 const (
 	WebhookName                     string = "ingresscontroller-validation"
-	docString                       string = `Managed OpenShift Customer may create IngressControllers without necessary taints. This can cause those workloads to be provisioned on infra or master nodes.`
+	docString                       string = `Managed OpenShift Customer may create IngressControllers without necessary taints. This can cause those workloads to be provisioned on master nodes.`
 	legacyIngressSupportFeatureFlag        = "ext-managed.openshift.io/legacy-ingress-support"
 )
 
@@ -140,8 +140,8 @@ func (wh *IngressControllerWebhook) authorized(request admissionctl.Request) adm
 	// Check if the group does not have exceptions
 	if !isAllowedUser(request) {
 		for _, toleration := range ic.Spec.NodePlacement.Tolerations {
-			if strings.Contains(toleration.Key, "node-role.kubernetes.io/master") || strings.Contains(toleration.Key, "node-role.kubernetes.io/infra") {
-				ret = admissionctl.Denied("Not allowed to provision ingress controller pods with toleration for master and infra nodes.")
+			if strings.Contains(toleration.Key, "node-role.kubernetes.io/master") {
+				ret = admissionctl.Denied("Not allowed to provision ingress controller pods with toleration for master nodes.")
 				ret.UID = request.AdmissionRequest.UID
 
 				return ret
