@@ -35,7 +35,7 @@ var (
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"config.openshift.io"},
 				APIVersions: []string{"*"},
-				Resources:   []string{"kubelet"},
+				Resources:   []string{"kubeletconfig","kubeletconfigs"},
 				Scope:       &scope,
 			},
 		},
