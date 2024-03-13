@@ -34,7 +34,7 @@ var (
 			Operations: []admissionregv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{"machineconfiguration.openshift.io"},
-				APIVersions: []string{"*"},
+				APIVersions: []string{"v1"},
 				Resources:   []string{"kubeletconfig","kubeletconfigs"},
 				Scope:       &scope,
 			},
