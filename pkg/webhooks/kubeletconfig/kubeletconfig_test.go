@@ -164,9 +164,9 @@ func TestRules(t *testing.T) {
 		{
 			Operations: []admissionregv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 			Rule: admissionregv1.Rule{
-				APIGroups:   []string{"config.openshift.io"},
-				APIVersions: []string{"*"},
-				Resources:   []string{"kubelet"},
+				APIGroups:   []string{"machineconfiguration.openshift.io"},
+				APIVersions: []string{"v1"},
+				Resources:   []string{"kubeletconfig", "kubeletconfigs"},
 				Scope:       &scope,
 			},
 		},
