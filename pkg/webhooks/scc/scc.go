@@ -3,14 +3,13 @@ package scc
 import (
 	"fmt"
 	"net/http"
-	"os"
+	"regexp"
 	"slices"
 
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -18,8 +17,8 @@ import (
 )
 
 const (
-	WebhookName string = "scc-validation"
-	docString   string = `Managed OpenShift Customers may not modify the following default SCCs: %s`
+	WebhookName = "scc-validation"
+	docString   = `Managed OpenShift Customers may not modify the following default SCCs: %s`
 )
 
 var (
@@ -42,8 +41,8 @@ var (
 		"system:serviceaccount:openshift-cluster-version:default",
 		"system:admin",
 	}
-	allowedGroups = []string{}
-	defaultSCCs   = []string{
+	allowedGroupsRe = regexp.MustCompile("^system:serviceaccounts:osde2e-(h-)?[a-z0-9]{5}")
+	defaultSCCs     = []string{
 		"anyuid",
 		"hostaccess",
 		"hostmount-anyuid",
@@ -59,25 +58,13 @@ var (
 )
 
 type SCCWebHook struct {
-	s runtime.Scheme
+	scheme *runtime.Scheme
 }
 
 // NewWebhook creates the new webhook
 func NewWebhook() *SCCWebHook {
-	scheme := runtime.NewScheme()
-	err := admissionv1.AddToScheme(scheme)
-	if err != nil {
-		log.Error(err, "Fail adding admissionsv1 scheme to SCCWebHook")
-		os.Exit(1)
-	}
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		log.Error(err, "Fail adding corev1 scheme to SCCWebHook")
-		os.Exit(1)
-	}
-
 	return &SCCWebHook{
-		s: *scheme,
+		scheme: runtime.NewScheme(),
 	}
 }
 
@@ -117,7 +104,7 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 
 // renderSCC render the SCC object from the requests
 func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.SecurityContextConstraints, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
+	decoder, err := admissionctl.NewDecoder(s.scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +126,8 @@ func isAllowedUserGroup(request admissionctl.Request) bool {
 		return true
 	}
 
-	for _, group := range allowedGroups {
-		if slices.Contains(request.UserInfo.Groups, group) {
+	for _, group := range request.UserInfo.Groups {
+		if allowedGroupsRe.Match([]byte(group)) {
 			return true
 		}
 	}

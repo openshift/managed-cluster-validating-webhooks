@@ -167,6 +167,14 @@ func TestUserPositive(t *testing.T) {
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: true,
 		},
+		{
+			targetSCC:       "privileged",
+			testID:          "osde2e-serviceaccounts-are-allowed",
+			username:        "system:serviceaccount:osde2e-abcde:osde2e-runner",
+			operation:       admissionv1.Update,
+			userGroups:      []string{"system:authenticated", "system:serviceaccounts:osde2e-abcde"},
+			shouldBeAllowed: true,
+		},
 	}
 	runSCCTests(t, tests)
 }
