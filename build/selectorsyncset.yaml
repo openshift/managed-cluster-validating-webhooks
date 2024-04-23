@@ -571,7 +571,6 @@ objects:
           - cloudcredential.openshift.io
           - machine.openshift.io
           - admissionregistration.k8s.io
-          - imageregistry.operator.openshift.io
           - addons.managed.openshift.io
           - cloudingress.managed.openshift.io
           - managed.openshift.io
