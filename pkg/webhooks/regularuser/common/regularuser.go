@@ -57,7 +57,6 @@ var (
 					"cloudcredential.openshift.io",
 					"machine.openshift.io",
 					"admissionregistration.k8s.io",
-					"imageregistry.operator.openshift.io",
 					// Deny ability to manage SRE resources
 					// oc get --raw /apis | jq -r '.groups[] | select(.name | contains("managed")) | .name'
 					"addons.managed.openshift.io",
