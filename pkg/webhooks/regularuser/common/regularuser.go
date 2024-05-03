@@ -226,9 +226,10 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 	switch {
 	case utils.RequestMatchesGroupKind(request, mustGatherKind, mustGatherGroup):
 		if isMustGatherAuthorized(request) {
-			ret = admissionctl.Allowed("Management of MustGather CR is authorized")
-			ret.UID = request.AdmissionRequest.UID
-			return ret
+			return utils.WebhookResponse(request, true, "")
+		} else {
+			log.Info("Denying access", "request", request.AdmissionRequest)
+			return utils.WebhookResponse(request, false, "Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
 		}
 	case utils.RequestMatchesGroupKind(request, customDomainKind, customDomainGroup):
 		if isCustomDomainAuthorized(request) {
@@ -287,7 +288,7 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 
 // isMustGatherAuthorized check if request is authorized for MustGather CR
 func isMustGatherAuthorized(request admissionctl.Request) bool {
-	return slices.Contains(request.UserInfo.Groups, ceeGroup)
+	return slices.Contains(request.UserInfo.Groups, "cluster-admins")
 }
 
 // isCustomDomainAuthorized check if request is authorized for CustomDomain CR
