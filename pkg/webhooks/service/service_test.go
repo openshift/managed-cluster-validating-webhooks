@@ -49,11 +49,17 @@ const testServiceJSONString string = `
 }`
 
 type serviceTestArgs struct {
-	testID              string
-	operation           admissionv1.Operation
-	originalAnnotations map[string]string
-	expectedAnnotations map[string]string
-	shouldBeAllowed     bool
+	testID    string
+	operation admissionv1.Operation
+	// oldObjectAnnotations will trigger the creation of a Service to fill AdmissionRequest.OldObject,
+	// which is typically only populated for DELETE and UPDATE operations (other operations can leave
+	// this field nil). For example, in an UPDATE operation, OldObject represents the Service as it
+	// was before the user requested an UPDATE, and Object (which will be annotated using the
+	// originalAnnotations field) represents the state of the Service desired by the user post-UPDATE
+	oldObjectAnnotations map[string]string
+	originalAnnotations  map[string]string
+	expectedAnnotations  map[string]string
+	shouldBeAllowed      bool
 }
 
 // createJSONByteArrayService returns a JSON byte-string of a mock Service with the given
@@ -84,15 +90,23 @@ func runServiceTest(t *testing.T, tArgs serviceTestArgs) {
 		Resource: "services",
 	}
 
+	// For certain ops, create JSON and raw representations of the "old" Service object
+	// See docstring for serviceTestArgs.oldObjectAnnotations
+	var oldObjectServiceRawPtr *runtime.RawExtension
+	if tArgs.oldObjectAnnotations != nil {
+		oldObjectServiceJSONByteArray := createJSONByteArrayService(tArgs.oldObjectAnnotations)
+		oldObjectServiceRawPtr = &runtime.RawExtension{Raw: oldObjectServiceJSONByteArray}
+	}
+
 	// Create JSON and raw representations of the original Service object
 	originalServiceJSONByteArray := createJSONByteArrayService(tArgs.originalAnnotations)
-	originalServiceRaw := runtime.RawExtension{Raw: originalServiceJSONByteArray}
+	originalServiceRawPtr := &runtime.RawExtension{Raw: originalServiceJSONByteArray}
 
 	// Set up the Webhook under test
 	// Note that this webhook doesn't care about RBAC, so we hardcode dummy RBAC parameter values
 	hook := NewWebhook()
 	httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(),
-		tArgs.testID, gvk, gvr, tArgs.operation, "my_user", []string{"my_group"}, "my_ns", &originalServiceRaw, nil)
+		tArgs.testID, gvk, gvr, tArgs.operation, "my_user", []string{"my_group"}, "my_ns", originalServiceRawPtr, oldObjectServiceRawPtr)
 	if err != nil {
 		t.Fatalf("Expected no error, got %s", err.Error())
 	}
@@ -176,6 +190,13 @@ func TestServiceMutation(t *testing.T) {
 			shouldBeAllowed:     true,
 		},
 		{
+			testID:              "create-service-incorrect-annotation-single",
+			operation:           admissionv1.Create,
+			originalAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=foo"},
+			expectedAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
+			shouldBeAllowed:     true,
+		},
+		{
 			testID:              "create-service-irrelevant-annotations",
 			operation:           admissionv1.Create,
 			originalAnnotations: map[string]string{"foo": "bar", "ABC": "123"},
@@ -183,11 +204,12 @@ func TestServiceMutation(t *testing.T) {
 			shouldBeAllowed:     true,
 		},
 		{
-			testID:              "update-service-correct-tag-irrelevant-annotations",
-			operation:           admissionv1.Update,
-			originalAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true", "foo": "bar", "ABC": "123"},
-			expectedAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true", "foo": "bar", "ABC": "123"},
-			shouldBeAllowed:     true,
+			testID:               "update-service-correct-tag-add-irrelevant-annotation",
+			operation:            admissionv1.Update,
+			oldObjectAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true", "foo": "bar"},
+			originalAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true", "foo": "bar", "ABC": "123"},
+			expectedAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true", "foo": "bar", "ABC": "123"},
+			shouldBeAllowed:      true,
 		},
 		{
 			testID:              "create-service-irrelevant-tags",
@@ -197,18 +219,28 @@ func TestServiceMutation(t *testing.T) {
 			shouldBeAllowed:     true,
 		},
 		{
-			testID:              "update-service-relevant-tags",
-			operation:           admissionv1.Update,
-			originalAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=false,Foo=Bar,ABC=123"},
-			expectedAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true,Foo=Bar,ABC=123"},
-			shouldBeAllowed:     true,
+			testID:               "update-service-correct-tag-deletion-attempt", // OSD-21590 regression test
+			operation:            admissionv1.Update,
+			oldObjectAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true,Foo=Bar,ABC=123"},
+			originalAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "Foo=Bar,ABC=123"},
+			expectedAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true,Foo=Bar,ABC=123"},
+			shouldBeAllowed:      true,
 		},
 		{
-			testID:              "create-service-correct-tag",
-			operation:           admissionv1.Create,
-			originalAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
-			expectedAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
-			shouldBeAllowed:     true,
+			testID:               "update-service-correct-tag-modification-attempt", // OSD-21590 regression test
+			operation:            admissionv1.Update,
+			oldObjectAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true,Foo=Bar,ABC=123"},
+			originalAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=foobar,Foo=Bar,ABC=123"},
+			expectedAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true,Foo=Bar,ABC=123"},
+			shouldBeAllowed:      true,
+		},
+		{
+			testID:               "create-service-correct-tag",
+			operation:            admissionv1.Create,
+			oldObjectAnnotations: map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
+			originalAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
+			expectedAnnotations:  map[string]string{"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=true"},
+			shouldBeAllowed:      true,
 		},
 		{
 			testID:              "update-service-correct-tags",
@@ -402,10 +434,19 @@ func Test_hasRedHatManagedTag(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "incorrect tag value",
+			name: "incorrect tag values",
 			args: args{
 				serviceAnnotations: map[string]string{
 					"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=false,Foo=Bar,ABC=123",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "incorrect tag value alone",
+			args: args{
+				serviceAnnotations: map[string]string{
+					"service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags": "red-hat-managed=foo",
 				},
 			},
 			want: false,
