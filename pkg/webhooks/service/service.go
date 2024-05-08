@@ -151,11 +151,7 @@ func (s *ServiceWebhook) renderService(req admissionctl.Request) (*corev1.Servic
 	}
 	service := &corev1.Service{}
 
-	if len(req.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(req.OldObject, service)
-	} else {
-		err = decoder.Decode(req, service)
-	}
+	err = decoder.Decode(req, service)
 	if err != nil {
 		return nil, err
 	}
