@@ -79,7 +79,7 @@ func runSCCTests(t *testing.T, tests []sccTestSuites) {
 		}
 	}
 }
-func TestUserNegative(t *testing.T) {
+func TestUser(t *testing.T) {
 	tests := []sccTestSuites{
 		{
 			targetSCC:       "hostnetwork",
@@ -121,12 +121,6 @@ func TestUserNegative(t *testing.T) {
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			shouldBeAllowed: false,
 		},
-	}
-	runSCCTests(t, tests)
-}
-
-func TestUserPositive(t *testing.T) {
-	tests := []sccTestSuites{
 		{
 			targetSCC:       "testscc",
 			testID:          "user-can-modify-normal",
@@ -169,11 +163,11 @@ func TestUserPositive(t *testing.T) {
 		},
 		{
 			targetSCC:       "privileged",
-			testID:          "osde2e-serviceaccounts-are-allowed",
+			testID:          "osde2e-serviceaccounts-are-not-allowed",
 			username:        "system:serviceaccount:osde2e-abcde:osde2e-runner",
 			operation:       admissionv1.Update,
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:osde2e-abcde"},
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 	}
 	runSCCTests(t, tests)
