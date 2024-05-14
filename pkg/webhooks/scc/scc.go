@@ -3,7 +3,6 @@ package scc
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"slices"
 
 	securityv1 "github.com/openshift/api/security/v1"
@@ -41,8 +40,8 @@ var (
 		"system:serviceaccount:openshift-cluster-version:default",
 		"system:admin",
 	}
-	allowedGroupsRe = regexp.MustCompile("^system:serviceaccounts:osde2e-(h-)?[a-z0-9]{5}")
-	defaultSCCs     = []string{
+	allowedGroups = []string{}
+	defaultSCCs   = []string{
 		"anyuid",
 		"hostaccess",
 		"hostmount-anyuid",
@@ -126,8 +125,8 @@ func isAllowedUserGroup(request admissionctl.Request) bool {
 		return true
 	}
 
-	for _, group := range request.UserInfo.Groups {
-		if allowedGroupsRe.Match([]byte(group)) {
+	for _, group := range allowedGroups {
+		if slices.Contains(request.UserInfo.Groups, group) {
 			return true
 		}
 	}
