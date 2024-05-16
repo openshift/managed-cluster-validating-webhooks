@@ -221,4 +221,6 @@ func (s *prometheusruleWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *prometheusruleWebhook) ClassicEnabled() bool { return true }
+
 func (s *prometheusruleWebhook) HypershiftEnabled() bool { return false }

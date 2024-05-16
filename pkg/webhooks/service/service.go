@@ -218,6 +218,8 @@ func (s *ServiceWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *ServiceWebhook) ClassicEnabled() bool { return false }
+
 // HypershiftEnabled indicates that this webhook is compatible with hosted
 // control plane clusters
 func (s *ServiceWebhook) HypershiftEnabled() bool { return true }

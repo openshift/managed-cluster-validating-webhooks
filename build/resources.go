@@ -806,6 +806,10 @@ func main() {
 			}
 			seen[hook().GetURI()] = true
 
+			if !hook().ClassicEnabled() {
+				continue
+			}
+
 			// no rules...?
 			if len(hook().Rules()) == 0 {
 				continue

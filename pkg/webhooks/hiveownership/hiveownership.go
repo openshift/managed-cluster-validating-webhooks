@@ -130,6 +130,8 @@ func (s *HiveOwnershipWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *HiveOwnershipWebhook) ClassicEnabled() bool { return true }
+
 func (s *HiveOwnershipWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook

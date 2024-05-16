@@ -47,7 +47,9 @@ type Webhook interface {
 	// SyncSetLabelSelector returns the label selector to use in the SyncSet.
 	// Return utils.DefaultLabelSelector() to stick with the default
 	SyncSetLabelSelector() metav1.LabelSelector
-	// HypershiftEnabled will return boolean value for hypershift enabled configurations
+	// ClassicEnabled will return true if the webhook should be deployed to OSD/ROSA Classic clusters
+	ClassicEnabled() bool
+	// HypershiftEnabled will return true if the webhook should be deployed to ROSA HCP clusters
 	HypershiftEnabled() bool
 }
 

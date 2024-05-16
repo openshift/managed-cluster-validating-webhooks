@@ -193,4 +193,6 @@ func (s *customresourcedefinitionsruleWebhook) SyncSetLabelSelector() metav1.Lab
 	return utils.DefaultLabelSelector()
 }
 
+func (s *customresourcedefinitionsruleWebhook) ClassicEnabled() bool { return true }
+
 func (s *customresourcedefinitionsruleWebhook) HypershiftEnabled() bool { return false }

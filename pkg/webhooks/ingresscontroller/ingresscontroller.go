@@ -192,6 +192,8 @@ func (s *IngressControllerWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return customLabelSelector
 }
 
+func (s *IngressControllerWebhook) ClassicEnabled() bool { return true }
+
 func (s *IngressControllerWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook

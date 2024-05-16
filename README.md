@@ -82,7 +82,9 @@ type Webhook interface {
 	// SyncSetLabelSelector returns the label selector to use in the SyncSet.
 	// Return utils.DefaultLabelSelector() to stick with the default
 	SyncSetLabelSelector() metav1.LabelSelector
-	// HypershiftEnabled will return boolean value for hypershift enabled configurations
+	// ClassicEnabled will return true if the webhook should be deployed to OSD/ROSA Classic clusters
+	ClassicEnabled() bool
+	// HypershiftEnabled will return true if the webhook should be deployed to ROSA HCP clusters
 	HypershiftEnabled() bool
 }
 ```
@@ -117,7 +119,7 @@ The [utils package](pkg/webhooks/utils/utils.go) provides a string slice content
 
 ### Mutating Webhooks
 
-Despite its name, this repository has basic support for deploying mutating webhooks alongside validating ones due to their similarity. The differences between the two webhook types boil down to the types of decisions (`Response`s) they're allowed to return to the API server. Just like validating webhooks, mutating webhooks can decide that a request is `Allowed`, `Denied`, or `Errored` (see *[Building a Response](#building-a-response)* below). Unlike validating webhooks, however, mutating webhooks may instead decide that a request can be allowed only if some changes are made (i.e., `Patched`). `Patched` decisions contain a RFC 6902 ([JSONPatch](https://jsonpatch.com/)) string that describes the necessary mutations. 
+Despite its name, this repository has basic support for deploying mutating webhooks alongside validating ones due to their similarity. The differences between the two webhook types boil down to the types of decisions (`Response`s) they're allowed to return to the API server. Just like validating webhooks, mutating webhooks can decide that a request is `Allowed`, `Denied`, or `Errored` (see *[Building a Response](#building-a-response)* below). Unlike validating webhooks, however, mutating webhooks may instead decide that a request can be allowed only if some changes are made (i.e., `Patched`). `Patched` decisions contain a RFC 6902 ([JSONPatch](https://jsonpatch.com/)) string that describes the necessary mutations.
 
 For example, the [service-mutation webhook](pkg/webhooks/service/service.go) enforces an AWS managed policy requirement that ELBs are tagged with `red-hat-managed=true` by mutating all CREATE and UPDATE operations on LoadBalancer-type `Services` such that they contain the annotation `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: red-hat-managed=true`. For a CREATE operation on a `Service` that's missing the necessary annotation, the JSONPatch embedded within the `Patched` Response might look like:
 

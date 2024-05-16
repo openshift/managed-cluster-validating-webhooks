@@ -205,6 +205,8 @@ func (s *NodeWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *NodeWebhook) ClassicEnabled() bool { return true }
+
 func (s *NodeWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook
