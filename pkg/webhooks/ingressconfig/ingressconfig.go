@@ -122,6 +122,8 @@ func (w *IngressConfigWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (w *IngressConfigWebhook) ClassicEnabled() bool { return true }
+
 // HypershiftEnabled will return boolean value for hypershift enabled configurations
 func (w *IngressConfigWebhook) HypershiftEnabled() bool { return true }
 

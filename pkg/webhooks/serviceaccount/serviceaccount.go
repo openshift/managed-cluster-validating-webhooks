@@ -241,4 +241,6 @@ func (s *serviceAccountWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
+func (s *serviceAccountWebhook) ClassicEnabled() bool { return true }
+
 func (s *serviceAccountWebhook) HypershiftEnabled() bool { return true }

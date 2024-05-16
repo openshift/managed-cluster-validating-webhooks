@@ -243,4 +243,6 @@ func (s *ClusterRoleBindingWebHook) SyncSetLabelSelector() metav1.LabelSelector 
 	return utils.DefaultLabelSelector()
 }
 
+func (s *ClusterRoleBindingWebHook) ClassicEnabled() bool { return true }
+
 func (s *ClusterRoleBindingWebHook) HypershiftEnabled() bool { return true }

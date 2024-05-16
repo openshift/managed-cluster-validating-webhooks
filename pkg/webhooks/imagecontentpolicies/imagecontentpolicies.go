@@ -165,6 +165,10 @@ func (w *ImageContentPoliciesWebhook) SyncSetLabelSelector() metav1.LabelSelecto
 	return utils.DefaultLabelSelector()
 }
 
+func (w *ImageContentPoliciesWebhook) ClassicEnabled() bool {
+	return true
+}
+
 func (w *ImageContentPoliciesWebhook) HypershiftEnabled() bool {
 	return true
 }

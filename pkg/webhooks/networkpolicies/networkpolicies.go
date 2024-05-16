@@ -205,4 +205,6 @@ func (s *networkpoliciesruleWebhook) SyncSetLabelSelector() metav1.LabelSelector
 	return utils.DefaultLabelSelector()
 }
 
+func (s *networkpoliciesruleWebhook) ClassicEnabled() bool { return true }
+
 func (s *networkpoliciesruleWebhook) HypershiftEnabled() bool { return false }
