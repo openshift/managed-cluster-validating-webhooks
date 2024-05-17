@@ -67,33 +67,40 @@ func (s *PodImageSpecWebhook) authorizeOrMutate(request admissionctl.Request) ad
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
+	mutated := false
 	for _ ,container := range pod.Spec.Containers {
-		err := mutateContainerImageSpec(container)
+		err := mutateContainerImageSpec(container.Image)
 		if err != nil {
 			return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	ret = admissionctl.Patched(
-		fmt.Sprintf("images on pod %s mutated for reliablity", pod.GetName()),
-	)
-	
+	if mutated {
+		ret = admissionctl.Patched(
+			fmt.Sprintf("images on pod %s mutated for reliablity", pod.GetName()),
+		)
 
-	log.Info(fmt.Sprintf("images on pod %s mutated for reliablity", pod.GetName()))
-	// ret.Complete() sets the UID and finalizes the patch
-	ret.Complete(request)
+		log.Info(fmt.Sprintf("images on pod %s mutated for reliablity", pod.GetName()))
+		// ret.Complete() sets the UID and finalizes the patch
+		ret.Complete(request)
+	} else {
+		ret = admissionctl.Allowed("Pod image spec is valid")
+		ret.UID = request.AdmissionRequest.UID	
+	}
+	
 	return ret
 }
 
-func (s *PodImageSpecWebhook) renderPod(req admissionctl.Request) (*corev1.Pod, error) {
+// renderPod renders the Pod in the admission Request
+func (s *PodImageSpecWebhook) renderPod(request admissionctl.Request) (*corev1.Pod, error) {
 	decoder, err := admissionctl.NewDecoder(&s.s)
 	if err != nil {
 		return nil, err
 	}
 	pod := &corev1.Pod{}
 	if len(req.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(req.OldObject, pod)
+		err = decoder.DecodeRaw(request.OldObject, pod)
 	} else {
-		err = decoder.DecodeRaw(req.Object, pod)
+		err = decoder.DecodeRaw(request.Object, pod)
 	}
 	if err != nil {
 		return nil, err
@@ -101,13 +108,14 @@ func (s *PodImageSpecWebhook) renderPod(req admissionctl.Request) (*corev1.Pod, 
 	return pod, nil
 }
 
-func checkContainerImageSpecByRegex(container corev1.Container) (bool, string, string, string, error) {
+// checkContainerImageSpecByRegex checks to see if the image is in the openshift namespace in the internal registry
+func checkContainerImageSpecByRegex(imagespec string) (bool, string, string, string, error) {
 	regex, err := regexp.Compile(`(image-registry.openshift-image-registry.svc:5000\/\)\(?P<namespace>openshift)(/)(?P<image>\S*)(:)(?P<tag>\S*)`)
 	if err != nil {
 		return false, "", "", "", err
 	}
 
-	matches := regex.FindStringSubmatch(container.Image)
+	matches := regex.FindStringSubmatch(imagespec)
 	namespaceIndex := regex.SubexpIndex("namespace")
 	imageIndex := regex.SubexpIndex("image")
 	tagIndex := regex.SubexpIndex("tag")
@@ -119,8 +127,8 @@ func checkContainerImageSpecByRegex(container corev1.Container) (bool, string, s
 	return false, "", "", "", nil
 }
 
-func mutateContainerImageSpec(container corev1.Container) error {
-	matched, namespace, image, tag, err := checkContainerImageSpecByRegex(container)
+func mutateContainerImageSpec(imagespec string) (bool, error) {
+	matched, namespace, image, tag, err := checkContainerImageSpecByRegex(imagespec)
 	if err != nil {
 		return err
 	}
@@ -128,11 +136,16 @@ func mutateContainerImageSpec(container corev1.Container) error {
 	if matched {
 		// TODO: We need to pull the raw image spec to replace the image spec
 		// ImageStreams have the raw image spec by namespace and name ie: oc get is -A
-		// Also this needs to be a jsonpatch path
-		container.Image = "rawimagespec"
+		// The current idea is to pull this from the cluster.. 
+		// but seems heavy handed query Kube API on every pod admiission?
+		switch image:
+			case "cli":
+				container.Image = "cli"
+			case "tools":
+				container.Image = "tools"
 	}
 
-	return nil
+	return matched, nil
 }
 
 // GetURI implements Webhook interface
@@ -186,7 +199,7 @@ func (s *PodImageSpecWebhook) TimeoutSeconds() int32 {
 
 // Doc implements Webhook interface
 func (s *PodImageSpecWebhook) Doc() string {
-	return (docString)
+	return docString
 }
 
 // SyncSetLabelSelector returns the label selector to use in the SyncSet.
@@ -197,5 +210,6 @@ func (s *PodImageSpecWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 
 // HypershiftEnabled indicates that this webhook is compatible with hosted
 // control plane clusters
-func (s *PodImageSpecWebhook) HypershiftEnabled() bool { return true }
-
+func (s *PodImageSpecWebhook) HypershiftEnabled() bool {
+	return true 
+}
