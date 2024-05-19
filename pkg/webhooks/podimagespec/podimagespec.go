@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/k8sutil"
 
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +38,8 @@ var (
 		},
 	}
 	log = logf.Log.WithName(WebhookName)
+	imageRegex = regexp.MustCompile(`(image-registry.openshift-image-registry.svc:5000\/\)\(?P<namespace>openshift)(/)(?P<image>\S*)(:)(?P<tag>\S*)`)
+	client = k8sutil.MustHaveContainerClient()
 )
 
 // PodImageSpecWebhook mutates an image spec in a pod
@@ -58,6 +61,20 @@ func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admission
 	return s.authorizeOrMutate(request)
 }
 
+// order of operations
+// check regex
+// pull image-registry status
+// pull image spec
+
+// kube client?
+// generate on boot
+// permissions for webhook service account
+// get kubeconfig from webhook service acount 
+// make sure service account token is in the pod
+// ask micheal shen about where to put kubeclient
+
+// run performance tests
+
 // authorizeOrMutate decides whether the Request requires mutation before it's allowed to proceed.
 func (s *PodImageSpecWebhook) authorizeOrMutate(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
@@ -69,7 +86,7 @@ func (s *PodImageSpecWebhook) authorizeOrMutate(request admissionctl.Request) ad
 
 	mutated := false
 	for _ ,container := range pod.Spec.Containers {
-		err := mutateContainerImageSpec(container.Image)
+		mutated, err := mutateContainerImageSpec(container.Image)
 		if err != nil {
 			return admissionctl.Errored(http.StatusBadRequest, err)
 	}
@@ -110,15 +127,11 @@ func (s *PodImageSpecWebhook) renderPod(request admissionctl.Request) (*corev1.P
 
 // checkContainerImageSpecByRegex checks to see if the image is in the openshift namespace in the internal registry
 func checkContainerImageSpecByRegex(imagespec string) (bool, string, string, string, error) {
-	regex, err := regexp.Compile(`(image-registry.openshift-image-registry.svc:5000\/\)\(?P<namespace>openshift)(/)(?P<image>\S*)(:)(?P<tag>\S*)`)
-	if err != nil {
-		return false, "", "", "", err
-	}
 
-	matches := regex.FindStringSubmatch(imagespec)
-	namespaceIndex := regex.SubexpIndex("namespace")
-	imageIndex := regex.SubexpIndex("image")
-	tagIndex := regex.SubexpIndex("tag")
+	matches := imageRegex.FindStringSubmatch(imagespec)
+	namespaceIndex := imageRegex.SubexpIndex("namespace")
+	imageIndex := imageRegex.SubexpIndex("image")
+	tagIndex := imageRegex.SubexpIndex("tag")
 	
 	if regex.MatchString(container.Image) {
 		return true, matches[namespaceIndex], matches[imageIndex], matches[tagIndex], nil
@@ -206,6 +219,11 @@ func (s *PodImageSpecWebhook) Doc() string {
 // Return utils.DefaultLabelSelector() to stick with the  default
 func (s *PodImageSpecWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
+}
+
+// ClassicEnabled indicates that this webhook is compatible with classic clusters
+func (s *PodImageSpecWebhook) ClassicEnabled() bool {
+	return false 
 }
 
 // HypershiftEnabled indicates that this webhook is compatible with hosted

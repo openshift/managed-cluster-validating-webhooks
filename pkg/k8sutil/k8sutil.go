@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -24,6 +26,29 @@ var (
 	ErrNoNamespace  = fmt.Errorf("namespace not found for current environment")
 	ErrRunLocal     = fmt.Errorf("operator run mode forced to local")
 )
+
+// ContainerClient Is a kubeclient that interacts with the Kube api through the service account that is running it
+type ContainerClient struct {
+	client client.Client
+}
+
+// MustHaveContainerClient creates a new kubeclient that interacts with the Kube api with the service account secrets
+func MustHaveContainerClient() *ContainerClient {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(`MustHaveContainerClient: unable to obtain cluster config` + err.Error())
+	}
+
+	c, err := client.New(config, client.Options{})
+	if err != nil {
+		panic(`MustHaveContainerClient: unable to create client` + err.Error())
+	}
+
+	return &ContainerClient{
+		client: c,
+	}
+
+}
 
 func isRunModeLocal() bool {
 	return os.Getenv(ForceRunModeEnv) == string(LocalRunMode)
