@@ -5,6 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -24,6 +27,22 @@ var (
 	ErrNoNamespace  = fmt.Errorf("namespace not found for current environment")
 	ErrRunLocal     = fmt.Errorf("operator run mode forced to local")
 )
+
+// KubeClient creates a new kubeclient that interacts with the Kube api with the service account secrets
+func KubeClient(s *runtime.Scheme) (client.Client, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := client.New(config, client.Options{
+		Scheme: s,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
 
 func isRunModeLocal() bool {
 	return os.Getenv(ForceRunModeEnv) == string(LocalRunMode)
