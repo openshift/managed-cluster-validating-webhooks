@@ -3,6 +3,7 @@ package imagecontentpolicies
 import (
 	"net/http"
 	"regexp"
+	"slices"
 
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
@@ -22,6 +23,15 @@ const (
 	// Only registry.redhat.io exactly is blocked, while all other contained regexes
 	// follow a similar pattern, i.e. rejecting quay.io or quay.io/.*
 	unauthorizedRepositoryMirrors = `(^registry\.redhat\.io$|^quay\.io(/.*)?$|^registry\.access\.redhat\.com(/.*)?)`
+
+	//Allow Hypershift hosted clusters to mirror ECR
+	authorizedECRMirrors = `(^(.*).dkr.ecr.(.*).amazonaws.com)`
+)
+
+var (
+	allowedGroups = []string{
+		"system:serviceaccounts:openshift-backplane-srep",
+	}
 )
 
 type ImageContentPoliciesWebhook struct {
@@ -42,12 +52,22 @@ func (w *ImageContentPoliciesWebhook) Authorized(request admission.Request) admi
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
+	// Allow system account to change IDMS,ITMS and ICSP for HCP hosted cluster
+	if w.HypershiftEnabled() && isAllowedUserGroup(request) {
+		return utils.WebhookResponse(request, true, "")
+	}
+
 	switch request.RequestKind.Kind {
 	case "ImageDigestMirrorSet":
 		idms := configv1.ImageDigestMirrorSet{}
 		if err := decoder.Decode(request, &idms); err != nil {
 			w.log.Error(err, "failed to render an ImageDigestMirrorSet from request")
 			return admission.Errored(http.StatusBadRequest, err)
+		}
+
+		// Allow HCP to mirror ECR repos
+		if w.HypershiftEnabled() && authorizeHCPImageDigestMirrorSet(idms) {
+			return utils.WebhookResponse(request, true, "")
 		}
 
 		if !authorizeImageDigestMirrorSet(idms) {
@@ -185,6 +205,18 @@ func authorizeImageDigestMirrorSet(idms configv1.ImageDigestMirrorSet) bool {
 	return true
 }
 
+// authorizeHCPImageDigestMirrorSet should allow an ImageDigestMirrorSet that matches an authorized mirror list
+func authorizeHCPImageDigestMirrorSet(idms configv1.ImageDigestMirrorSet) bool {
+	authorizedECRMirrorsRe := regexp.MustCompile(authorizedECRMirrors)
+	for _, mirror := range idms.Spec.ImageDigestMirrors {
+		if authorizedECRMirrorsRe.Match([]byte(mirror.Source)) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // authorizeImageTagMirrorSet should reject an ImageTagMirrorSet that matches an unauthorized mirror list
 func authorizeImageTagMirrorSet(itms configv1.ImageTagMirrorSet) bool {
 	unauthorizedRepositoryMirrorsRe := regexp.MustCompile(unauthorizedRepositoryMirrors)
@@ -207,4 +239,14 @@ func authorizeImageContentSourcePolicy(icsp operatorv1alpha1.ImageContentSourceP
 	}
 
 	return true
+}
+
+// isAllowedUserGroup checks if the user or group is allowed to perform the action
+func isAllowedUserGroup(request admission.Request) bool {
+	for _, group := range allowedGroups {
+		if slices.Contains(request.UserInfo.Groups, group) {
+			return true
+		}
+	}
+	return false
 }
