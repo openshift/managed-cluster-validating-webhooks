@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/k8sutil"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
+	"gomodules.xyz/jsonpatch/v2"
 
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	configv1 "github.com/openshift/api/imageregistry/v1"
@@ -82,13 +83,12 @@ func (s *PodImageSpecWebhook) CheckImageRegistryStatus(ctx context.Context) (boo
 		return false, fmt.Errorf("failed to get image registry config: %v", err)
 	}
 
-	if s.configV1.Spec.ManagementState == operatorv1.Managed || s.configV1.Spec.ManagementState == operatorv1.Unmanaged {
+	// if image registry is set to managed then it is operational
+	if s.configV1.Spec.ManagementState == operatorv1.Managed {
 		return true, nil
-	} else if s.configV1.Spec.ManagementState == operatorv1.Removed {
+	} else {
 		return false, nil
 	}
-
-	return false, fmt.Errorf("unknown managementState: %s", s.configV1.Spec.ManagementState)
 }
 
 // Authorized implements Webhook interface
@@ -105,54 +105,62 @@ func (s *PodImageSpecWebhook) authorizeOrMutate(request admissionctl.Request) ad
 		log.Error(err, "Couldn't render a Pod from the incoming request")
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
-	//1. Regex match
+
 	for i := range pod.Spec.Containers {
 		container := &pod.Spec.Containers[i]
-		matched, namespace, _, _, err := checkContainerImageSpecByRegex(container.Image)
+		ret, err := s.authorizeOrMutateContainer(container)
+		ret.UID = request.AdmissionRequest.UID
 		if err != nil {
-			return admissionctl.Errored(http.StatusBadRequest, err)
-		}
-		if namespace != "openshift" {
-			ret.UID = request.AdmissionRequest.UID
-			ret = admissionctl.Allowed("Pod image spec is valid")
-			return ret
-		}
-		//if the regex matches, check image-registry status
-		if matched {
-			ctx := context.Background()
-			//check if image-registry is enabled
-			registryAvailable, err := s.CheckImageRegistryStatus(ctx)
-			if err != nil {
-				log.Error(err, "Failed to check image registry status")
-				return admissionctl.Errored(http.StatusInternalServerError, err)
-			}
-			if !registryAvailable {
-				imageMutated, err := s.mutateContainerImageSpec(&container.Image, namespace, ctx)
-				if err != nil {
-					return admissionctl.Errored(http.StatusBadRequest, err)
-				}
-				if imageMutated {
-					ret = admissionctl.Patched(
-						fmt.Sprintf("images on pod %s mutated for reliability", pod.GetName()),
-					)
-
-					log.Info(fmt.Sprintf("images on pod %s mutated for reliablity", pod.GetName()))
-					// ret.Complete() sets the UID and finalizes the patch
-					ret.Complete(request)
-				} else {
-					return admissionctl.Errored(http.StatusBadRequest, err)
-				}
-			} else {
-				ret = admissionctl.Allowed("Image registry is available, no mutation required")
-				ret.UID = request.AdmissionRequest.UID
-			}
-		} else {
-			ret = admissionctl.Allowed("Pod image spec is valid")
-			ret.UID = request.AdmissionRequest.UID
+			return admissionctl.Errored(http.StatusInternalServerError, err)
 		}
 	}
 
+	for i := range pod.Spec.InitContainers {
+		container := &pod.Spec.InitContainers[i]
+		ret, err := s.authorizeOrMutateContainer(container)
+		ret.UID = request.AdmissionRequest.UID
+		if err != nil {
+			return admissionctl.Errored(http.StatusInternalServerError, err)
+		}
+	}
+
+	ret.Complete(request)
 	return ret
+}
+
+func (s *PodImageSpecWebhook) authorizeOrMutateContainer(container *corev1.Container) (admissionctl.Response, error) {
+	var ret admissionctl.Response
+	//1. Regex match
+	matched, namespace, image, _, err := checkContainerImageSpecByRegex(container.Image)
+	if err != nil {
+		return admissionctl.Errored(http.StatusBadRequest, err), err
+	}
+	if namespace != "openshift" {
+		return admissionctl.Allowed("Pod image spec is valid"), nil
+	}
+	//if the regex matches, check image-registry status
+	if matched {
+		ctx := context.Background()
+		//check if image-registry is enabled
+		registryAvailable, err := s.CheckImageRegistryStatus(ctx)
+		if err != nil {
+			log.Error(err, "Failed to check image registry status")
+			return admissionctl.Errored(http.StatusBadRequest, err), err
+		}
+		// if image registry is not available mutate the container image spec
+		if !registryAvailable {
+			patch, err := s.buildPatchOperation(image, namespace, ctx)
+			if err != nil {
+				return admissionctl.Errored(http.StatusBadRequest, err), err
+			}
+			ret = admissionctl.Patched(fmt.Sprintf("image for container %s mutated for reliability", container.Name), *patch)
+		} else {
+			ret = admissionctl.Allowed("Image registry is available, no mutation required")
+		}
+	} else {
+		ret = admissionctl.Allowed("Pod image spec is valid")
+	}
+	return ret, nil
 }
 
 // renderPod renders the Pod in the admission Request
@@ -162,11 +170,7 @@ func (s *PodImageSpecWebhook) renderPod(request admissionctl.Request) (*corev1.P
 		return nil, err
 	}
 	pod := &corev1.Pod{}
-	if len(request.OldObject.Raw) > 0 {
-		err = decoder.DecodeRaw(request.OldObject, pod)
-	} else {
-		err = decoder.DecodeRaw(request.Object, pod)
-	}
+	err = decoder.Decode(request, pod)
 	if err != nil {
 		return nil, err
 	}
@@ -186,27 +190,23 @@ func checkContainerImageSpecByRegex(imagespec string) (bool, string, string, str
 	return true, matches[namespaceIndex], matches[imageIndex], matches[tagIndex], nil
 }
 
-// mutateContainerImageSpec mutates the container image specification if it matches the internal registry pattern and the namespace is openshift.
-func (s *PodImageSpecWebhook) mutateContainerImageSpec(imagespec *string, namespace string, ctx context.Context) (bool, error) {
-	// TODO: We need to pull the raw image spec to replace the image spec
-	// ImageStreams have the raw image spec by namespace and name ie: oc get is -A
-	// The current idea is to pull this from the cluster..
-	// but seems heavy handed query Kube API on every pod admiission?
+func (s *PodImageSpecWebhook) buildPatchOperation(image string, namespace string, ctx context.Context) (*jsonpatch.JsonPatchOperation, error) {
 	var err error
 	if s.kubeClient == nil {
 		s.kubeClient, err = k8sutil.KubeClient(s.s)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 	}
-
-	err = s.kubeClient.Get(ctx, client.ObjectKey{Name: *imagespec}, &s.imageV1)
+	// get the image refrence from the imagestream
+	err = s.kubeClient.Get(ctx, client.ObjectKey{Name: image, Namespace: namespace}, &s.imageV1)
 	if err != nil {
-		return false, fmt.Errorf("failed to get image registry config: %v", err)
+		return nil, fmt.Errorf("failed to get image spec: %v", err)
 	}
-	*imagespec = s.imageV1.DockerImageReference
 
-	return true, nil
+	patchPath := "spec/containers/image"
+	patch := jsonpatch.NewOperation("replace", patchPath, s.imageV1.DockerImageReference)
+	return &patch, nil
 }
 
 // GetURI implements Webhook interface
