@@ -1,8 +1,10 @@
 package imagecontentpolicies
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
@@ -24,6 +26,15 @@ const (
 	unauthorizedRepositoryMirrors = `(^registry\.redhat\.io$|^quay\.io(/.*)?$|^registry\.access\.redhat\.com(/.*)?)`
 )
 
+var (
+	allowedUsers = []string{
+		"backplane-cluster-admin",
+	}
+	allowedGroups = []string{
+		"system:serviceaccounts:openshift-backplane-srep",
+	}
+)
+
 type ImageContentPoliciesWebhook struct {
 	scheme *runtime.Scheme
 	log    logr.Logger
@@ -40,6 +51,11 @@ func (w *ImageContentPoliciesWebhook) Authorized(request admission.Request) admi
 	decoder, err := admission.NewDecoder(w.scheme)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	// Allow system account to change IDMS,ITMS and ICSP
+	if isAllowedUserGroup(request) {
+		return utils.WebhookResponse(request, true, "")
 	}
 
 	switch request.RequestKind.Kind {
@@ -162,7 +178,11 @@ func (w *ImageContentPoliciesWebhook) Doc() string {
 }
 
 func (w *ImageContentPoliciesWebhook) SyncSetLabelSelector() metav1.LabelSelector {
-	return utils.DefaultLabelSelector()
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"api.openshift.com/managed": "true",
+		},
+	}
 }
 
 func (w *ImageContentPoliciesWebhook) ClassicEnabled() bool {
@@ -207,4 +227,18 @@ func authorizeImageContentSourcePolicy(icsp operatorv1alpha1.ImageContentSourceP
 	}
 
 	return true
+}
+
+// isAllowedUserGroup checks if the user or group is allowed to perform the action
+func isAllowedUserGroup(request admission.Request) bool {
+	fmt.Print(request.UserInfo)
+	if slices.Contains(allowedUsers, request.UserInfo.Username) {
+		return true
+	}
+	for _, group := range allowedGroups {
+		if slices.Contains(request.UserInfo.Groups, group) {
+			return true
+		}
+	}
+	return false
 }

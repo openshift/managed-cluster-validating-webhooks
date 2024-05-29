@@ -326,13 +326,15 @@ func TestImageContentPolicy(t *testing.T) {
 		Resource: "imagecontentsourcepolicies",
 	}
 	tests := []struct {
-		name    string
-		op      admissionv1.Operation
-		gvk     metav1.GroupVersionKind
-		gvr     metav1.GroupVersionResource
-		obj     *runtime.RawExtension
-		oldObj  *runtime.RawExtension
-		allowed bool
+		name       string
+		op         admissionv1.Operation
+		gvk        metav1.GroupVersionKind
+		gvr        metav1.GroupVersionResource
+		obj        *runtime.RawExtension
+		oldObj     *runtime.RawExtension
+		username   string
+		userGroups []string
+		allowed    bool
 	}{
 		{
 			name: "allowed-creation-idms",
@@ -472,12 +474,60 @@ func TestImageContentPolicy(t *testing.T) {
 			gvr:     icspgvr,
 			allowed: false,
 		},
+		{
+			name: "authorized-users-can-create-icsp",
+			op:   admissionv1.Create,
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "quay.io")),
+			},
+			gvk:      icspgvk,
+			gvr:      icspgvr,
+			username: "backplane-cluster-admin",
+			allowed:  true,
+		},
+		{
+			name: "unauthorized-users-can-not-create-icsp",
+			op:   admissionv1.Create,
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "quay.io")),
+			},
+			gvk:      icspgvk,
+			gvr:      icspgvr,
+			username: "no-auth-user",
+			allowed:  false,
+		},
+		{
+			name: "authorized-service-account-can-create-icsp",
+			op:   admissionv1.Create,
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "quay.io")),
+			},
+			gvk:        icspgvk,
+			gvr:        icspgvr,
+			userGroups: []string{"system:serviceaccounts:openshift-backplane-srep"},
+			allowed:    true,
+		},
+		{
+			name: "unauthorized-service-account-can-not-create-icsp",
+			op:   admissionv1.Create,
+			obj: &runtime.RawExtension{
+				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "quay.io")),
+			},
+			gvk:        icspgvk,
+			gvr:        icspgvr,
+			userGroups: []string{"system:unauthenticated"},
+			allowed:    false,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			hook := NewWebhook()
-			req, err := testutils.CreateHTTPRequest(hook.GetURI(), test.name, test.gvk, test.gvr, test.op, "", []string{}, "", test.obj, test.oldObj)
+			req, err := testutils.CreateHTTPRequest(
+				hook.GetURI(), test.name, test.gvk, test.gvr,
+				test.op, test.username, test.userGroups, "",
+				test.obj, test.oldObj,
+			)
 			if err != nil {
 				t.Errorf("failed to create test HTTP request: %v", err)
 			}
