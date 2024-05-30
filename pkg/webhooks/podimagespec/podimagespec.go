@@ -50,7 +50,6 @@ var (
 // PodImageSpecWebhook mutates an image spec in a pod
 type PodImageSpecWebhook struct {
 	s          *runtime.Scheme
-	configV1   configv1.Config
 	imageV1    imagestreamv1.Image
 	kubeClient client.Client
 }
@@ -71,6 +70,7 @@ func NewWebhook() *PodImageSpecWebhook {
 // CheckImageRegistryStatus checks the status of the image registry service
 func (s *PodImageSpecWebhook) CheckImageRegistryStatus(ctx context.Context) (bool, error) {
 	var err error
+	configV1 := &configv1.Config{}
 	if s.kubeClient == nil {
 		s.kubeClient, err = k8sutil.KubeClient(s.s)
 		if err != nil {
@@ -78,17 +78,16 @@ func (s *PodImageSpecWebhook) CheckImageRegistryStatus(ctx context.Context) (boo
 		}
 	}
 
-	err = s.kubeClient.Get(ctx, client.ObjectKey{Name: "cluster"}, &s.configV1)
+	err = s.kubeClient.Get(ctx, client.ObjectKey{Name: "cluster"}, configV1)
 	if err != nil {
 		return false, fmt.Errorf("failed to get image registry config: %v", err)
 	}
 
 	// if image registry is set to managed then it is operational
-	if s.configV1.Spec.ManagementState == operatorv1.Managed {
+	if configV1.Spec.ManagementState == operatorv1.Managed {
 		return true, nil
-	} else {
-		return false, nil
 	}
+	return false, nil
 }
 
 // Authorized implements Webhook interface
