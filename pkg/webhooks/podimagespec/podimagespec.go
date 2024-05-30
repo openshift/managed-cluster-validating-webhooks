@@ -43,7 +43,7 @@ var (
 		},
 	}
 	log        = logf.Log.WithName(WebhookName)
-	imageRegex = regexp.MustCompile(`(image-registry\.openshift-image-registry\.svc:5000\/)(?P<namespace>\S*)(/)(?P<image>\S*)(:)(?P<tag>\S*)`)
+	imageRegex = regexp.MustCompile(`^(image-registry\.openshift-image-registry\.svc:5000\/)(?P<namespace>\S*)(/)(?P<image>\w*)(:)(?P<tag>\S*)`)
 )
 
 // PodImageSpecWebhook mutates an image spec in a pod
@@ -60,38 +60,21 @@ func NewWebhook() *PodImageSpecWebhook {
 	}
 }
 
-// CheckImageRegistryStatus checks the status of the image registry service
-func (s *PodImageSpecWebhook) CheckImageRegistryStatus(ctx context.Context) (bool, error) {
+// Authorized implements Webhook interface
+func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
 	var err error
-	registryV1 := &registryv1.Config{}
+	ctx := context.Background()
+
 	if s.kubeClient == nil {
 		s.kubeClient, err = k8sutil.KubeClient(s.s)
 		if err != nil {
-			return false, err
+			return admissionctl.Errored(http.StatusBadRequest, err)
 		}
 	}
 
-	err = s.kubeClient.Get(ctx, client.ObjectKey{Name: "cluster"}, registryV1)
-	if err != nil {
-		return false, fmt.Errorf("failed to get image registry config: %v", err)
-	}
-
-	// if image registry is set to managed then it is operational
-	if registryV1.Spec.ManagementState == operatorv1.Managed {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-// Authorized implements Webhook interface
-func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
-	//Implement authorized next
-	// return s.authorizeOrMutate(request)
-	ctx := context.Background()
 	pod, err := s.renderPod(request)
 	if err != nil {
-		log.Error(err, "Couldn't render a Pod from the incoming request")
+		log.Error(err, "couldn't render a Pod from the incoming request")
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
@@ -99,9 +82,9 @@ func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admission
 		return admissionctl.Allowed("Pod image spec is valid")
 	}
 
-	registryAvailable, err := s.CheckImageRegistryStatus(ctx)
+	registryAvailable, err := s.checkImageRegistryStatus(ctx)
 	if err != nil {
-		log.Error(err, "Failed to check image registry status")
+		log.Error(err, "failed to check image registry status")
 		return admissionctl.Errored(http.StatusInternalServerError, err)
 	}
 
@@ -116,28 +99,6 @@ func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admission
 	}
 
 	return admissionctl.PatchResponseFromRaw(request.Object.Raw, mutatedPod)
-}
-
-func (s *PodImageSpecWebhook) mutatePod(pod *corev1.Pod, ctx context.Context) ([]byte, error) {
-	mutatedPod := pod.DeepCopy()
-
-	for i := range pod.Spec.Containers {
-		imageURI, err := s.lookupImageStreamTagSpec(pod.Spec.Containers[i].Image, ctx)
-		if err != nil {
-			return []byte{}, err
-		}
-		mutatedPod.Spec.Containers[i].Image = imageURI
-	}
-
-	for i := range pod.Spec.InitContainers {
-		imageURI, err := s.lookupImageStreamTagSpec(pod.Spec.InitContainers[i].Image, ctx)
-		if err != nil {
-			return []byte{}, err
-		}
-		mutatedPod.Spec.InitContainers[i].Image = imageURI
-	}
-
-	return mutatedPod.Marshal()
 }
 
 // renderPod renders the Pod in the admission Request
@@ -174,6 +135,46 @@ func podContainsContainerRegexMatch(pod *corev1.Pod) (podMatch bool) {
 	return
 }
 
+func (s *PodImageSpecWebhook) mutatePod(pod *corev1.Pod, ctx context.Context) ([]byte, error) {
+	mutatedPod := pod.DeepCopy()
+
+	for i := range pod.Spec.Containers {
+		imageURI, err := s.lookupImageStreamTagSpec(pod.Spec.Containers[i].Image, ctx)
+		if err != nil {
+			return []byte{}, err
+		}
+		mutatedPod.Spec.Containers[i].Image = imageURI
+	}
+
+	for i := range pod.Spec.InitContainers {
+		imageURI, err := s.lookupImageStreamTagSpec(pod.Spec.InitContainers[i].Image, ctx)
+		if err != nil {
+			return []byte{}, err
+		}
+		mutatedPod.Spec.InitContainers[i].Image = imageURI
+	}
+
+	return mutatedPod.Marshal()
+}
+
+// checkImageRegistryStatus checks the status of the image registry service
+func (s *PodImageSpecWebhook) checkImageRegistryStatus(ctx context.Context) (bool, error) {
+	var err error
+	registryV1 := &registryv1.Config{}
+
+	err = s.kubeClient.Get(ctx, client.ObjectKey{Name: "cluster"}, registryV1)
+	if err != nil {
+		return false, fmt.Errorf("failed to get image registry config: %v", err)
+	}
+
+	// if image registry is set to managed then it is operational
+	if registryV1.Spec.ManagementState == operatorv1.Managed {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // checkContainerImageSpecByRegex checks to see if the image is in the openshift namespace in the internal registry
 func checkContainerImageSpecByRegex(imagespec string) (bool, string, string, string) {
 	matches := imageRegex.FindStringSubmatch(imagespec)
@@ -194,12 +195,6 @@ func (s *PodImageSpecWebhook) lookupImageStreamTagSpec(imagespec string, ctx con
 		return imagespec, nil
 	}
 
-	if s.kubeClient == nil {
-		s.kubeClient, err = k8sutil.KubeClient(s.s)
-		if err != nil {
-			return imagespec, err
-		}
-	}
 	// get the image refrence from the imagestream
 	imageStreamTag := imagestreamv1.ImageStreamTag{}
 	err = s.kubeClient.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("%s:%s", image, tag), Namespace: namespace}, &imageStreamTag)
