@@ -140,69 +140,6 @@ func (s *PodImageSpecWebhook) mutatePod(pod *corev1.Pod, ctx context.Context) ([
 	return mutatedPod.Marshal()
 }
 
-// // authorizeOrMutate decides whether the Request requires mutation before it's allowed to proceed.
-// func (s *PodImageSpecWebhook) authorizeOrMutate(request admissionctl.Request) admissionctl.Response {
-// 	var ret admissionctl.Response
-// 	pod, err := s.renderPod(request)
-// 	if err != nil {
-// 		log.Error(err, "Couldn't render a Pod from the incoming request")
-// 		return admissionctl.Errored(http.StatusBadRequest, err)
-// 	}
-
-// 	for i := range pod.Spec.Containers {
-// 		container := &pod.Spec.Containers[i]
-// 		ret, err := s.authorizeOrMutateContainer(container)
-// 		ret.UID = request.AdmissionRequest.UID
-// 		if err != nil {
-// 			return admissionctl.Errored(http.StatusInternalServerError, err)
-// 		}
-// 	}
-
-// 	for i := range pod.Spec.InitContainers {
-// 		container := &pod.Spec.InitContainers[i]
-// 		ret, err := s.authorizeOrMutateContainer(container)
-// 		ret.UID = request.AdmissionRequest.UID
-// 		if err != nil {
-// 			return admissionctl.Errored(http.StatusInternalServerError, err)
-// 		}
-// 	}
-
-// 	ret.Complete(request)
-// 	return ret
-// }
-
-// func (s *PodImageSpecWebhook) authorizeOrMutateContainer(container *corev1.Container) (admissionctl.Response, error) {
-// 	var ret admissionctl.Response
-// 	//1. Regex match
-// 	matched, namespace, image, _ := checkContainerImageSpecByRegex(container.Image)
-// 	if namespace != "openshift" {
-// 		return admissionctl.Allowed("Pod image spec is valid"), nil
-// 	}
-// 	//if the regex matches, check image-registry status
-// 	if matched {
-// 		ctx := context.Background()
-// 		//check if image-registry is enabled
-// 		registryAvailable, err := s.CheckImageRegistryStatus(ctx)
-// 		if err != nil {
-// 			log.Error(err, "Failed to check image registry status")
-// 			return admissionctl.Errored(http.StatusBadRequest, err), err
-// 		}
-// 		// if image registry is not available mutate the container image spec
-// 		if !registryAvailable {
-// 			patch, err := s.buildPatchOperation(image, namespace, ctx)
-// 			if err != nil {
-// 				return admissionctl.Errored(http.StatusBadRequest, err), err
-// 			}
-// 			ret = admissionctl.Patched(fmt.Sprintf("image for container %s mutated for reliability", container.Name), *patch)
-// 		} else {
-// 			ret = admissionctl.Allowed("Image registry is available, no mutation required")
-// 		}
-// 	} else {
-// 		ret = admissionctl.Allowed("Pod image spec is valid")
-// 	}
-// 	return ret, nil
-// }
-
 // renderPod renders the Pod in the admission Request
 func (s *PodImageSpecWebhook) renderPod(request admissionctl.Request) (*corev1.Pod, error) {
 	decoder, err := admissionctl.NewDecoder(s.s)
@@ -275,13 +212,6 @@ func (s *PodImageSpecWebhook) lookupImageStreamTagSpec(imagespec string, ctx con
 
 	return imageStreamTag.Tag.From.Name, nil
 }
-
-// func (s *PodImageSpecWebhook) buildPatchOperation(image string, namespace string, ctx context.Context) (*jsonpatch.JsonPatchOperation, error) {
-
-// 	patchPath := "spec/containers/image"
-// 	patch := jsonpatch.NewOperation("replace", patchPath, s.imageV1.DockerImageReference)
-// 	return &patch, nil
-// }
 
 // GetURI implements Webhook interface
 func (s *PodImageSpecWebhook) GetURI() string {
