@@ -69,49 +69,67 @@ func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admission
 	ret := s.authorized(request)
 	if err := ret.Complete(request); err != nil {
 		log.Error(err, "Failed to complete the request")
-		return admissionctl.Errored(http.StatusInternalServerError, err)
+        ret = admissionctl.Errored(http.StatusInternalServerError, err)
+        ret.UID = request.AdmissionRequest.UID
+        return ret
 	}
 	return ret
 }
 
 func (s *PodImageSpecWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var err error
+    var ret admissionctl.Response
 	ctx := context.Background()
 
 	if s.kubeClient == nil {
 		s.kubeClient, err = k8sutil.KubeClient(s.s)
 		if err != nil {
-			return admissionctl.Errored(http.StatusBadRequest, err)
+			ret = admissionctl.Errored(http.StatusBadRequest, err)
+            ret.UID = request.AdmissionRequest.UID
+            return ret
 		}
 	}
 
 	pod, err := s.renderPod(request)
 	if err != nil {
 		log.Error(err, "couldn't render a Pod from the incoming request")
-		return admissionctl.Errored(http.StatusBadRequest, err)
+        ret = admissionctl.Errored(http.StatusBadRequest, err)
+        ret.UID = request.AdmissionRequest.UID
+        return ret
 	}
 
 	if !podContainsContainerRegexMatch(pod) {
-		return admissionctl.Allowed("Pod image spec is valid")
+        ret = admissionctl.Allowed("Pod image spec is valid")
+        ret.UID = request.AdmissionRequest.UID
+        return ret
 	}
 
 	registryAvailable, err := s.checkImageRegistryStatus(ctx)
 	if err != nil {
 		log.Error(err, "failed to check image registry status")
-		return admissionctl.Errored(http.StatusInternalServerError, err)
+        ret = admissionctl.Errored(http.StatusInternalServerError, err)
+        ret.UID = request.AdmissionRequest.UID
+        return ret
 	}
 
 	if registryAvailable {
-		return admissionctl.Allowed("Image registry is available, no mutation required")
+        ret = admissionctl.Allowed("Image registry is available, no mutation required")
+        ret.UID = request.AdmissionRequest.UID
+        return ret
 	}
 
-	mutatedPod, err := s.mutatePod(pod, ctx)
+	mutatedPod, err := s.mutatePod(ctx, pod)
 	if err != nil {
 		log.Error(err, "Unable mutate pod")
-		return admissionctl.Errored(http.StatusInternalServerError, err)
+        ret = admissionctl.Errored(http.StatusInternalServerError, err)
+        ret.UID = request.AdmissionRequest.UID
+        return ret
 	}
 
-	return admissionctl.PatchResponseFromRaw(request.Object.Raw, mutatedPod)
+	ret = admissionctl.PatchResponseFromRaw(request.Object.Raw, mutatedPod)
+    ret.UID = request.AdmissionRequest.UID
+    return ret
+
 }
 
 // renderPod renders the Pod in the admission Request
@@ -148,11 +166,11 @@ func podContainsContainerRegexMatch(pod *corev1.Pod) (podMatch bool) {
 	return
 }
 
-func (s *PodImageSpecWebhook) mutatePod(pod *corev1.Pod, ctx context.Context) ([]byte, error) {
+func (s *PodImageSpecWebhook) mutatePod(ctx context.Context, pod *corev1.Pod) ([]byte, error) {
 	mutatedPod := pod.DeepCopy()
 
 	for i := range pod.Spec.Containers {
-		imageURI, err := s.lookupImageStreamTagSpec(pod.Spec.Containers[i].Image, ctx)
+		imageURI, err := s.lookupImageStreamTagSpec(ctx, pod.Spec.Containers[i].Image)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -160,7 +178,7 @@ func (s *PodImageSpecWebhook) mutatePod(pod *corev1.Pod, ctx context.Context) ([
 	}
 
 	for i := range pod.Spec.InitContainers {
-		imageURI, err := s.lookupImageStreamTagSpec(pod.Spec.InitContainers[i].Image, ctx)
+		imageURI, err := s.lookupImageStreamTagSpec(ctx, pod.Spec.InitContainers[i].Image)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -200,7 +218,7 @@ func checkContainerImageSpecByRegex(imagespec string) (bool, string, string, str
 	return true, matches[namespaceIndex], matches[imageIndex], matches[tagIndex]
 }
 
-func (s *PodImageSpecWebhook) lookupImageStreamTagSpec(imagespec string, ctx context.Context) (string, error) {
+func (s *PodImageSpecWebhook) lookupImageStreamTagSpec(ctx context.Context, imagespec string) (string, error) {
 	var err error
 
 	matched, namespace, image, tag := checkContainerImageSpecByRegex(imagespec)
