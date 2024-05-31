@@ -69,66 +69,66 @@ func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admission
 	ret := s.authorized(request)
 	if err := ret.Complete(request); err != nil {
 		log.Error(err, "Failed to complete the request")
-        ret = admissionctl.Errored(http.StatusInternalServerError, err)
-        ret.UID = request.AdmissionRequest.UID
-        return ret
+		ret = admissionctl.Errored(http.StatusInternalServerError, err)
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 	return ret
 }
 
 func (s *PodImageSpecWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var err error
-    var ret admissionctl.Response
+	var ret admissionctl.Response
 	ctx := context.Background()
 
 	if s.kubeClient == nil {
 		s.kubeClient, err = k8sutil.KubeClient(s.s)
 		if err != nil {
 			ret = admissionctl.Errored(http.StatusBadRequest, err)
-            ret.UID = request.AdmissionRequest.UID
-            return ret
+			ret.UID = request.AdmissionRequest.UID
+			return ret
 		}
 	}
 
 	pod, err := s.renderPod(request)
 	if err != nil {
 		log.Error(err, "couldn't render a Pod from the incoming request")
-        ret = admissionctl.Errored(http.StatusBadRequest, err)
-        ret.UID = request.AdmissionRequest.UID
-        return ret
+		ret = admissionctl.Errored(http.StatusBadRequest, err)
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 
 	if !podContainsContainerRegexMatch(pod) {
-        ret = admissionctl.Allowed("Pod image spec is valid")
-        ret.UID = request.AdmissionRequest.UID
-        return ret
+		ret = admissionctl.Allowed("Pod image spec is valid")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 
 	registryAvailable, err := s.checkImageRegistryStatus(ctx)
 	if err != nil {
 		log.Error(err, "failed to check image registry status")
-        ret = admissionctl.Errored(http.StatusInternalServerError, err)
-        ret.UID = request.AdmissionRequest.UID
-        return ret
+		ret = admissionctl.Errored(http.StatusInternalServerError, err)
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 
 	if registryAvailable {
-        ret = admissionctl.Allowed("Image registry is available, no mutation required")
-        ret.UID = request.AdmissionRequest.UID
-        return ret
+		ret = admissionctl.Allowed("Image registry is available, no mutation required")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 
 	mutatedPod, err := s.mutatePod(ctx, pod)
 	if err != nil {
 		log.Error(err, "Unable mutate pod")
-        ret = admissionctl.Errored(http.StatusInternalServerError, err)
-        ret.UID = request.AdmissionRequest.UID
-        return ret
+		ret = admissionctl.Errored(http.StatusInternalServerError, err)
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 
 	ret = admissionctl.PatchResponseFromRaw(request.Object.Raw, mutatedPod)
-    ret.UID = request.AdmissionRequest.UID
-    return ret
+	ret.UID = request.AdmissionRequest.UID
+	return ret
 
 }
 
