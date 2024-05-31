@@ -10,12 +10,14 @@ import (
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 
 	imagestreamv1 "github.com/openshift/api/image/v1"
+	configv1 "github.com/openshift/api/imageregistry/v1"
 	registryv1 "github.com/openshift/api/imageregistry/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -55,6 +57,8 @@ type PodImageSpecWebhook struct {
 // NewWebhook creates the new webhook
 func NewWebhook() *PodImageSpecWebhook {
 	scheme := runtime.NewScheme()
+	configv1.Install(scheme)
+	imagestreamv1.Install(scheme)
 	return &PodImageSpecWebhook{
 		s: scheme,
 	}
@@ -62,6 +66,15 @@ func NewWebhook() *PodImageSpecWebhook {
 
 // Authorized implements Webhook interface
 func (s *PodImageSpecWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	ret := s.authorized(request)
+	if err := ret.Complete(request); err != nil {
+		log.Error(err, "Failed to complete the request")
+		return admissionctl.Errored(http.StatusInternalServerError, err)
+	}
+	return ret
+}
+
+func (s *PodImageSpecWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var err error
 	ctx := context.Background()
 
@@ -154,7 +167,7 @@ func (s *PodImageSpecWebhook) mutatePod(pod *corev1.Pod, ctx context.Context) ([
 		mutatedPod.Spec.InitContainers[i].Image = imageURI
 	}
 
-	return mutatedPod.Marshal()
+	return json.Marshal(mutatedPod)
 }
 
 // checkImageRegistryStatus checks the status of the image registry service
