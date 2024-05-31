@@ -162,6 +162,55 @@ func createRoleBinding() *rbacv1.RoleBinding {
 	}
 }
 
+func createClusterRole() *rbacv1.ClusterRole {
+	return &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: roleName,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{
+					"imageregistry.operator.openshift.io",
+				},
+				Resources: []string{
+					"configs",
+				},
+				Verbs: []string{
+					"get",
+				},
+			},
+		},
+	}
+}
+
+func createClusterRoleBinding() *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s:%s", roleName, serviceAccountName),
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: *namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Name:     roleName,
+			Kind:     "ClusterRole",
+			APIGroup: rbacv1.GroupName,
+		},
+	}
+}
+
 func createPrometheusRole() *rbacv1.Role {
 	return &rbacv1.Role{
 		TypeMeta: metav1.TypeMeta{
@@ -779,6 +828,8 @@ func main() {
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createServiceAccount()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createRole()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createRoleBinding()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterRole()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterRoleBinding()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createPrometheusRole()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createPromethusRoleBinding()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createServiceMonitor()})
