@@ -66,9 +66,10 @@ func (d *Dispatcher) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		// Valid AdmissionReview, but we can't do anything with it because we do not
 		// think the request inside is valid.
 		if !hook().Validate(request) {
+			err = fmt.Errorf("not a valid webhook request")
+			log.Error(err, "Error validaing HTTP Request Body")
 			responsehelper.SendResponse(w,
-				admissionctl.Errored(http.StatusBadRequest,
-					fmt.Errorf("Not a valid webhook request")))
+				admissionctl.Errored(http.StatusBadRequest, err))
 			return
 		}
 
@@ -83,5 +84,5 @@ func (d *Dispatcher) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
 	responsehelper.SendResponse(w,
 		admissionctl.Errored(http.StatusBadRequest,
-			fmt.Errorf("Request is not for a registered webhook")))
+			fmt.Errorf("request is not for a registered webhook")))
 }

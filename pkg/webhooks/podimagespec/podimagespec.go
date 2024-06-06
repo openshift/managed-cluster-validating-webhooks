@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/k8sutil"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 
 	imagestreamv1 "github.com/openshift/api/image/v1"
-	configv1 "github.com/openshift/api/imageregistry/v1"
 	registryv1 "github.com/openshift/api/imageregistry/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,8 +58,33 @@ type PodImageSpecWebhook struct {
 // NewWebhook creates the new webhook
 func NewWebhook() *PodImageSpecWebhook {
 	scheme := runtime.NewScheme()
-	configv1.Install(scheme)
-	imagestreamv1.Install(scheme)
+
+	err := admissionv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding admissionv1 scheme to PodImageSpecWebhook")
+		os.Exit(1)
+	}
+	err = admissionregv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding admissionregv1 scheme to PodImageSpecWebhook")
+		os.Exit(1)
+	}
+	err = corev1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding corev1 scheme to PodImageSpecWebhook")
+		os.Exit(1)
+	}
+	err = imagestreamv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding imagestreamv1 scheme to PodImageSpecWebhook")
+		os.Exit(1)
+	}
+	err = registryv1.AddToScheme(scheme)
+	if err != nil {
+		log.Error(err, "Fail adding registryv1 scheme to PodImageSpecWebhook")
+		os.Exit(1)
+	}
+
 	return &PodImageSpecWebhook{
 		s: scheme,
 	}
@@ -84,6 +110,7 @@ func (s *PodImageSpecWebhook) authorized(request admissionctl.Request) admission
 	if s.kubeClient == nil {
 		s.kubeClient, err = k8sutil.KubeClient(s.s)
 		if err != nil {
+			log.Error(err, "Fail creating KubeClient for PodImageSpecWebhook")
 			ret = admissionctl.Errored(http.StatusBadRequest, err)
 			ret.UID = request.AdmissionRequest.UID
 			return ret
