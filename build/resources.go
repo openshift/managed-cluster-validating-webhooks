@@ -465,6 +465,14 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 								},
 							},
 						},
+						{
+							Name: "hosted-kubeconfig",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: "service-network-admin-kubeconfig",
+								},
+							},
+						},
 					},
 					Containers: []corev1.Container{
 						{
@@ -484,6 +492,11 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 									MountPath: "/service-ca",
 									ReadOnly:  true,
 								},
+								{
+									Name:      "hosted-kubeconfig",
+									MountPath: "/etc/hosted-kubernetes",
+									ReadOnly:  true,
+								},
 							},
 							Ports: []corev1.ContainerPort{
 								{
@@ -496,6 +509,12 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 								"-tlscert", "/service-certs/tls.crt",
 								"-cacert", "/service-ca/service-ca.crt",
 								"-tls",
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "KUBECONFIG",
+									Value: "/etc/hosted-kubernetes/kubeconfig",
+								},
 							},
 						},
 					},

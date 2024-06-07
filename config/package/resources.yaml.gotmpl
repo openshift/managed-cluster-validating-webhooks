@@ -96,6 +96,9 @@ spec:
         - -cacert
         - /service-ca/service-ca.crt
         - -tls
+        env:
+        - name: KUBECONFIG
+          value: /etc/hosted-kubernetes/kubeconfig
         image: REPLACED_BY_PIPELINE
         imagePullPolicy: IfNotPresent
         name: webhooks
@@ -108,6 +111,9 @@ spec:
           readOnly: true
         - mountPath: /service-ca
           name: service-ca
+          readOnly: true
+        - mountPath: /etc/hosted-kubernetes
+          name: hosted-kubeconfig
           readOnly: true
       restartPolicy: Always
       tolerations:
@@ -130,6 +136,9 @@ spec:
       - configMap:
           name: webhook-cert
         name: service-ca
+      - name: hosted-kubeconfig
+        secret:
+          secretName: service-network-admin-kubeconfig
 status: {}
 ---
 apiVersion: admissionregistration.k8s.io/v1

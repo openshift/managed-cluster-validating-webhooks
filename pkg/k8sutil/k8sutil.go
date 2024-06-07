@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -28,9 +29,28 @@ var (
 	ErrRunLocal     = fmt.Errorf("operator run mode forced to local")
 )
 
+func buildConfig(kubeconfig string) (*rest.Config, error) {
+	// Try loading KUBECONFIG env var.  If not set fallback on InClusterConfig
+
+	if kubeconfig != "" {
+		cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+		return cfg, nil
+	}
+
+	cfg, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
 // KubeClient creates a new kubeclient that interacts with the Kube api with the service account secrets
 func KubeClient(s *runtime.Scheme) (client.Client, error) {
-	config, err := rest.InClusterConfig()
+	// Try loading KUBECONFIG env var.  Else falls back on in-cluster config
+	config, err := buildConfig(os.Getenv("KUBECONFIG"))
 	if err != nil {
 		return nil, err
 	}
