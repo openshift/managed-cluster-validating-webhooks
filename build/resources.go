@@ -133,6 +133,17 @@ func createRole() *rbacv1.Role {
 					"*",
 				},
 			},
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"configmaps",
+				},
+				Verbs: []string{
+					"get",
+				},
+			},
 		},
 	}
 }

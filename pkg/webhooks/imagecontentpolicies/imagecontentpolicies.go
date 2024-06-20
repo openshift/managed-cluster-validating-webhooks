@@ -1,6 +1,7 @@
 package imagecontentpolicies
 
 import (
+	"context"
 	"net/http"
 	"regexp"
 	"slices"
@@ -8,10 +9,13 @@ import (
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
+	"github.com/openshift/managed-cluster-validating-webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -26,6 +30,8 @@ const (
 
 	//Allow Hypershift hosted clusters to mirror ECR
 	authorizedECRMirrors = `(^(.*).dkr.ecr.(.*).amazonaws.com)`
+
+	allowECRConfigMapName = "allow-ecr"
 )
 
 var (
@@ -52,7 +58,6 @@ func (w *ImageContentPoliciesWebhook) Authorized(request admission.Request) admi
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	// Allow system account to change IDMS,ITMS and ICSP for HCP hosted cluster
 	if w.HypershiftEnabled() && isAllowedUserGroup(request) {
 		return utils.WebhookResponse(request, true, "")
 	}
@@ -66,7 +71,7 @@ func (w *ImageContentPoliciesWebhook) Authorized(request admission.Request) admi
 		}
 
 		// Allow HCP to mirror ECR repos
-		if w.HypershiftEnabled() && authorizeHCPImageDigestMirrorSet(idms) {
+		if w.HypershiftEnabled() && w.isECRAllowed() && authorizeHCPImageDigestMirrorSet(idms) {
 			return utils.WebhookResponse(request, true, "")
 		}
 
@@ -190,6 +195,23 @@ func (w *ImageContentPoliciesWebhook) ClassicEnabled() bool {
 }
 
 func (w *ImageContentPoliciesWebhook) HypershiftEnabled() bool {
+	return true
+}
+
+func (w *ImageContentPoliciesWebhook) isECRAllowed() bool {
+	cfg, err := rest.InClusterConfig()
+	if err != nil {
+		w.log.Info("failed to load config for feature flag, running imagecontentpolicies webhook without the feature flag")
+		return false
+	}
+
+	client, err := kubernetes.NewForConfig(cfg)
+
+	if _, err := client.CoreV1().ConfigMaps(config.OperatorNamespace).Get(context.TODO(), allowECRConfigMapName, metav1.GetOptions{}); err != nil {
+		// The Configmap does not exist or we ran into errors
+		// Assume this feature flag should be off
+		return false
+	}
 	return true
 }
 
