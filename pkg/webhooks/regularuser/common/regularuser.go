@@ -32,7 +32,7 @@ const (
 	mustGatherKind      = "MustGather"
 	mustGatherGroup     = "managed.openshift.io"
 	clusterVersionKind  = "ClusterVersion"
-	clusterVersionGroup = "config.openshit.io"
+	clusterVersionGroup = "config.openshift.io"
 	customDomainKind    = "CustomDomain"
 	customDomainGroup   = "managed.openshift.io"
 	netNamespaceKind    = "NetNamespace"
