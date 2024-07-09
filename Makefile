@@ -146,36 +146,27 @@ container-test:
 			make test
 
 ### Imported
-.PHONY: skopeo-push
-skopeo-push:
+.PHONY: container-image-push 
+container-image-push:
 	@if [[ -z $$QUAY_USER || -z $$QUAY_TOKEN ]]; then \
 		echo "You must set QUAY_USER and QUAY_TOKEN environment variables" ;\
 		echo "ex: make QUAY_USER=value QUAY_TOKEN=value $@" ;\
 		exit 1 ;\
 	fi
-	# QUAY_USER and QUAY_TOKEN are supplied as env vars
-	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${IMG}:${IMAGETAG}" \
-		"docker://${IMG}:latest"
-	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${IMG}:${IMAGETAG}" \
-		"docker://${IMG}:${IMAGETAG}"
+	$(CONTAINER_ENGINE) login -u="${QUAY_USER}" -p="${QUAY_TOKEN}" quay.io
+	$(CONTAINER_ENGINE) push "${IMG}:${IMAGETAG}"
+	$(CONTAINER_ENGINE) push "${IMG}:latest"
 
-.PHONY: skopeo-push-package
-skopeo-push-package:
+.PHONY: package-push
+package-push:
 	@if [[ -z $$QUAY_USER || -z $$QUAY_TOKEN ]]; then \
 		echo "You must set QUAY_USER and QUAY_TOKEN environment variables" ;\
 		echo "ex: make QUAY_USER=value QUAY_TOKEN=value $@" ;\
 		exit 1 ;\
 	fi
-	# QUAY_USER and QUAY_TOKEN are supplied as env vars
-	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${PKG_IMG}:${IMAGETAG}" \
-		"docker://${PKG_IMG}:latest"
-	skopeo copy --dest-creds "${QUAY_USER}:${QUAY_TOKEN}" \
-		"docker-daemon:${PKG_IMG}:${IMAGETAG}" \
-		"docker://${PKG_IMG}:${IMAGETAG}"
-
+	$(CONTAINER_ENGINE) login -u="${QUAY_USER}" -p="${QUAY_TOKEN}" quay.io
+	$(CONTAINER_ENGINE) push "${PKG_IMG}:${IMAGETAG}"
+	$(CONTAINER_ENGINE) push "${PKG_IMG}:latest"
 
 .PHONY: push-base
 push-base: build/Dockerfile
