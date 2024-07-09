@@ -90,4 +90,4 @@ if image_exists_in_repo "$IMAGE_URI"; then
 fi
 
 # build the image, the selectorsyncset, and push the image
-make -C $(dirname $0)/../ package build-base skopeo-push-package
+make -C $(dirname $0)/../ package build-base package-push
