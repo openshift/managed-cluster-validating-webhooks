@@ -66,7 +66,7 @@ serve:
 
 .PHONY: vet
 vet:
-	$(AT)gofmt -s -l $(shell go list -f '{{ .Dir }}' ./... ) | grep ".*\.go"; if [ "$$?" = "0" ]; then gofmt -s -d $(shell go list -f '{{ .Dir }}' ./... ); exit 1; fi
+	$(AT)go fmt ./...
 	$(AT)go vet ./cmd/... ./pkg/...
 
 .PHONY: generate
@@ -138,7 +138,7 @@ $(PACKAGE_RESOURCE_DESTINATION):
 .PHONY: container-test
 container-test:
 	$(CONTAINER_ENGINE) run \
-		-v $(CURDIR):$(CURDIR) \
+		-v $(CURDIR):$(CURDIR):z \
 		-w $(CURDIR) \
 		-e GOFLAGS=$(GOFLAGS) \
 		--rm \
