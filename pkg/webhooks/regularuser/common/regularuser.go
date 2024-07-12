@@ -253,7 +253,8 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 
 	// TODO: Do not allow all system:serviceaccount:* users or belong to system:serviceaccounts:* groups
 	// https://kubernetes.io/docs/reference/access-authn-authz/rbac/
-	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") {
+	// In response to https://issues.redhat.com/browse/OHSS-35716, excluding user system:serviceaccount:open-cluster-management-addon-observability:endpoint-observability-operator-sa
+	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") && !strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:serviceaccount:open-cluster-management-addon-observability") {
 		ret = admissionctl.Allowed("authenticated system: users are allowed")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
