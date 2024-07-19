@@ -170,7 +170,7 @@ func (w *ImageContentPoliciesWebhook) ClassicEnabled() bool {
 }
 
 func (w *ImageContentPoliciesWebhook) HypershiftEnabled() bool {
-	return true
+	return false
 }
 
 // authorizeImageDigestMirrorSet should reject an ImageDigestMirrorSet that matches an unauthorized mirror list

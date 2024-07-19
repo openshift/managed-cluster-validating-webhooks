@@ -504,6 +504,13 @@ func TestImageContentPolicy(t *testing.T) {
 					t.Errorf("expected allowed request with code: %d, got %d", http.StatusForbidden, resp.Result.Code)
 				}
 			}
+
+			enabled := hook.HypershiftEnabled()
+
+			if enabled {
+				t.Error("expected to disable in hypershift")
+			}
+
 		})
 	}
 }
