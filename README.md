@@ -381,20 +381,6 @@ scc-validation
 techpreviewnoupgrade-validation
 ```
 
-At this point, we have:
-
-* clusterlogging-validation
-* hiveownership-validation
-* imagecontentpolicies-validation
-* namespace-validation
-* pod-validation
-* prometheusrule-validation
-* regular-user-validation
-* regular-user-validation-osd
-* scc-validation
-* techpreviewnoupgrade-validation
-* ingress-config-validation
-
 In the [Makefile](/Makefile), the `SELECTOR_SYNC_SET_HOOK_EXCLUDES` variable is used to control which are excluded. By default, it is set to `debug-hook`, in case one should come to appear at some time in the future.
 
 Temporarily disable the `identity-validation` and `namespace-validation` hooks, set that same variable in the Makefile:
@@ -406,17 +392,7 @@ SELECTOR_SYNC_SET_HOOK_EXCLUDES ?= debug-hook,identity-validation,namespace-vali
 Then at the shell run:
 
 ```shell
-# make syncset
-docker run \
-    -v /Users/youruser/git/github.com/openshift/managed-cluster-validating-webhooks:/Users/youruser/git/github.com/openshift/managed-cluster-validating-webhooks \
-    -w /Users/youruser/git/github.com/openshift/managed-cluster-validating-webhooks \
-    --rm \
-    golang:1.14 \
-      go run \
-        build/resources.go \
-        -exclude identity-validation,namespace-validation \
-        -outfile build/selectorsyncset.yaml
-# truncated ...
+GO_IMAGE=docker.io/golang:1.21 make generate
 ```
 
 Commit the Makefile and resulting `build/selectorsyncset.yaml` and deploy it with the normal workflows.
@@ -431,11 +407,5 @@ pkg/webhooks/add_namespace_hook.go
 pkg/webhooks/namespace/namespace_test.go
 pkg/webhooks/namespace/namespace.go
 pkg/webhooks/namespace
-# make
+GO_IMAGE=docker.io/golang:1.21 make generate
 ```
-
-Commit all changes and deploy as normal.
-
-Once the code changes are complete, remove the undesired `ValidatingWebhookConfiguration` object(s) manually from the cluster.
-
-
