@@ -178,48 +178,6 @@ metadata:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
   creationTimestamp: null
-  name: sre-imagecontentpolicies-validation
-webhooks:
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/imagecontentpolicies-validation
-  failurePolicy: Fail
-  matchPolicy: Equivalent
-  name: imagecontentpolicies-validation.managed.openshift.io
-  rules:
-  - apiGroups:
-    - config.openshift.io
-    apiVersions:
-    - '*'
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - imagedigestmirrorsets
-    - imagetagmirrorsets
-    scope: Cluster
-  - apiGroups:
-    - operator.openshift.io
-    apiVersions:
-    - '*'
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - imagecontentsourcepolicies
-    scope: Cluster
-  sideEffects: None
-  timeoutSeconds: 2
----
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  annotations:
-    package-operator.run/phase: webhooks
-    service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-ingress-config-validation
 webhooks:
 - admissionReviewVersions:
