@@ -15,7 +15,8 @@ IMG_ORG ?= app-sre
 IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
 PKG_IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_PKG_IMG}
 
-SYNCSET_GENERATOR_IMAGE := registry.ci.openshift.org/openshift/release:golang-1.21
+# Just need Go, feel free to override to docker.io/golang:1.21 locally
+GO_IMAGE ?= registry.ci.openshift.org/openshift/release:golang-1.21
 
 BINARY_FILE ?= build/_output/webhooks
 
@@ -49,7 +50,7 @@ DOCFLAGS ?=
 
 default: all
 
-all: test build-image build-package-image build-sss
+all: generate test build-image build-package-image
 
 .PHONY: test
 test: vet $(GO_SOURCES)
@@ -70,7 +71,7 @@ vet:
 	$(AT)go vet ./cmd/... ./pkg/...
 
 .PHONY: generate
-generate:
+generate: render
 	$(AT)go generate ./pkg/config
 
 .PHONY: build
@@ -104,7 +105,6 @@ build-push:
 build-push-package:
 	build/build_push_package.sh $(PKG_IMG):$(IMAGETAG)
 
-build-sss: syncset
 render: syncset
 .PHONY: syncset $(SELECTOR_SYNC_SET_DESTINATION)
 syncset: $(SELECTOR_SYNC_SET_DESTINATION)
@@ -114,7 +114,7 @@ $(SELECTOR_SYNC_SET_DESTINATION):
 		-w $(CURDIR) \
 		-e GOFLAGS=$(GOFLAGS) \
 		--rm \
-		$(SYNCSET_GENERATOR_IMAGE) \
+		$(GO_IMAGE) \
 			go run \
 				build/resources.go \
 				-exclude $(SELECTOR_SYNC_SET_HOOK_EXCLUDES) \
@@ -130,7 +130,7 @@ $(PACKAGE_RESOURCE_DESTINATION):
 		-w $(CURDIR) \
 		-e GOFLAGS=$(GOFLAGS) \
 		--rm \
-		$(SYNCSET_GENERATOR_IMAGE) \
+		$(GO_IMAGE) \
 			go run \
 				build/resources.go \
 				-packagedir $(shell dirname $(@))
@@ -142,7 +142,7 @@ container-test:
 		-w $(CURDIR) \
 		-e GOFLAGS=$(GOFLAGS) \
 		--rm \
-		$(SYNCSET_GENERATOR_IMAGE) \
+		$(GO_IMAGE) \
 			make test
 
 ### Imported
