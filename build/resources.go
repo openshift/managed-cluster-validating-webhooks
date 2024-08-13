@@ -32,6 +32,9 @@ const (
 	roleName           string = "validation-webhook"
 	prometheusRoleName string = "prometheus-k8s"
 	repoName           string = "managed-cluster-validating-webhooks"
+	// Role and Binding for reading cluster-config-v1 config map...
+	clusterConfigRole        string = "config-v1-reader-wh"
+	clusterConfigRoleBinding string = "validation-webhook-cluster-config-v1-reader"
 	// Used to define what phase a resource should be deployed in by package-operator
 	pkoPhaseAnnotation string = "package-operator.run/phase"
 	// Defines the 'rbac' package-operator phase for any resources related to RBAC
@@ -206,6 +209,60 @@ func createClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 		RoleRef: rbacv1.RoleRef{
 			Name:     roleName,
 			Kind:     "ClusterRole",
+			APIGroup: rbacv1.GroupName,
+		},
+	}
+}
+
+func createClusterConfigRole() *rbacv1.Role {
+	return &rbacv1.Role{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Role",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterConfigRole,
+			Namespace: "kube-system",
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"configmaps",
+				},
+				Verbs: []string{
+					"get",
+				},
+				ResourceNames: []string{
+					"cluster-config-v1",
+				},
+			},
+		},
+	}
+}
+
+func createClusterConfigRoleBinding() *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterConfigRoleBinding,
+			Namespace: "kube-system",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: *namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Name:     clusterConfigRole,
+			Kind:     "Role",
 			APIGroup: rbacv1.GroupName,
 		},
 	}
@@ -851,6 +908,8 @@ func main() {
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterRoleBinding()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createPrometheusRole()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createPromethusRoleBinding()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterConfigRole()})
+		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createClusterConfigRoleBinding()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createServiceMonitor()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createCACertConfigMap()})
 		templateResources.Add(utils.DefaultLabelSelector(), runtime.RawExtension{Object: createService()})
