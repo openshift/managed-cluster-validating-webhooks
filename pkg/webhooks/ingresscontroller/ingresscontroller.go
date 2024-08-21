@@ -177,13 +177,13 @@ func (wh *IngressControllerWebhook) authorized(request admissionctl.Request) adm
 	}
 
 	/* TODO:
-	 * 1) ONLY check for privatelink clusters? How?
-	 * 2) HCP vs Classic, etc.. ...any other cluster type this should apply to? Is this handled by the
-	 * HypershiftEnabled vs ClassicEnabled flags set in this module? Currently HCP disabled.
-	 * If HCP is to be enabled for allowed source ranges, should this part of a 2nd ingress validator to
-	 * allow separation of validations between cluster install types? Is there a run time method available
-	 * to this validator to determine classic vs hcp?
-	 * 3) What other specifics should be checked here for this cidr check to be applicable?m
+	 * - HypershiftEnabled is currently set to false/disabled.
+	 *   If HCP is to be enabled for allowed source ranges, should this part of a 2nd ingress validator to
+	 *   allow separation of validations between cluster install types? ...or if there's a reliable run time method available
+	 *   to this validator to determine classic vs hcp they can remain in the single webhook(?)
+	 * - Classic vs HCP could likely share some of the network funcions, but will need slightly
+	 *   different logic as well as permissions fetching the network config info from different
+	 *   source  (configmap) locations and config formats(?).
 	 */
 	// Only check for machine cidr in allowed ranges if creating or updating resource...
 	reqOp := request.AdmissionRequest.Operation
@@ -279,7 +279,7 @@ func (wh *IngressControllerWebhook) checkAllowsMachineCIDR(ipRanges []operatorv1
 	// Note: From docs it appears a missing ASR value/attr allows all. However...
 	// once ASR values have been added to an ingresscontroller, later deleting all the ASRs can expose an issue
 	// where the IGC will remaining in progressing state indefinitely.
-	// For now return Allowed with a warning?
+	// For now return Allowed, but with a warning?
 	if ipRanges == nil || len(ipRanges) <= 0 {
 		return admissionctl.Allowed("Allowing empty 'AllowedSourceRanges'. Populate this value if operator remains in 'progressing' state")
 	}
@@ -370,8 +370,12 @@ func NewWebhook() *IngressControllerWebhook {
 		log.Error(err, "Fail adding corev1 scheme to IngressControllerWebhook")
 		os.Exit(1)
 	}
-	return &IngressControllerWebhook{
+	wh := &IngressControllerWebhook{
 		s:          *scheme,
 		kubeClient: nil,
 	}
+	// Try to populate machine cidr at init. If this fails it will try again on the
+	// first update/create request involving the default ingress controller.
+	wh.getMachineCIDR()
+	return wh
 }
