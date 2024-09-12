@@ -281,7 +281,7 @@ func (wh *IngressControllerWebhook) checkAllowsMachineCIDR(ipRanges []operatorv1
 	// where the IGC will remaining in progressing state indefinitely.
 	// For now return Allowed, but with a warning?
 	if ipRanges == nil || len(ipRanges) <= 0 {
-		return admissionctl.Allowed("Allowing empty 'AllowedSourceRanges'. Populate this value if operator remains in 'progressing' state")
+		return admissionctl.Allowed("Allowing empty 'AllowedSourceRanges'")
 	}
 	machIP, machNet, err := wh.getMachineCIDR()
 	if err != nil {
