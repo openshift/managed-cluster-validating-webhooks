@@ -198,7 +198,6 @@ func (wh *IngressControllerWebhook) authorized(request admissionctl.Request) adm
 			return ret
 		}
 	}
-	log.Info("############# DEBUG LOG: IngressController operation is allowed ###########")
 	ret = admissionctl.Allowed("IngressController operation is allowed, machineCIDR n/a")
 	ret.UID = request.AdmissionRequest.UID
 
