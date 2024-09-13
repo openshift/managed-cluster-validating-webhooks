@@ -16,15 +16,14 @@ import (
 )
 
 const (
-	WebhookName               string = "sdn-migration-validation"
-	privilegedServiceAccounts string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
-	docString                 string = `Managed OpenShift customers may not modify the network config type because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
-	overrideAnnotation        string = "unsupported-red-hat-internal-testing"
+	WebhookName        string = "sdn-migration-validation"
+	docString          string = `Managed OpenShift customers may not modify the network config type because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
+	overrideAnnotation string = "unsupported-red-hat-internal-testing"
 )
 
 var (
 	log                         = logf.Log.WithName(WebhookName)
-	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
+	privilegedServiceAccountsRe = regexp.MustCompile(utils.PrivilegedServiceAccountGroups)
 
 	scope = admissionregv1.ClusterScope
 	rules = []admissionregv1.RuleWithOperations{

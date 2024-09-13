@@ -290,7 +290,7 @@ func TestLayeredProducts(t *testing.T) {
 	tests := []namespaceTestSuites{
 		{
 			// Layered admins can manipulate in the lp ns, but not privileged ones
-			// note: ^redhat.* is a privileged ns, but lp admins have an exception in
+			// note: ^redhat-.* is a privileged ns, but lp admins have an exception in
 			// it (but not other privileged ns)
 			testID:          "lp-create-layered-ns",
 			targetNamespace: "redhat-layered-product",
