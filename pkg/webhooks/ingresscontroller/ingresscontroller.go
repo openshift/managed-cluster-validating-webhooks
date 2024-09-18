@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
+	installer "github.com/openshift/installer/pkg/types"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/k8sutil"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	"github.com/pkg/errors"
@@ -54,22 +55,9 @@ var (
 )
 
 type IngressControllerWebhook struct {
-	s          runtime.Scheme
-	kubeClient client.Client
+	s runtime.Scheme
 	// Allow caching install config and machineCIDR values...
-	machineCIDRIP  net.IP
 	machineCIDRNet *net.IPNet
-}
-
-// installConfig struct to load the min values needed from the install-config data.
-// Alternative would be to vendor all of github.com/openshift/installer/pkg/types to import the proper struct.
-// Required values: machineCidr info, anything else we gather from this? hcp vs classic, privatelink info, etc?
-type installConfig struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
-	Networking        struct {
-		MachineCIDR string `json:"machineCIDR"`
-	} `json:"networking"`
 }
 
 // ObjectSelector implements Webhook interface
@@ -178,12 +166,10 @@ func (wh *IngressControllerWebhook) authorized(request admissionctl.Request) adm
 
 	/* TODO:
 	 * - HypershiftEnabled is currently set to false/disabled.
-	 *   If HCP is to be enabled for allowed source ranges, should this part of a 2nd ingress validator to
-	 *   allow separation of validations between cluster install types? ...or if there's a reliable run time method available
-	 *   to this validator to determine classic vs hcp they can remain in the single webhook(?)
 	 * - Classic vs HCP could likely share some of the network funcions, but will need slightly
-	 *   different logic as well as permissions fetching the network config info from different
-	 *   source  (configmap) locations and config formats(?).
+	 *   different logic for the different minimum CIDR sets required, as well as  different
+	 *   permissions fetching the network config info from different
+	 *   source (configmap) locations and config formats(?).
 	 */
 	// Only check for machine cidr in allowed ranges if creating or updating resource...
 	reqOp := request.AdmissionRequest.Operation
@@ -204,58 +190,46 @@ func (wh *IngressControllerWebhook) authorized(request admissionctl.Request) adm
 	return ret
 }
 
-func (wh *IngressControllerWebhook) getMachineCIDR() (net.IP, *net.IPNet, error) {
-	if wh.machineCIDRIP == nil || wh.machineCIDRNet == nil {
-		instConf, err := wh.getClusterConfig()
-		if err != nil {
-			log.Error(err, "Failed to fetch machineCIDR", "namespace", installConfigNamespace, "configmap", installConfigMap)
-			return nil, nil, err
-		}
+func (wh *IngressControllerWebhook) getMachineCIDR(instConf *installer.InstallConfig) (*net.IPNet, error) {
+	if wh.machineCIDRNet == nil {
 		if instConf == nil {
 			err := fmt.Errorf("can not fetch machineCIDR from empty '%s' install config", installConfigMap)
 			log.Error(err, "getMachineCIDR failed to find CIDR value")
-			return nil, nil, err
+			return nil, err
 		}
-		if len(instConf.Networking.MachineCIDR) <= 0 {
-			err := fmt.Errorf("empty machineCIDR string value parsed from '%s' install config", installConfigMap)
-			log.Error(err, "getMachineCIDR found empty CIDR value")
-			return nil, nil, err
+		if instConf.Networking.MachineCIDR == nil {
+			err := fmt.Errorf("nil installConfig.machineCIDR value found")
+			log.Error(err, "nil installConfig.machineCIDR value found")
+			return nil, err
 		}
-		machIP, machNet, err := net.ParseCIDR(string(instConf.Networking.MachineCIDR))
-		if err != nil {
-			log.Error(err, "err parsing machineCIDR into network cidr", "machineCIDR", string(instConf.Networking.MachineCIDR))
-			return nil, nil, err
-		}
-		if machIP == nil || machNet == nil {
-			err := fmt.Errorf("failed to parse machineCIDR string:'%s' into network structures", string(instConf.Networking.MachineCIDR))
-			log.Error(err, "failed to parse install-config machineCIDR")
-			return nil, nil, err
+		if len(instConf.Networking.MachineCIDR.Network()) <= 0 || len(instConf.Networking.MachineCIDR.IPNet.Network()) <= 0 {
+			err := fmt.Errorf("empty machineCIDR network() value parsed from '%s' install config", installConfigMap)
+			log.Error(err, "getMachineCIDR found empty network value")
+			return nil, err
 		}
 		// Successfully fetched, parsed, and converted the machineCIDR string into net structures...
-		wh.machineCIDRIP = machIP
-		wh.machineCIDRNet = machNet
+		wh.machineCIDRNet = &instConf.Networking.MachineCIDR.IPNet
 	}
-	return wh.machineCIDRIP, wh.machineCIDRNet, nil
+	return wh.machineCIDRNet, nil
 }
 
 /* Fetch the install-config from the kube-system config map's data.
  * this requires proper role, rolebinding for this service account's get() request
  * to succeed. (see toplevel selectorsyncset).  This config should not change during runtime so
- * this operation should cache this if possible.
+ * this operation should cache the value(s) if possible.
  * TODO: Should it retry fetching the config if there are any failures/errors encountered while
  * parsing out the the desired values?
  */
-func (wh *IngressControllerWebhook) getClusterConfig() (*installConfig, error) {
+func (wh *IngressControllerWebhook) getClusterConfig() (*installer.InstallConfig, error) {
 	var err error
-	if wh.kubeClient == nil {
-		wh.kubeClient, err = k8sutil.KubeClient(&wh.s)
-		if err != nil {
-			log.Error(err, "Fail creating KubeClient for IngressControllerWebhook")
-			return nil, err
-		}
+
+	kubeClient, err := k8sutil.KubeClient(&wh.s)
+	if err != nil {
+		log.Error(err, "Fail creating KubeClient for IngressControllerWebhook")
+		return nil, err
 	}
 	clusterConfig := &corev1.ConfigMap{}
-	err = wh.kubeClient.Get(context.Background(), client.ObjectKey{Name: installConfigMap, Namespace: installConfigNamespace}, clusterConfig)
+	err = kubeClient.Get(context.Background(), client.ObjectKey{Name: installConfigMap, Namespace: installConfigNamespace}, clusterConfig)
 	if err != nil {
 		log.Error(err, "Failed to fetch configmap: 'cluster-config-v1' for cluster config")
 		return nil, err
@@ -264,8 +238,7 @@ func (wh *IngressControllerWebhook) getClusterConfig() (*installConfig, error) {
 	if !ok {
 		return nil, fmt.Errorf("did not find key %s in configmap %s/%s", installConfigKeyName, installConfigNamespace, installConfigMap)
 	}
-	instConf := &installConfig{}
-
+	instConf := &installer.InstallConfig{}
 	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader([]byte(data)), 4096)
 	if err := decoder.Decode(instConf); err != nil {
 		return nil, errors.Wrap(err, "failed to decode install config")
@@ -280,16 +253,12 @@ func (wh *IngressControllerWebhook) checkAllowsMachineCIDR(ipRanges []operatorv1
 	// where the IGC will remaining in progressing state indefinitely.
 	// For now return Allowed, but with a warning?
 	if ipRanges == nil || len(ipRanges) <= 0 {
-		return admissionctl.Allowed("Allowing empty 'AllowedSourceRanges'")
+		return admissionctl.Allowed("Allowing empty 'AllowedSourceRanges'.")
 	}
-	machIP, machNet, err := wh.getMachineCIDR()
-	if err != nil {
-		// This represents a fault in either the webhook itself, webhook permissions, or install config.
-		// Might be nice to have an env var etc we can set to allow proceeding w/o the immediate need to roll new code?
-		return admissionctl.Errored(http.StatusInternalServerError, err)
-	}
-	machNetSize, machNetBits := machNet.Mask.Size()
-	log.Info("Checking AllowedSourceRanges", "MachineCIDR", fmt.Sprintf("%s/%d", machIP.String(), machNetSize), "NetBits", machNetBits, "AllowedSourceRanges", ipRanges)
+
+	machNetSize, machNetBits := wh.machineCIDRNet.Mask.Size()
+	machineCIDRIP := wh.machineCIDRNet.IP
+	log.Info("Checking AllowedSourceRanges", "MachineCIDR", fmt.Sprintf("%s/%d", machineCIDRIP.String(), machNetSize), "NetBits", machNetBits, "AllowedSourceRanges", ipRanges)
 	for _, OpV1CIDR := range ipRanges {
 		// Clean up the operatorV1.CIDR value into trimmed CIDR 'a.b.c.d/x' string
 		ASRstring := strings.TrimSpace(string(OpV1CIDR))
@@ -304,20 +273,19 @@ func (wh *IngressControllerWebhook) checkAllowsMachineCIDR(ipRanges []operatorv1
 			return admissionctl.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse AllowedSourceRanges value: '%s'. Err: %s", string(ASRstring), err))
 		}
 		// First check if this AlloweSourceRange entry network contains the machine cidr ip...
-		if !ASRNet.Contains(machIP) {
-			log.Info(fmt.Sprintf("AllowedSourceRange:'%s' does not contain machine CIDR:'%s/%d'", ASRstring, machIP.String(), machNetSize))
+		if !ASRNet.Contains(machineCIDRIP) {
+			//log.Info(fmt.Sprintf("AllowedSourceRange:'%s' does not contain machine CIDR:'%s/%d'", ASRstring, machineCIDRIP.String(), machNetSize))
 			continue
 		}
 		// Check if this AlloweSourceRange entry mask includes the network.
 		ASRNetSize, ASRNetBits := ASRNet.Mask.Size()
 		if machNetBits == ASRNetBits && ASRNetSize <= machNetSize {
-			log.Info(fmt.Sprintf("Found machineCidr:'%s/%d' within AllowedSourceRange:'%s'", machIP.String(), machNetSize, ASRstring))
-			return admissionctl.Allowed(fmt.Sprintf("Found machineCidr:'%s/%d' within AllowedSourceRange:'%s'", machIP.String(), machNetSize, ASRstring))
-			//return admissionctl.Allowed("IngressController operation is allowed. Minimum AllowedSourceRanges are met.")
+			log.Info(fmt.Sprintf("Found machineCidr:'%s/%d' within AllowedSourceRange:'%s'", machineCIDRIP.String(), machNetSize, ASRstring))
+			return admissionctl.Allowed(fmt.Sprintf("Found machineCidr:'%s/%d' within AllowedSourceRange:'%s'", machineCIDRIP.String(), machNetSize, ASRstring))
 		}
 	}
-	log.Info(fmt.Sprintf("machineCidr:'%s/%d' not found within networks provided by AllowedSourceRanges:'%v'", machIP.String(), machNetSize, ipRanges))
-	return admissionctl.Denied(fmt.Sprintf("At least one AllowedSourceRange must allow machine cidr:'%s/%d'", machIP.String(), machNetSize))
+	log.Info(fmt.Sprintf("machineCidr:'%s/%d' not found within networks provided by AllowedSourceRanges:'%v'", machineCIDRIP.String(), machNetSize, ipRanges))
+	return admissionctl.Denied(fmt.Sprintf("At least one AllowedSourceRange must allow machine cidr:'%s/%d'", machineCIDRIP.String(), machNetSize))
 }
 
 // isAllowedUser checks if the user is allowed to perform the action
@@ -362,7 +330,8 @@ func (s *IngressControllerWebhook) ClassicEnabled() bool { return true }
 func (s *IngressControllerWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook
-func NewWebhook() *IngressControllerWebhook {
+// Allow variadic args so unit tests can provide optional test values...
+func NewWebhook(params ...interface{}) *IngressControllerWebhook {
 	scheme := runtime.NewScheme()
 	err := corev1.AddToScheme(scheme)
 	if err != nil {
@@ -370,11 +339,39 @@ func NewWebhook() *IngressControllerWebhook {
 		os.Exit(1)
 	}
 	wh := &IngressControllerWebhook{
-		s:          *scheme,
-		kubeClient: nil,
+		s: *scheme,
 	}
-	// Try to populate machine cidr at init. If this fails it will try again on the
-	// first update/create request involving the default ingress controller.
-	wh.getMachineCIDR()
+	// utils.TestHooks maps to cli flag 'testhooks' and is used during 'make test' to "test webhook URI uniqueness".
+	// 'make test' does not require this hook to build runtime clients/config at this time...
+	if utils.TestHooks {
+		return wh
+	}
+
+	if len(params) > 0 {
+		param := params[0]
+		// As of know only *IPNet values can be provided by unit tests to set machineCIDR, normal webhook factory
+		// calls NewWebhook() without arguments...
+		if cidr, ok := param.(*net.IPNet); ok {
+			log.Info(fmt.Sprintf("Got test net.IPNet param network() for machineCIDR:'%s'\n", cidr.Network()))
+			wh.machineCIDRNet = cidr
+		} else {
+			log.Error(fmt.Errorf("invalid test param provided, expected *net.IPNet machineCIDR value"), "invalid test param provided, expected *net.IPNet machineCIDR value")
+			os.Exit(1)
+		}
+	} else {
+		// This is not a test run.
+		// Try to populate machine cidr at init. Exit with error if this fails...
+		instConf, err := wh.getClusterConfig()
+		if err != nil {
+			log.Error(err, "Failed to fetch configmap for machineCIDR", "namespace", installConfigNamespace, "configmap", installConfigMap)
+			os.Exit(1)
+		}
+
+		_, err = wh.getMachineCIDR(instConf)
+		if err != nil || wh.machineCIDRNet == nil {
+			log.Error(err, "Failed to fetch cluster machineCIDR.")
+			os.Exit(1)
+		}
+	}
 	return wh
 }

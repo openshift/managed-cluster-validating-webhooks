@@ -26,6 +26,8 @@ const (
 )
 
 var (
+	// Allows sharing of testhooks 'make test' flag value used by main to test "webhook URI uniqueness"
+	TestHooks       bool
 	admissionScheme = runtime.NewScheme()
 	admissionCodecs = serializer.NewCodecFactory(admissionScheme)
 )

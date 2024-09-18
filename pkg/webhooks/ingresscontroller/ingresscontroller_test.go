@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
@@ -100,7 +101,6 @@ type ingressControllerTestSuites struct {
 	allowedSourceRanges []operatorv1.CIDR
 	machineCIDR         string
 	shouldBeAllowed     bool
-	errorContains       string
 }
 
 func runIngressControllerTests(t *testing.T, tests []ingressControllerTestSuites) {
@@ -115,8 +115,10 @@ func runIngressControllerTests(t *testing.T, tests []ingressControllerTestSuites
 		Resource: "ingresscontroller",
 	}
 	for _, test := range tests {
+		//fmt.Fprintf(os.Stderr, "Starting test:'%s'\n", test.testID)
 		rawObjString, err := createRawIngressControllerJSON(test.name, test.namespace, test.nodeSelector, test.tolerations, test.allowedSourceRanges)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "Couldn't create a JSON fragment %s \n", err.Error())
 			t.Fatalf("Couldn't create a JSON fragment %s", err.Error())
 		}
 
@@ -127,25 +129,31 @@ func runIngressControllerTests(t *testing.T, tests []ingressControllerTestSuites
 		oldObj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
 		}
-
-		hook := NewWebhook()
-		err = setMachineCidr(t, test, hook)
+		cidr, err := getMachineCidr(t, test.machineCIDR)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "Expected no error, got err parsing machineCIDR:'%s', got '%s'\n", string(test.machineCIDR), err.Error())
 			t.Fatalf("Expected no error, got err parsing machineCIDR:'%s', got '%s'", string(test.machineCIDR), err.Error())
 		}
+		hook := NewWebhook(cidr)
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(), test.testID, gvk, gvr, test.operation, test.username, test.userGroups, "", &obj, &oldObj)
 
 		if err != nil {
 			t.Logf("Request object:'%s'", obj)
+			// go test is quirky about muting its logger when run against more than 1 package
+			fmt.Fprintf(os.Stderr, "Expected no error, got %s \n", err.Error())
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
 
 		response, err := testutils.SendHTTPRequest(httprequest, hook)
 		if err != nil {
+			// go test is quirky about muting its logger when run against more than 1 package
+			fmt.Fprintf(os.Stderr, "Expected no error, got %s", err.Error())
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
 		if response.UID == "" {
 			//t.Logf("Request object:'%s'", obj)
+			// go test is quirky about muting its logger when run against more than 1 package
+			fmt.Fprintf(os.Stderr, "No tracking UID associated with the response.")
 			t.Logf("Response object:'%v'", response)
 			t.Fatalf("No tracking UID associated with the response.")
 		}
@@ -153,24 +161,23 @@ func runIngressControllerTests(t *testing.T, tests []ingressControllerTestSuites
 		if response.Allowed != test.shouldBeAllowed {
 			t.Logf("%s", obj)
 			t.Logf("Response.reason:'%v'", response)
+			// go test is quirky about muting its logger when run against more than 1 package
+			fmt.Fprintf(os.Stderr, "[%s] Mismatch: %s (groups=%s) %s %s the ingress controller. Test's expectation is that the user %s", test.testID, test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed))
 			t.Fatalf("[%s] Mismatch: %s (groups=%s) %s %s the ingress controller. Test's expectation is that the user %s", test.testID, test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed))
 		}
+		//fmt.Fprintf(os.Stderr, "Finished Success: '%s'\n", test.testID)
 	}
 }
 
-func setMachineCidr(t *testing.T, test ingressControllerTestSuites, hook *IngressControllerWebhook) error {
-	if len(test.machineCIDR) > 0 {
-		ip, net, err := net.ParseCIDR(string(test.machineCIDR))
-		if err != nil {
-			return err
-		}
-		hook.machineCIDRIP = ip
-		hook.machineCIDRNet = net
-	} else {
-		hook.machineCIDRIP = nil
-		hook.machineCIDRNet = nil
+func getMachineCidr(t *testing.T, machineCIDR string) (*net.IPNet, error) {
+	if len(machineCIDR) <= 0 {
+		machineCIDR = "10.0.0.0/16"
 	}
-	return nil
+	_, net, err := net.ParseCIDR(string(machineCIDR))
+	if err != nil {
+		t.Fatalf("Expected no error, got err parsing machineCIDR:'%s', got '%s'", string(machineCIDR), err.Error())
+	}
+	return net, nil
 }
 
 func TestIngressControllerTolerations(t *testing.T) {
@@ -419,21 +426,6 @@ func runIngressControllerAllowedSourceRangesTests(t *testing.T, op admissionv1.O
 			shouldBeAllowed: true,
 		},
 		{
-			testID:     fmt.Sprintf("allowedSourceRanges-test-missing-allowedSourceRanges-and-machineCIDR-%s", op),
-			name:       "default",
-			namespace:  "openshift-ingress-operator",
-			username:   "admin",
-			userGroups: []string{"system:authenticated", "cluster-admins"},
-			operation:  op,
-			//machineCIDR: "10.0.0.0/16",
-			//AllowedSourceRanges: nil,
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
 			testID:              fmt.Sprintf("allowedSourceRanges-test-empty-allowedSourceRanges-%s", op),
 			name:                "default",
 			namespace:           "openshift-ingress-operator",
@@ -441,21 +433,6 @@ func runIngressControllerAllowedSourceRangesTests(t *testing.T, op admissionv1.O
 			userGroups:          []string{"system:authenticated", "cluster-admins"},
 			operation:           op,
 			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:     fmt.Sprintf("allowedSourceRanges-test-empty-ASR-no-machineCIDR-%s", op),
-			name:       "default",
-			namespace:  "openshift-ingress-operator",
-			username:   "admin",
-			userGroups: []string{"system:authenticated", "cluster-admins"},
-			operation:  op,
-			//machineCIDR: "10.0.0.0/16",
 			allowedSourceRanges: []operatorv1.CIDR{},
 			nodeSelector: corev1.NodeSelector{
 				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
@@ -583,22 +560,6 @@ func runIngressControllerAllowedSourceRangesTests(t *testing.T, op admissionv1.O
 			tolerations:     []corev1.Toleration{},
 			shouldBeAllowed: true,
 		},
-		{
-			testID:     fmt.Sprintf("allowedSourceRanges-test-valid-input-no-machineCIDR-%s", op),
-			name:       "default",
-			namespace:  "openshift-ingress-operator",
-			username:   "admin",
-			userGroups: []string{"system:authenticated", "cluster-admins"},
-			operation:  op,
-			//machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"192.168.1.0/24", "10.0.0.0/16"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: false,
-			errorContains:   "",
-		},
 	}
 	runIngressControllerTests(t, tests)
 }
@@ -631,7 +592,6 @@ func runIngressControllerAllowedSourceRangesNonDefaultTest(t *testing.T, op admi
 			},
 			tolerations:     []corev1.Toleration{},
 			shouldBeAllowed: true,
-			errorContains:   "",
 		},
 		{
 			testID:              fmt.Sprintf("allowedSourceRanges-test-non-os-namespace-exclude-machineCIDR-%s", op),
@@ -647,7 +607,6 @@ func runIngressControllerAllowedSourceRangesNonDefaultTest(t *testing.T, op admi
 			},
 			tolerations:     []corev1.Toleration{},
 			shouldBeAllowed: true,
-			errorContains:   "",
 		},
 	}
 	runIngressControllerTests(t, tests)
@@ -659,8 +618,9 @@ func TestIngressControllerAllowedSourceRangesNonDefaultCreate(t *testing.T) {
 func TestIngressControllerAllowedSourceRangesNonDefaultUpdate(t *testing.T) {
 	runIngressControllerAllowedSourceRangesTests(t, admissionv1.Update)
 }
+
 func TestIngressControllerCheckDeleteSupport(t *testing.T) {
-	hook := NewWebhook()
+	hook := NewWebhook(getMachineCidr(t, ""))
 	rules := hook.Rules()
 	for _, rule := range rules {
 		for _, op := range rule.Operations {
