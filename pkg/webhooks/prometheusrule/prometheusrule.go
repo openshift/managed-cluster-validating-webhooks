@@ -18,16 +18,15 @@ import (
 )
 
 const (
-	WebhookName                    string = "prometheusrule-validation"
-	docString                      string = `Managed OpenShift Customers may not create PrometheusRule in namespaces managed by Red Hat.`
-	privilegedServiceAccountGroups string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
+	WebhookName string = "prometheusrule-validation"
+	docString   string = `Managed OpenShift Customers may not create PrometheusRule in namespaces managed by Red Hat.`
 )
 
 var (
 	timeout                          int32 = 2
 	allowedUsers                           = []string{"kube:admin", "system:admin", "backplane-cluster-admin"}
 	sreAdminGroups                         = []string{"system:serviceaccounts:openshift-backplane-srep"}
-	privilegedServiceAccountGroupsRe       = regexp.MustCompile(privilegedServiceAccountGroups)
+	privilegedServiceAccountGroupsRe       = regexp.MustCompile(utils.PrivilegedServiceAccountGroups)
 	privilegedLabels                       = map[string]string{"app.kubernetes.io/name": "stackrox"}
 	scope                                  = admissionregv1.NamespacedScope
 	rules                                  = []admissionregv1.RuleWithOperations{

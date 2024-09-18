@@ -17,15 +17,14 @@ import (
 )
 
 const (
-	WebhookName               string = "ingress-config-validation"
-	privilegedServiceAccounts string = `^system:serviceaccounts:(kube.*|openshift.*|default|redhat.*|osde2e-[a-z0-9]{5})`
-	privilegedUsers           string = `system:admin`
-	docString                 string = `Managed OpenShift customers may not modify ingress config resources because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
+	WebhookName     string = "ingress-config-validation"
+	privilegedUsers string = `system:admin`
+	docString       string = `Managed OpenShift customers may not modify ingress config resources because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
 )
 
 var (
 	log                         = logf.Log.WithName(WebhookName)
-	privilegedServiceAccountsRe = regexp.MustCompile(privilegedServiceAccounts)
+	privilegedServiceAccountsRe = regexp.MustCompile(utils.PrivilegedServiceAccountGroups)
 	privilegedUsersRe           = regexp.MustCompile(privilegedUsers)
 
 	scope = admissionregv1.ClusterScope
