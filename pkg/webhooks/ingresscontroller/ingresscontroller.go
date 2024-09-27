@@ -343,7 +343,7 @@ func NewWebhook(params ...interface{}) *IngressControllerWebhook {
 	}
 	// utils.TestHooks maps to cli flag 'testhooks' and is used during 'make test' to "test webhook URI uniqueness".
 	// 'make test' does not require this hook to build runtime clients/config at this time...
-	if utils.TestHooks {
+	if utils.TestHooks || utils.BuildRun {
 		return wh
 	}
 

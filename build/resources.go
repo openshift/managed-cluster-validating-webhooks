@@ -884,6 +884,7 @@ func sliceContains(needle string, haystack []string) bool {
 
 func main() {
 	flag.Parse()
+	utils.BuildRun = true
 
 	skip := strings.Split(*excludes, ",")
 	onlyInclude := strings.Split(*only, "")
