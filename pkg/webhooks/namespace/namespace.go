@@ -319,7 +319,7 @@ func (s *NamespaceWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 
 func (s *NamespaceWebhook) ClassicEnabled() bool { return true }
 
-func (s *NamespaceWebhook) HypershiftEnabled() bool { return true }
+func (s *NamespaceWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook
 func NewWebhook() *NamespaceWebhook {
