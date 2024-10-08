@@ -21,6 +21,7 @@ import (
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/k8sutil"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/localmetrics"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
+	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 )
 
 var log = logf.Log.WithName("handler")
@@ -28,7 +29,7 @@ var log = logf.Log.WithName("handler")
 var (
 	listenAddress = flag.String("listen", "0.0.0.0", "listen address")
 	listenPort    = flag.String("port", "5000", "port to listen on")
-	testHooks     = flag.Bool("testhooks", false, "Test webhook URI uniqueness and quit?")
+	metricsAddr   string
 
 	useTLS  = flag.Bool("tls", false, "Use TLS? Must specify -tlskey, -tlscert, -cacert")
 	tlsKey  = flag.String("tlskey", "", "TLS Key for TLS")
@@ -39,15 +40,18 @@ var (
 	metricsPort = "8080"
 )
 
-func main() {
-	var metricsAddr string
+func init() {
+	// Allow export webhook var to share flag value...
+	flag.BoolVar(&utils.TestHooks, "testhooks", false, "Test webhook URI uniqueness and quit?")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":"+metricsPort, "The address the metric endpoint binds to.")
 	flag.Parse()
-	klog.SetOutput(os.Stdout)
+}
 
+func main() {
+	klog.SetOutput(os.Stdout)
 	logf.SetLogger(klogr.New())
 
-	if !*testHooks {
+	if !utils.TestHooks {
 		log.Info("HTTP server running at", "listen", net.JoinHostPort(*listenAddress, *listenPort))
 	}
 	dispatcher := dispatcher.NewDispatcher(webhooks.Webhooks)
@@ -58,12 +62,12 @@ func main() {
 			panic(fmt.Errorf("Duplicate webhook trying to listen on %s", realHook.GetURI()))
 		}
 		seen[name] = true
-		if !*testHooks {
+		if !utils.TestHooks {
 			log.Info("Listening", "webhookName", name, "URI", realHook.GetURI())
 		}
 		http.HandleFunc(realHook.GetURI(), dispatcher.HandleRequest)
 	}
-	if *testHooks {
+	if utils.TestHooks {
 		os.Exit(0)
 	}
 
