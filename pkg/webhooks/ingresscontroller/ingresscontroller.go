@@ -165,16 +165,16 @@ func (wh *IngressControllerWebhook) authorized(request admissionctl.Request) adm
 	}
 
 	/* TODO:
+	 * - Currently only 'classic' handled by this webhook, and 'hypershift' work may or may not follow once defined.
 	 * - HypershiftEnabled is currently set to false/disabled.
 	 * - Classic vs HCP could likely share some of the network funcions, but will need slightly
-	 *   different logic for the different minimum CIDR sets required, as well as  different
+	 *   different logic for the different minimum CIDR sets required, different
 	 *   permissions fetching the network config info from different
-	 *   source (configmap) locations and config formats(?).
+	 *   source (configmap) locations, and different parsing of config formats, etc..
 	 */
 	// Only check for machine cidr in allowed ranges if creating or updating resource...
 	reqOp := request.AdmissionRequest.Operation
 	if reqOp == admissionv1.Create || reqOp == admissionv1.Update {
-		//TODO: Will these need to iterate over more than just the default IngressController config?
 		if ic.ObjectMeta.Name == "default" && ic.ObjectMeta.Namespace == "openshift-ingress-operator" {
 			ret := wh.checkAllowsMachineCIDR(ic.Spec.EndpointPublishingStrategy.LoadBalancer.AllowedSourceRanges)
 			ret.UID = request.AdmissionRequest.UID
@@ -231,7 +231,7 @@ func (wh *IngressControllerWebhook) getClusterConfig() (*installer.InstallConfig
 	clusterConfig := &corev1.ConfigMap{}
 	err = kubeClient.Get(context.Background(), client.ObjectKey{Name: installConfigMap, Namespace: installConfigNamespace}, clusterConfig)
 	if err != nil {
-		log.Error(err, "Failed to fetch configmap: 'cluster-config-v1' for cluster config")
+		log.Error(err, fmt.Sprintf("Failed to fetch configmap: '%s' for cluster config", installConfigMap))
 		return nil, err
 	}
 	data, ok := clusterConfig.Data[installConfigKeyName]
