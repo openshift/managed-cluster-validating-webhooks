@@ -191,12 +191,6 @@ docs:
 # Targets used by osde2e test harness
 ######################
 
-# create e2e scaffolding
-
-.PHONY: e2e-harness-generate
-e2e-harness-generate:
-	$ osde2e/e2e-harness-generate.sh $(OPERATOR_NAME) 
-
 # create binary
 .PHONY: e2e-harness-build
 e2e-harness-build: GOFLAGS_MOD=-mod=mod
@@ -207,7 +201,8 @@ e2e-harness-build:
 
 # TODO: Push to a known image tag and commit id
 # push harness image
+
 .PHONY: e2e-image-build-push
 e2e-image-build-push:
-	$ osde2e/e2e-image-build-push.sh "./osde2e/Dockerfile $(IMAGE_REGISTRY)/$(HARNESS_IMAGE_REPOSITORY)/$(HARNESS_IMAGE_NAME):$(HARNESS_IMAGE_TAG)"
-	$ osde2e/e2e-image-build-push.sh "./osde2e/Dockerfile $(IMAGE_REGISTRY)/$(HARNESS_IMAGE_REPOSITORY)/$(HARNESS_IMAGE_NAME):latest"
+	${CONTAINER_ENGINE} build --pull -f osde2e/Dockerfile -t ${IMG}:$(HARNESS_IMAGE_TAG) .
+	${CONTAINER_ENGINE} push ${IMG}:latest
