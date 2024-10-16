@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 
+include osde2e/project.mk
 # Verbosity
 AT_ = @
 AT = $(AT_$(V))
@@ -201,8 +202,13 @@ e2e-harness-build:
 
 # TODO: Push to a known image tag and commit id
 # push harness image
+# Use current commit as harness image tag
+CURRENT_COMMIT=$(shell git rev-parse --short=7 HEAD)
+HARNESS_IMAGE_TAG=$(CURRENT_COMMIT)
 
 .PHONY: e2e-image-build-push
 e2e-image-build-push:
-	${CONTAINER_ENGINE} build --pull -f osde2e/Dockerfile -t ${IMG}:$(HARNESS_IMAGE_TAG) .
-	${CONTAINER_ENGINE} push ${IMG}:latest
+	${CONTAINER_ENGINE} build --pull -f osde2e/Dockerfile -t $(HARNESS_IMAGE_REGISTRY)/$(HARNESS_IMAGE_REPOSITORY)/$(HARNESS_IMAGE_NAME):$(HARNESS_IMAGE_TAG) .
+	${CONTAINER_ENGINE} tag $(HARNESS_IMAGE_REGISTRY)/$(HARNESS_IMAGE_REPOSITORY)/$(HARNESS_IMAGE_NAME):$(HARNESS_IMAGE_TAG) $(HARNESS_IMAGE_REGISTRY)/$(HARNESS_IMAGE_REPOSITORY)/$(HARNESS_IMAGE_NAME):latest
+	${CONTAINER_ENGINE} push $(HARNESS_IMAGE_REGISTRY)/$(HARNESS_IMAGE_REPOSITORY)/$(HARNESS_IMAGE_NAME):$(HARNESS_IMAGE_TAG)
+	${CONTAINER_ENGINE} push $(HARNESS_IMAGE_REGISTRY)/$(HARNESS_IMAGE_REPOSITORY)/$(HARNESS_IMAGE_NAME):latest
