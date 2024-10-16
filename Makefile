@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 
+include osde2e/project.mk
 # Verbosity
 AT_ = @
 AT = $(AT_$(V))
@@ -186,23 +187,3 @@ docs:
 	@# To hide the rules: make DOCFLAGS=-hideRules docs
 	@$(MAKE test)
 	@go run $(DOC_BINARY) $(DOCFLAGS)
-
-######################
-# Targets used by osde2e test harness
-######################
-
-# create binary
-.PHONY: e2e-harness-build
-e2e-harness-build: GOFLAGS_MOD=-mod=mod
-e2e-harness-build: GOENV=GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 GOFLAGS="${GOFLAGS_MOD}"
-e2e-harness-build:
-	go mod tidy
-	${GOENV} go test ./osde2e -v -c --tags=osde2e -o harness.test
-
-# TODO: Push to a known image tag and commit id
-# push harness image
-
-.PHONY: e2e-image-build-push
-e2e-image-build-push:
-	${CONTAINER_ENGINE} build --pull -f osde2e/Dockerfile -t ${IMG}:$(HARNESS_IMAGE_TAG) .
-	${CONTAINER_ENGINE} push ${IMG}:latest
