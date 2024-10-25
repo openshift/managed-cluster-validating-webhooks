@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 
+include osde2e/project.mk
 # Verbosity
 AT_ = @
 AT = $(AT_$(V))
