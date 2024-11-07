@@ -188,8 +188,8 @@ github.com/openshift/cluster-logging-operator v0.0.0-20230328172346-05f4f8be54d5
 github.com/openshift/cluster-logging-operator v0.0.0-20230328172346-05f4f8be54d5/go.mod h1:IOXmt1GV9ljaxYBUDer/vENbsCimsr3eLT2aDx7SpIY=
 github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 h1:cHyxR+Y8rAMT6m1jQCaYGRwikqahI0OjjUDhFNf3ySQ=
 github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87/go.mod h1:DB/Mf2oTeiAmVVX1gN+NEqweonAPY0TKUwADizj8+ZA=
-github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 h1:/CbENmI9HuJHd8N/h3eaUkqhHoQjj1BdwIGOF+X3wnM=
-github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298/go.mod h1:6dxhWPY3Wr/0b0eGrFpV7gcyeS+ne48Mo9OQ9dxrLNI=
+github.com/openshift/elasticsearch-operator v0.0.0-20231013125000-a5c132efd4e0 h1:B+3Z9Fp8n0a67vv6oHSFQoY4XJ2z58pYmTggj2vlopY=
+github.com/openshift/elasticsearch-operator v0.0.0-20231013125000-a5c132efd4e0/go.mod h1:MV0PMDsMJv7m9VtYmwUwS6CkfgHH/LT1ga8EGASSEF0=
 github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5 h1:adHXZ1WFqCvXpargpTa6divneeUuvV2xr/D6NWgbqS8=
 github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5/go.mod h1:VIxA5HhvBmsqVn7aUVQYs004B9K4U5A+HrFwvRq2nK8=
 github.com/openshift/operator-custom-metrics v0.5.1 h1:1pk4YMUV+cmqfV0f2fyxY62cl7Gc76kwudJT+EdcfYM=
