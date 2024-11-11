@@ -37,10 +37,7 @@ func NewWebhook() *ImageContentPoliciesWebhook {
 }
 
 func (w *ImageContentPoliciesWebhook) Authorized(request admission.Request) admission.Response {
-	decoder, err := admission.NewDecoder(w.scheme)
-	if err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
-	}
+	decoder := admission.NewDecoder(w.scheme)
 
 	switch request.RequestKind.Kind {
 	case "ImageDigestMirrorSet":

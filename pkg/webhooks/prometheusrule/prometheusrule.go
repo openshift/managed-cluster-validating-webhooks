@@ -154,13 +154,12 @@ func (s *prometheusruleWebhook) Validate(request admissionctl.Request) bool {
 
 	return valid
 }
+
 func (s *prometheusruleWebhook) renderPrometheusRule(req admissionctl.Request) (*prometheusRule, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	prometheusRule := &prometheusRule{}
 
+	var err error
 	if len(req.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(req.OldObject, prometheusRule)
 	} else {

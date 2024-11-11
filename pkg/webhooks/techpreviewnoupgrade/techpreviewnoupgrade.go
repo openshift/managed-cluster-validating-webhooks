@@ -89,14 +89,11 @@ func (s *TechPreviewNoUpgradeWebhook) ClassicEnabled() bool { return true }
 func (s *TechPreviewNoUpgradeWebhook) HypershiftEnabled() bool { return true }
 
 func (s *TechPreviewNoUpgradeWebhook) renderFeatureGate(request admissionctl.Request) (*configv1.FeatureGate, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	featureGate := &configv1.FeatureGate{}
 
 	// Check the incoming featureGate for TechPreviewNoUpgrade
-	err = decoder.DecodeRaw(request.Object, featureGate)
+	err := decoder.DecodeRaw(request.Object, featureGate)
 	if err != nil {
 		return nil, err
 	}

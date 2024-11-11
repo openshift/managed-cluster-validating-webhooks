@@ -126,11 +126,9 @@ func (s *NamespaceWebhook) Validate(req admissionctl.Request) bool {
 // (request.OldObject) objects returned. See the renderOldAndNewNamespaces
 // documentation for more.
 func (s *NamespaceWebhook) renderNamespace(req admissionctl.Request) (*corev1.Namespace, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	namespace := &corev1.Namespace{}
+	var err error
 	if len(req.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(req.OldObject, namespace)
 	} else {
@@ -151,12 +149,10 @@ func (s *NamespaceWebhook) renderNamespace(req admissionctl.Request) (*corev1.Na
 // If there is no corresponding namespace, this method will return nil in the
 // appropriate position.
 func (s *NamespaceWebhook) renderOldAndNewNamespaces(req admissionctl.Request) (*corev1.Namespace, *corev1.Namespace, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	oldNamespace := &corev1.Namespace{}
 
+	var err error
 	if len(req.OldObject.Raw) == 0 {
 		oldNamespace = nil
 	} else {

@@ -91,13 +91,9 @@ func (wh *IngressControllerWebhook) Validate(req admissionctl.Request) bool {
 }
 
 func (wh *IngressControllerWebhook) renderIngressController(req admissionctl.Request) (*operatorv1.IngressController, error) {
-	decoder, err := admissionctl.NewDecoder(&wh.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&wh.s)
 	ic := &operatorv1.IngressController{}
-	err = decoder.DecodeRaw(req.Object, ic)
-
+	err := decoder.DecodeRaw(req.Object, ic)
 	if err != nil {
 		return nil, err
 	}

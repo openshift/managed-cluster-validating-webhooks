@@ -136,11 +136,7 @@ func (s *NodeWebhook) authorized(request admissionctl.Request) admissionctl.Resp
 	//Checks for non-adminGroups non-ceeGroup non-adminGroups users
 	if request.Kind.Kind == "Node" {
 		node := corev1.Node{}
-		decoder, err := admission.NewDecoder(s.scheme)
-		if err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-
+		decoder := admission.NewDecoder(s.scheme)
 		switch request.Operation {
 		case admissionv1.Delete:
 			// request.Object is empty for the DELETE operation

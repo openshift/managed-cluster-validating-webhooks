@@ -116,12 +116,10 @@ func isAllowedUser(request admissionctl.Request) bool {
 }
 
 func (s *customresourcedefinitionsruleWebhook) renderCustomResourceDefinition(req admissionctl.Request) (*apiextensionsv1.CustomResourceDefinition, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	customResourceDefinition := &apiextensionsv1.CustomResourceDefinition{}
 
+	var err error
 	if len(req.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(req.OldObject, customResourceDefinition)
 	} else {

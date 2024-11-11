@@ -131,17 +131,14 @@ func isAllowedUser(request admissionctl.Request) bool {
 }
 
 func (s *networkpoliciesruleWebhook) renderNetworkPolicy(req admissionctl.Request) (*networkingv1.NetworkPolicy, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	networkPolicy := &networkingv1.NetworkPolicy{}
 
 	if len(req.Object.Raw) > 0 {
-		err = decoder.DecodeRaw(req.Object, networkPolicy)
+		err := decoder.DecodeRaw(req.Object, networkPolicy)
 		return networkPolicy, err
 	}
-	err = decoder.DecodeRaw(req.OldObject, networkPolicy)
+	err := decoder.DecodeRaw(req.OldObject, networkPolicy)
 	return networkPolicy, err
 }
 
