@@ -12,7 +12,7 @@ IMAGETAG ?= ${GIT_HASH}
 BASE_IMG ?= managed-cluster-validating-webhooks
 BASE_PKG_IMG ?= managed-cluster-validating-webhooks-hs-package
 IMG_REGISTRY ?= quay.io
-IMG_ORG ?= app-sre
+IMG_ORG ?= rh_ee_yiqzhang
 IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_IMG}
 PKG_IMG ?= $(IMG_REGISTRY)/$(IMG_ORG)/${BASE_PKG_IMG}
 

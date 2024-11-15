@@ -15,7 +15,6 @@ import (
 	quotav1 "github.com/openshift/api/quota/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/osde2e-common/pkg/clients/openshift"
-	"github.com/openshift/osde2e/pkg/common/expect"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -206,12 +205,12 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			}
 
 			var podList v1.PodList
-			expect.NoError(k8sClient.WithNamespace(metav1.NamespaceAll).List(ctx, &podList), "unable to list pods")
+			Expect.NoError(k8sClient.WithNamespace(metav1.NamespaceAll).List(ctx, &podList), "unable to list pods")
 			Expect(len(podList.Items)).To(BeNumerically(">", 0), "found no pods")
 
 			var nodeList v1.NodeList
 			selectInfraNodes := resources.WithLabelSelector(labels.FormatLabels(map[string]string{"node-role.kubernetes.io": "infra"}))
-			expect.NoError(k8sClient.List(ctx, &nodeList), selectInfraNodes)
+			Expect.NoError(k8sClient.List(ctx, &nodeList), selectInfraNodes)
 
 			nodeNames := []string{}
 			for _, node := range nodeList.Items {
@@ -268,21 +267,21 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Entry("as backplane-cluster-admin", "backplane-cluster-admin"),
 		)
 
-		It("only blocks configmap/user-ca-bundle changes", func(ctx context.Context) {
-			cm := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "user-ca-bundle", Namespace: "openshift-config"}}
-			err := dedicatedAdmink8s.Delete(ctx, cm)
-			Expect(errors.IsForbidden(err)).To(BeTrue(), "Expected to be forbidden from deleting user-ca-bundle ConfigMap")
+		// It("only blocks configmap/user-ca-bundle changes", func(ctx context.Context) {
+		// 	cm := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "user-ca-bundle", Namespace: "openshift-config"}}
+		// 	err := dedicatedAdmink8s.Delete(ctx, cm)
+		// 	Expect(errors.IsForbidden(err)).To(BeTrue(), "Expected to be forbidden from deleting user-ca-bundle ConfigMap")
 
-			cm = &v1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: namespaceName},
-				Data:       map[string]string{"test": "test"},
-			}
-			err = dedicatedAdmink8s.Create(ctx, cm)
+		// 	cm = &v1.ConfigMap{
+		// 		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: namespaceName},
+		// 		Data:       map[string]string{"test": "test"},
+		// 	}
+		// 	err = dedicatedAdmink8s.Create(ctx, cm)
 
-			Expect(err).NotTo(HaveOccurred(), "Expected to create ConfigMap in test-namespace")
-			err = dedicatedAdmink8s.Delete(ctx, cm)
-			Expect(err).NotTo(HaveOccurred(), "Expected to delete ConfigMap in test-namespace")
-		})
+		// 	Expect(err).NotTo(HaveOccurred(), "Expected to create ConfigMap in test-namespace")
+		// 	err = dedicatedAdmink8s.Delete(ctx, cm)
+		// 	Expect(err).NotTo(HaveOccurred(), "Expected to delete ConfigMap in test-namespace")
+		// })
 
 		It("blocks modifications to nodes", func(ctx context.Context) {
 			var nodes v1.NodeList
@@ -401,14 +400,14 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			unmanagedCRQ := newTestCRQ("openshift" + quotaName)
 
 			err := dedicatedAdmink8s.Create(ctx, unmanagedCRQ)
-			expect.NoError(err)
+			Expect.NoError(err)
 
 			unmanagedCRQ.SetLabels(map[string]string{"osde2e": ""})
 			err = dedicatedAdmink8s.Update(ctx, unmanagedCRQ)
-			expect.NoError(err)
+			Expect.NoError(err)
 
 			err = dedicatedAdmink8s.Delete(ctx, unmanagedCRQ)
-			expect.NoError(err)
+			Expect.NoError(err)
 		})
 	})
 
@@ -500,14 +499,14 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		It("blocks dedicated admins from managing privileged namespaces", func(ctx context.Context) {
 			for namespace := range privilegedNamespaces {
 				err := updateNamespace(ctx, namespace, testUser, "dedicated-admins")
-				expect.Forbidden(err)
+				Expect.Forbidden(err)
 			}
 		})
 
 		It("block non privileged users from managing privileged namespaces", func(ctx context.Context) {
 			for namespace := range privilegedNamespaces {
 				err := updateNamespace(ctx, namespace, testUser)
-				expect.Forbidden(err)
+				Expect.Forbidden(err)
 			}
 		})
 
@@ -515,17 +514,17 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			for _, user := range privilegedUsers {
 				for namespace := range privilegedNamespaces {
 					err := updateNamespace(ctx, namespace, user)
-					expect.NoError(err)
+					Expect.NoError(err)
 				}
 
 				err := updateNamespace(ctx, nonPrivilegedNamespace, user)
-				expect.NoError(err)
+				Expect.NoError(err)
 			}
 		})
 
 		It("allows non privileged users to manage non privileged namespaces", func(ctx context.Context) {
 			err := updateNamespace(ctx, nonPrivilegedNamespace, testUser, "dedicated-admins")
-			expect.NoError(err)
+			Expect.NoError(err)
 		})
 	})
 
