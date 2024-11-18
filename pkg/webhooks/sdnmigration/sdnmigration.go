@@ -53,14 +53,7 @@ func (w *NetworkConfigWebhook) Authorized(request admissionctl.Request) admissio
 	}
 
 	if request.Operation == admissionv1.Update {
-		decoder, err := admissionctl.NewDecoder(&w.s)
-		if err != nil {
-			log.Error(err, "failed to initialize decoder")
-			ret := admissionctl.Errored(http.StatusBadRequest, err)
-			ret.UID = request.AdmissionRequest.UID
-			return ret
-		}
-
+		decoder := admissionctl.NewDecoder(&w.s)
 		object := &configv1.Network{}
 		oldObject := &configv1.Network{}
 

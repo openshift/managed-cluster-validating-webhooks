@@ -187,11 +187,9 @@ func (s *ClusterloggingWebhook) authorized(request admissionctl.Request) admissi
 // If the request includes an OldObject (from an update or deletion), it will be
 // preferred, otherwise, the Object will be preferred.
 func (s *ClusterloggingWebhook) renderClusterLogging(request admissionctl.Request) (*cl.ClusterLogging, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	clusterLogging := &cl.ClusterLogging{}
+	var err error
 	if len(request.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(request.OldObject, clusterLogging)
 	} else {

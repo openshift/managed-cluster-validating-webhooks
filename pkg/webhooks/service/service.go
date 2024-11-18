@@ -145,13 +145,10 @@ func buildPatch(serviceAnnotations map[string]string) jsonpatch.JsonPatchOperati
 
 // renderService extracts the Service from the incoming request
 func (s *ServiceWebhook) renderService(req admissionctl.Request) (*corev1.Service, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	service := &corev1.Service{}
 
-	err = decoder.Decode(req, service)
+	err := decoder.Decode(req, service)
 	if err != nil {
 		return nil, err
 	}

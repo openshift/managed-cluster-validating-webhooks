@@ -103,12 +103,10 @@ func (s *SCCWebHook) authorized(request admissionctl.Request) admissionctl.Respo
 
 // renderSCC render the SCC object from the requests
 func (s *SCCWebHook) renderSCC(request admissionctl.Request) (*securityv1.SecurityContextConstraints, error) {
-	decoder, err := admissionctl.NewDecoder(s.scheme)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(s.scheme)
 	scc := &securityv1.SecurityContextConstraints{}
 
+	var err error
 	if len(request.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(request.OldObject, scc)
 	}

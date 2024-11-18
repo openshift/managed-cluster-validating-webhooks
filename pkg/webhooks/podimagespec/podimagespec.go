@@ -156,17 +156,13 @@ func (s *PodImageSpecWebhook) authorized(request admissionctl.Request) admission
 	ret = admissionctl.PatchResponseFromRaw(request.Object.Raw, mutatedPod)
 	ret.UID = request.AdmissionRequest.UID
 	return ret
-
 }
 
 // renderPod renders the Pod in the admission Request
 func (s *PodImageSpecWebhook) renderPod(request admissionctl.Request) (*corev1.Pod, error) {
-	decoder, err := admissionctl.NewDecoder(s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(s.s)
 	pod := &corev1.Pod{}
-	err = decoder.Decode(request, pod)
+	err := decoder.Decode(request, pod)
 	if err != nil {
 		return nil, err
 	}

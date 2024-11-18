@@ -94,11 +94,9 @@ func (s *PodWebhook) Validate(req admissionctl.Request) bool {
 }
 
 func (s *PodWebhook) renderPod(req admissionctl.Request) (*corev1.Pod, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	pod := &corev1.Pod{}
+	var err error
 	if len(req.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(req.OldObject, pod)
 	} else {

@@ -140,12 +140,10 @@ func (s *ClusterRoleBindingWebHook) authorized(request admissionctl.Request) adm
 
 // renderSCC render the SCC object from the requests
 func (s *ClusterRoleBindingWebHook) renderClusterRoleBinding(request admissionctl.Request) (*rbacv1.ClusterRoleBinding, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
 
+	var err error
 	if len(request.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(request.OldObject, clusterRoleBinding)
 	}

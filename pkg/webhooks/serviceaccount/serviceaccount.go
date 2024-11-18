@@ -129,12 +129,10 @@ func (s *serviceAccountWebhook) authorized(request admissionctl.Request) admissi
 
 // renderServiceAccount render the serviceaccount object from the requests
 func (s *serviceAccountWebhook) renderServiceAccount(request admissionctl.Request) (*corev1.ServiceAccount, error) {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return nil, err
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	sa := &corev1.ServiceAccount{}
 
+	var err error
 	if len(request.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(request.OldObject, sa)
 	}

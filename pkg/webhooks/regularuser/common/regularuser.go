@@ -329,15 +329,12 @@ func isClusterVersionAuthorized(request admissionctl.Request) bool {
 // isNetNamespaceValid check if the NetNamespace is valid
 func isNetNamespaceValid(s *RegularuserWebhook, request admissionctl.Request) bool {
 	// Decode object into a NetNamespace object
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return false
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	netNamespace := &networkv1.NetNamespace{}
 	if len(request.Object.Raw) == 0 {
 		return false
 	}
-	err = decoder.Decode(request, netNamespace)
+	err := decoder.Decode(request, netNamespace)
 	if err != nil {
 		return false
 	}
@@ -351,11 +348,9 @@ func isNetNamespaceValid(s *RegularuserWebhook, request admissionctl.Request) bo
 
 // allow if a ConfigMap is being updated that does not live under openshift-config or is not called user-ca-bundle under openshift-config
 func shouldAllowConfigMapChange(s *RegularuserWebhook, request admissionctl.Request) bool {
-	decoder, err := admissionctl.NewDecoder(&s.s)
-	if err != nil {
-		return false
-	}
+	decoder := admissionctl.NewDecoder(&s.s)
 	configMap := &corev1.ConfigMap{}
+	var err error
 	if admissionregv1.OperationType(request.Operation) == admissionregv1.Delete {
 		err = decoder.DecodeRaw(request.OldObject, configMap)
 	} else {
