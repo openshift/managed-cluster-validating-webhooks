@@ -189,8 +189,8 @@ github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5 h1:adHXZ1WFqCv
 github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5/go.mod h1:VIxA5HhvBmsqVn7aUVQYs004B9K4U5A+HrFwvRq2nK8=
 github.com/openshift/operator-custom-metrics v0.5.1 h1:1pk4YMUV+cmqfV0f2fyxY62cl7Gc76kwudJT+EdcfYM=
 github.com/openshift/operator-custom-metrics v0.5.1/go.mod h1:0dYDHi/ubKRWzsC9MmW6bRMdBgo1QSOuAh3GupTe0Sw=
-github.com/openshift/osde2e-common v0.0.0-20240918073459-9f5c678d7bb7 h1:d7Hq/lNlxO6sipjwRIMq57imRs/di8uzIld94pI3cPI=
-github.com/openshift/osde2e-common v0.0.0-20240918073459-9f5c678d7bb7/go.mod h1:rRRFqdDA4UWsdtLDTCMdtxtbaaj1sqXO5sBQpbQ97No=
+github.com/openshift/osde2e-common v0.0.0-20231010150014-8a4449a371e6 h1:MPcnO0eeWEyjLBA4mMgJ8pv8u7DjKC7yS+a39R+zhqs=
+github.com/openshift/osde2e-common v0.0.0-20231010150014-8a4449a371e6/go.mod h1:lzmkYjtdf0EgPnoujLNAzorq/7vygGCcgceo/dQI1d0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

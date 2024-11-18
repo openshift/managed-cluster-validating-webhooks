@@ -12,7 +12,7 @@ require (
 	github.com/openshift/cluster-logging-operator v0.0.0-20230328172346-05f4f8be54d5
 	github.com/openshift/hive/apis v0.0.0-20230327212335-7fd70848a6d5
 	github.com/openshift/operator-custom-metrics v0.5.1
-	github.com/openshift/osde2e-common v0.0.0-20240918073459-9f5c678d7bb7
+	github.com/openshift/osde2e-common v0.0.0-20231010150014-8a4449a371e6
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
 	github.com/prometheus/client_golang v1.20.4
 	gomodules.xyz/jsonpatch/v2 v2.3.0
