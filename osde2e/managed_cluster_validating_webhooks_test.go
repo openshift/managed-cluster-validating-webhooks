@@ -196,7 +196,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				"cloud-ingress-operator":          "openshift-cloud-ingress-operator",
 				"configure-alertmanager-operator": "openshift-monitoring",
 				"custom-domains-operator":         "openshift-custom-domains-operator",
-				"managed-upgrade-operator":        "openshift-managed-upgrade-operator",
 				"managed-velero-operator":         "openshift-velero",
 				"must-gather-operator":            "openshift-must-gather-operator",
 				"osd-metrics-exporter":            "openshift-osd-metrics",
@@ -214,15 +213,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred(), "unable to list infra nodes ")
 
 			nodeNames := []string{}
-			for _, node := range nodeList.Items {
-				nodeNames = append(nodeNames, node.GetName())
-			}
-
-			//  managed-up-grade-operator pod seems to run on control-plane/master nodes
-			//  add a check for master nodes to prevent test failures.
-			selectMasterNodes := resources.WithLabelSelector(labels.FormatLabels(map[string]string{"node-role.kubernetes.io/master": ""}))
-			err = client.List(ctx, &nodeList, selectMasterNodes)
-			Expect(err).ShouldNot(HaveOccurred(), "unable to list master nodes ")
 			for _, node := range nodeList.Items {
 				nodeNames = append(nodeNames, node.GetName())
 			}
