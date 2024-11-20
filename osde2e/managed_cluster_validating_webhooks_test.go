@@ -20,7 +20,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -152,13 +151,13 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 		It("blocks pods scheduled onto master/infra nodes", func(ctx context.Context) {
 			err := dedicatedAdmink8s.Create(ctx, withNamespace(pod, privilegedNamespace))
-			Expect(apierrors.IsForbidden(err)).To(BeTrue())
+			Expect(errors.IsForbidden(err)).To(BeTrue())
 
 			err = userk8s.Create(ctx, withNamespace(pod, privilegedNamespace))
-			Expect(apierrors.IsForbidden(err)).To(BeTrue())
+			Expect(errors.IsForbidden(err)).To(BeTrue())
 
 			err = userk8s.Create(ctx, withNamespace(pod, unprivilegedNamespace))
-			Expect(apierrors.IsForbidden(err)).To(BeTrue())
+			Expect(errors.IsForbidden(err)).To(BeTrue())
 		}, SpecTimeout(createPodWaitDuration.Seconds()+deletePodWaitDuration.Seconds()))
 
 		It("allows cluster-admin to schedule pods onto master/infra nodes", func(ctx context.Context) {
@@ -500,14 +499,14 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		It("blocks dedicated admins from managing privileged namespaces", func(ctx context.Context) {
 			for namespace := range privilegedNamespaces {
 				err := updateNamespace(ctx, namespace, testUser, "dedicated-admins")
-				Expect(apierrors.IsForbidden(err)).To(BeTrue())
+				Expect(errors.IsForbidden(err)).To(BeTrue())
 			}
 		})
 
 		It("block non privileged users from managing privileged namespaces", func(ctx context.Context) {
 			for namespace := range privilegedNamespaces {
 				err := updateNamespace(ctx, namespace, testUser)
-				Expect(apierrors.IsForbidden(err)).To(BeTrue())
+				Expect(errors.IsForbidden(err)).To(BeTrue())
 			}
 		})
 
@@ -556,7 +555,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to add PrometheusRule to scheme")
 			rule := newPrometheusRule(privilegedNamespace)
 			err = client.Delete(ctx, rule)
-			Expect(err == nil || apierrors.IsNotFound(err)).To(BeTrue(), "Failed to ensure PrometheusRule deletion")
+			Expect(err == nil || errors.IsNotFound(err)).To(BeTrue(), "Failed to ensure PrometheusRule deletion")
 		})
 
 		AfterAll(func(ctx context.Context) {
