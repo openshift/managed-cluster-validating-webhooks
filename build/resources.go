@@ -547,8 +547,8 @@ func createDaemonSet() *appsv1.DaemonSet {
 				Type: appsv1.RollingUpdateDaemonSetStrategyType,
 				RollingUpdate: &appsv1.RollingUpdateDaemonSet{
 					MaxUnavailable: &intstr.IntOrString{
-						Type:   intstr.Int,
-						IntVal: 1,
+						Type:   intstr.String,
+						StrVal: "10%",
 					},
 				},
 			},
