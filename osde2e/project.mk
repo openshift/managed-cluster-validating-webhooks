@@ -1,5 +1,5 @@
 # Project specific values
-OPERATOR_NAME?=$(shell sed -n 's/.*OperatorName .*"\([^"]*\)".*/\1/p' config/config.go)
+OPERATOR_NAME?=managed-cluster-validating-webhooks
 
 HARNESS_IMAGE_REGISTRY?=quay.io
 HARNESS_IMAGE_REPOSITORY?=app-sre
