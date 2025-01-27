@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	WebhookName        string = "sdn-migration-validation"
-	docString          string = `Managed OpenShift customers may not modify the network config type because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
-	overrideAnnotation string = "unsupported-red-hat-internal-testing"
+	WebhookName               string = "sdn-migration-validation"
+	docString                 string = `Managed OpenShift customers may not modify the network config type because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
+	overrideAnnotation        string = "unsupported-red-hat-internal-testing"
+	privilegedHiveUserAccount string = "admin-kubeconfig-signer"
 )
 
 var (
@@ -45,6 +46,15 @@ type NetworkConfigWebhook struct {
 
 // Authorized will determine if the request is allowed
 func (w *NetworkConfigWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
+	// We are doing this check to ensure that hive can trigger the
+	// migration process. Once a cluster install completes successfully,
+	// the admin password and kubeconfig will be uploaded as secrets and linked to the ClusterDeployment resource
+	// on hive under the cluster namespace. Hive uses this credentials for the user "admin-kubeconfig-signer"
+	// in order to call the api on the clusters and execute administrative tasks.
+	if request.UserInfo.Username == privilegedHiveUserAccount {
+		return utils.WebhookResponse(request, true, "Privileged user may access")
+	}
+
 	// allow if modified by an allow listed service account
 	for _, group := range request.UserInfo.Groups {
 		if privilegedServiceAccountsRe.Match([]byte(group)) {
