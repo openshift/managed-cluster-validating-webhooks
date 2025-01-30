@@ -3,14 +3,10 @@ package ingresscontroller
 import (
 	"encoding/json"
 	"fmt"
-	"net"
-	"os"
 	"testing"
 
-	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/testutils"
 	admissionv1 "k8s.io/api/admission/v1"
-	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,7 +32,6 @@ const template string = `{
         "domain": "apps.dummy.devshift.org",
         "endpointPublishingStrategy": {
             "loadBalancer": {
-				%s
                 "providerParameters": {
                     "aws": {
                         "classicLoadBalancer": {
@@ -66,8 +61,7 @@ const template string = `{
   }
   `
 
-func createRawIngressControllerJSON(name string, namespace string, nodeSelector corev1.NodeSelector, tolerations []corev1.Toleration, allowedRanges []operatorv1.CIDR) (string, error) {
-	var AllowedSourceRangesPartial string = ""
+func createRawIngressControllerJSON(name string, namespace string, nodeSelector corev1.NodeSelector, tolerations []corev1.Toleration) (string, error) {
 	nodeSelectorPartial, err := json.Marshal(nodeSelector)
 	if err != nil {
 		return "", err
@@ -76,31 +70,22 @@ func createRawIngressControllerJSON(name string, namespace string, nodeSelector 
 	if err != nil {
 		return "", err
 	}
-	// Allow a nil value to exclude the 'allowedSourceRanges' param from the request.
-	if allowedRanges != nil {
-		ASRString, err := json.Marshal(allowedRanges)
-		if err != nil {
-			return "", err
-		}
-		AllowedSourceRangesPartial = fmt.Sprintf("\"allowedSourceRanges\": %s,", ASRString)
-	}
 
-	output := fmt.Sprintf(template, name, namespace, string(AllowedSourceRangesPartial), string(nodeSelectorPartial), string(tolerationsPartial))
+	output := fmt.Sprintf(template, name, namespace, string(nodeSelectorPartial), string(tolerationsPartial))
+
 	return output, nil
 }
 
 type ingressControllerTestSuites struct {
-	testID              string
-	name                string
-	namespace           string
-	username            string
-	userGroups          []string
-	operation           admissionv1.Operation
-	nodeSelector        corev1.NodeSelector
-	tolerations         []corev1.Toleration
-	allowedSourceRanges []operatorv1.CIDR
-	machineCIDR         string
-	shouldBeAllowed     bool
+	testID          string
+	name            string
+	namespace       string
+	username        string
+	userGroups      []string
+	operation       admissionv1.Operation
+	nodeSelector    corev1.NodeSelector
+	tolerations     []corev1.Toleration
+	shouldBeAllowed bool
 }
 
 func runIngressControllerTests(t *testing.T, tests []ingressControllerTestSuites) {
@@ -115,10 +100,8 @@ func runIngressControllerTests(t *testing.T, tests []ingressControllerTestSuites
 		Resource: "ingresscontroller",
 	}
 	for _, test := range tests {
-		//fmt.Fprintf(os.Stderr, "Starting test:'%s'\n", test.testID)
-		rawObjString, err := createRawIngressControllerJSON(test.name, test.namespace, test.nodeSelector, test.tolerations, test.allowedSourceRanges)
+		rawObjString, err := createRawIngressControllerJSON(test.name, test.namespace, test.nodeSelector, test.tolerations)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Couldn't create a JSON fragment %s \n", err.Error())
 			t.Fatalf("Couldn't create a JSON fragment %s", err.Error())
 		}
 
@@ -129,55 +112,27 @@ func runIngressControllerTests(t *testing.T, tests []ingressControllerTestSuites
 		oldObj := runtime.RawExtension{
 			Raw: []byte(rawObjString),
 		}
-		cidr, err := getMachineCidr(t, test.machineCIDR)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Expected no error, got err parsing machineCIDR:'%s', got '%s'\n", string(test.machineCIDR), err.Error())
-			t.Fatalf("Expected no error, got err parsing machineCIDR:'%s', got '%s'", string(test.machineCIDR), err.Error())
-		}
-		hook := NewWebhook(cidr)
+
+		hook := NewWebhook()
 		httprequest, err := testutils.CreateHTTPRequest(hook.GetURI(), test.testID, gvk, gvr, test.operation, test.username, test.userGroups, "", &obj, &oldObj)
 
 		if err != nil {
-			t.Logf("Request object:'%s'", obj)
-			// go test is quirky about muting its logger when run against more than 1 package
-			fmt.Fprintf(os.Stderr, "Expected no error, got %s \n", err.Error())
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
 
 		response, err := testutils.SendHTTPRequest(httprequest, hook)
 		if err != nil {
-			// go test is quirky about muting its logger when run against more than 1 package
-			fmt.Fprintf(os.Stderr, "Expected no error, got %s", err.Error())
 			t.Fatalf("Expected no error, got %s", err.Error())
 		}
 		if response.UID == "" {
-			//t.Logf("Request object:'%s'", obj)
-			// go test is quirky about muting its logger when run against more than 1 package
-			fmt.Fprintf(os.Stderr, "No tracking UID associated with the response.")
-			t.Logf("Response object:'%v'", response)
 			t.Fatalf("No tracking UID associated with the response.")
 		}
 
 		if response.Allowed != test.shouldBeAllowed {
-			t.Logf("%s", obj)
-			t.Logf("Response.reason:'%v'", response)
-			// go test is quirky about muting its logger when run against more than 1 package
-			fmt.Fprintf(os.Stderr, "[%s] Mismatch: %s (groups=%s) %s %s the ingress controller. Test's expectation is that the user %s", test.testID, test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed))
 			t.Fatalf("[%s] Mismatch: %s (groups=%s) %s %s the ingress controller. Test's expectation is that the user %s", test.testID, test.username, test.userGroups, testutils.CanCanNot(response.Allowed), test.operation, testutils.CanCanNot(test.shouldBeAllowed))
-		}
-		//fmt.Fprintf(os.Stderr, "Finished Success: '%s'\n", test.testID)
-	}
-}
 
-func getMachineCidr(t *testing.T, machineCIDR string) (*net.IPNet, error) {
-	if len(machineCIDR) <= 0 {
-		machineCIDR = "10.0.0.0/16"
+		}
 	}
-	_, net, err := net.ParseCIDR(string(machineCIDR))
-	if err != nil {
-		t.Fatalf("Expected no error, got err parsing machineCIDR:'%s', got '%s'", string(machineCIDR), err.Error())
-	}
-	return net, nil
 }
 
 func TestIngressControllerTolerations(t *testing.T) {
@@ -406,227 +361,4 @@ func TestIngressControllerExceptions(t *testing.T) {
 		},
 	}
 	runIngressControllerTests(t, tests)
-}
-
-func runIngressControllerAllowedSourceRangesTests(t *testing.T, op admissionv1.Operation) {
-	tests := []ingressControllerTestSuites{
-		{
-			testID:      fmt.Sprintf("allowedSourceRanges-test-missing-allowedSourceRanges-%s", op),
-			name:        "default",
-			namespace:   "openshift-ingress-operator",
-			username:    "admin",
-			userGroups:  []string{"system:authenticated", "cluster-admins"},
-			operation:   op,
-			machineCIDR: "10.0.0.0/16",
-			//AllowedSourceRanges: nil,
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-empty-allowedSourceRanges-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-include-only-machineCIDR-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"10.0.0.0/8"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-include-many-before-machineCIDR-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"10.0.0.0/8", "192.168.1.0/24", "172.20.4.0/16"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-include-many-after-machineCIDR-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"192.168.1.0/24", "172.20.4.0/16", "10.0.0.0/8"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-exclude-single-machineCIDR-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"192.168.1.0/24"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: false,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-exclude-many-machineCIDR-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"192.168.1.0/24", "192.168.1.0/16", "172.20.4.5/32", "10.0.0.0/17"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: false,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-invalid-network-value-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"10"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: false,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-invalid-input-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"ABC"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: false,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-include-machineCIDR-with-ipv6-%s", op),
-			name:                "default",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"2001:db8:abcd:1234::1/64", "10.0.0.0/16"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-	}
-	runIngressControllerTests(t, tests)
-}
-
-func TestIngressControllerAllowedSourceRangesCreate(t *testing.T) {
-	// Test the update and create operations in parallel?
-	t.Parallel()
-	runIngressControllerAllowedSourceRangesTests(t, admissionv1.Create)
-}
-
-func TestIngressControllerAllowedSourceRangesUpdate(t *testing.T) {
-	// Test the update and create operations in parallel?
-	t.Parallel()
-	runIngressControllerAllowedSourceRangesTests(t, admissionv1.Update)
-}
-
-func runIngressControllerAllowedSourceRangesNonDefaultTest(t *testing.T, op admissionv1.Operation) {
-	tests := []ingressControllerTestSuites{
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-non-default-exclude-machineCIDR-%s", op),
-			name:                "shiny-newingress",
-			namespace:           "openshift-ingress-operator",
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"192.168.1.0/24", "172.20.4.0/24"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:              fmt.Sprintf("allowedSourceRanges-test-non-os-namespace-exclude-machineCIDR-%s", op),
-			name:                "default",
-			namespace:           "shiny-newingress-namespace", //May not be a valid test beyond testing  the webhook.
-			username:            "admin",
-			userGroups:          []string{"system:authenticated", "cluster-admins"},
-			operation:           op,
-			machineCIDR:         "10.0.0.0/16",
-			allowedSourceRanges: []operatorv1.CIDR{"192.168.1.0/24", "172.20.4.0/24"},
-			nodeSelector: corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{},
-			},
-			tolerations:     []corev1.Toleration{},
-			shouldBeAllowed: true,
-		},
-	}
-	runIngressControllerTests(t, tests)
-}
-
-func TestIngressControllerAllowedSourceRangesNonDefaultCreate(t *testing.T) {
-	runIngressControllerAllowedSourceRangesTests(t, admissionv1.Create)
-}
-func TestIngressControllerAllowedSourceRangesNonDefaultUpdate(t *testing.T) {
-	runIngressControllerAllowedSourceRangesTests(t, admissionv1.Update)
-}
-
-func TestIngressControllerCheckDeleteSupport(t *testing.T) {
-	hook := NewWebhook(getMachineCidr(t, ""))
-	rules := hook.Rules()
-	for _, rule := range rules {
-		for _, op := range rule.Operations {
-			if op == admissionregv1.OperationType(admissionv1.Delete) {
-				t.Fatalf("IngressController web hook is supporting the Delete operation. Replace this check with unit tests supporting 'Delete'")
-			}
-		}
-	}
 }
