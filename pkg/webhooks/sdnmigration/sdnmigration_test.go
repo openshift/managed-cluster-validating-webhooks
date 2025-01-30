@@ -32,8 +32,9 @@ func TestAuthorized(t *testing.T) {
 			},
 			ExpectAllowed: true,
 		},
+		// Hive uses the admin user and we need to bypass the webhook for Hive
 		{
-			Name: "system admin should be denied",
+			Name: "system admin should be allowed",
 			Request: admissionctl.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
 					UserInfo: authenticationv1.UserInfo{
@@ -41,7 +42,7 @@ func TestAuthorized(t *testing.T) {
 					},
 				},
 			},
-			ExpectAllowed: false,
+			ExpectAllowed: true,
 		},
 		{
 			Name: "non-privileged account should be denied",

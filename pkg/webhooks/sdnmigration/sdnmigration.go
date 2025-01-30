@@ -19,7 +19,7 @@ const (
 	WebhookName               string = "sdn-migration-validation"
 	docString                 string = `Managed OpenShift customers may not modify the network config type because it can can degrade cluster operators and can interfere with OpenShift SRE monitoring.`
 	overrideAnnotation        string = "unsupported-red-hat-internal-testing"
-	privilegedHiveUserAccount string = "admin-kubeconfig-signer"
+	privilegedHiveUserAccount string = "system:admin"
 )
 
 var (
