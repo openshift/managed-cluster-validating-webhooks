@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
@@ -116,11 +117,11 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 						Name:  "test",
 						Image: "quay.io/jitesoft/nginx:mainline",
 						SecurityContext: &v1.SecurityContext{
-							AllowPrivilegeEscalation: boolPtr(false),
+							AllowPrivilegeEscalation: pointer.BoolPtr(false),
 							Capabilities: &v1.Capabilities{
 								Drop: []v1.Capability{"ALL"},
 							},
-							RunAsNonRoot: boolPtr(true),
+							RunAsNonRoot: pointer.BoolPtr(true),
 							SeccompProfile: &v1.SeccompProfile{
 								Type: v1.SeccompProfileTypeRuntimeDefault,
 							},
@@ -130,7 +131,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			},
 		}
 
-		// Create the pod
 		err := client.Create(context.TODO(), pod)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -155,18 +155,44 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:  "test",
-							Image: "quay.io/jitesoft/nginx:mainline",
+							Name:  "test-ubi",
+							Image: "registry.access.redhat.com/ubi8/ubi-minimal",
 							SecurityContext: &v1.SecurityContext{
-								AllowPrivilegeEscalation: boolPtr(false),
+								AllowPrivilegeEscalation: pointer.BoolPtr(false),
 								Capabilities: &v1.Capabilities{
 									Drop: []v1.Capability{"ALL"},
 								},
-								RunAsNonRoot: boolPtr(true),
+								RunAsNonRoot: pointer.BoolPtr(true),
 								SeccompProfile: &v1.SeccompProfile{
 									Type: v1.SeccompProfileTypeRuntimeDefault,
 								},
 							},
+						},
+						{
+							Name:  "test-nginx",
+							Image: "quay.io/jitesoft/nginx:mainline",
+							SecurityContext: &v1.SecurityContext{
+								AllowPrivilegeEscalation: pointer.BoolPtr(false),
+								Capabilities: &v1.Capabilities{
+									Drop: []v1.Capability{"ALL"},
+								},
+								RunAsNonRoot: pointer.BoolPtr(true),
+								SeccompProfile: &v1.SeccompProfile{
+									Type: v1.SeccompProfileTypeRuntimeDefault,
+								},
+							},
+						},
+					},
+					Tolerations: []v1.Toleration{
+						{
+							Key:    "node-role.kubernetes.io/master",
+							Value:  "toleration-key-value",
+							Effect: v1.TaintEffectNoSchedule,
+						},
+						{
+							Key:    "node-role.kubernetes.io/infra",
+							Value:  "toleration-key-value2",
+							Effect: v1.TaintEffectNoSchedule,
 						},
 					},
 				},
@@ -194,7 +220,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 			err := client.Get(ctx, saName, namespaceName, sa)
 
-			if (err == nil) {
+			if err == nil {
 				err = client.Delete(ctx, sa)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete existing Service Account")
 			}
@@ -632,8 +658,3 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		})
 	})
 })
-
-// Helper function to create a pointer to a bool
-func boolPtr(b bool) *bool {
-	return &b
-}
