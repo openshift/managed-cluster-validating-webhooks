@@ -108,7 +108,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 	It("should create a pod with the correct security context", func() {
 		pod := &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: managedClusterValidationWebhookPodName,
+				Name: "testpod",
 			},
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -135,7 +135,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	// Helper function to create a pointer to a bool
+	
 	func boolPtr(b bool) *bool {
 		return &b
 	}
@@ -161,18 +161,17 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 					Containers: []v1.Container{
 						{
 							Name:  "test",
-							Image: "registry.access.redhat.com/ubi8/ubi-minimal",
-						},
-					},
-					Tolerations: []v1.Toleration{
-						{
-							Key:    "node-role.kubernetes.io/master",
-							Value:  "toleration-key-value",
-							Effect: v1.TaintEffectNoSchedule,
-						}, {
-							Key:    "node-role.kubernetes.io/infra",
-							Value:  "toleration-key-value2",
-							Effect: v1.TaintEffectNoSchedule,
+							Image: "quay.io/jitesoft/nginx:mainline",
+							SecurityContext: &v1.SecurityContext{
+								AllowPrivilegeEscalation: boolPtr(false),
+								Capabilities: &v1.Capabilities{
+									Drop: []v1.Capability{"ALL"},
+								},
+								RunAsNonRoot: boolPtr(true),
+								SeccompProfile: &v1.SeccompProfile{
+									Type: v1.SeccompProfileTypeRuntimeDefault,
+								},
+							},
 						},
 					},
 				},
@@ -200,7 +199,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 			err := client.Get(ctx, saName, namespaceName, sa)
 
-			if err == nil {
+			if (err == nil) {
 				err = client.Delete(ctx, sa)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete existing Service Account")
 			}
