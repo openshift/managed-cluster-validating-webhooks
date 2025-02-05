@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
@@ -105,6 +106,35 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("should create a pod with the correct security context", func() {
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "testpod",
+			},
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:  "test",
+						Image: "quay.io/jitesoft/nginx:mainline",
+						SecurityContext: &v1.SecurityContext{
+							AllowPrivilegeEscalation: pointer.BoolPtr(false),
+							Capabilities: &v1.Capabilities{
+								Drop: []v1.Capability{"ALL"},
+							},
+							RunAsNonRoot: pointer.BoolPtr(true),
+							SeccompProfile: &v1.SeccompProfile{
+								Type: v1.SeccompProfileTypeRuntimeDefault,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		err := client.Create(context.TODO(), pod)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	Describe("sre-pod-validation", Ordered, func() {
 		const (
 			privilegedNamespace   = "openshift-backplane"
@@ -125,8 +155,32 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:  "test",
+							Name:  "test-ubi",
 							Image: "registry.access.redhat.com/ubi8/ubi-minimal",
+							SecurityContext: &v1.SecurityContext{
+								AllowPrivilegeEscalation: pointer.BoolPtr(false),
+								Capabilities: &v1.Capabilities{
+									Drop: []v1.Capability{"ALL"},
+								},
+								RunAsNonRoot: pointer.BoolPtr(true),
+								SeccompProfile: &v1.SeccompProfile{
+									Type: v1.SeccompProfileTypeRuntimeDefault,
+								},
+							},
+						},
+						{
+							Name:  "test-nginx",
+							Image: "quay.io/jitesoft/nginx:mainline",
+							SecurityContext: &v1.SecurityContext{
+								AllowPrivilegeEscalation: pointer.BoolPtr(false),
+								Capabilities: &v1.Capabilities{
+									Drop: []v1.Capability{"ALL"},
+								},
+								RunAsNonRoot: pointer.BoolPtr(true),
+								SeccompProfile: &v1.SeccompProfile{
+									Type: v1.SeccompProfileTypeRuntimeDefault,
+								},
+							},
 						},
 					},
 					Tolerations: []v1.Toleration{
@@ -134,7 +188,8 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 							Key:    "node-role.kubernetes.io/master",
 							Value:  "toleration-key-value",
 							Effect: v1.TaintEffectNoSchedule,
-						}, {
+						},
+						{
 							Key:    "node-role.kubernetes.io/infra",
 							Value:  "toleration-key-value2",
 							Effect: v1.TaintEffectNoSchedule,
