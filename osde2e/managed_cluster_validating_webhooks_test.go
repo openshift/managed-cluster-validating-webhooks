@@ -135,11 +135,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	
-	func boolPtr(b bool) *bool {
-		return &b
-	}
-
 	Describe("sre-pod-validation", Ordered, func() {
 		const (
 			privilegedNamespace   = "openshift-backplane"
@@ -637,3 +632,8 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		})
 	})
 })
+
+// Helper function to create a pointer to a bool
+func boolPtr(b bool) *bool {
+	return &b
+}
