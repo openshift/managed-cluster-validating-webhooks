@@ -105,6 +105,41 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("should create a pod with the correct security context", func() {
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: managedClusterValidationWebhookPodName,
+			},
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:  "test",
+						Image: "quay.io/jitesoft/nginx:mainline",
+						SecurityContext: &v1.SecurityContext{
+							AllowPrivilegeEscalation: boolPtr(false),
+							Capabilities: &v1.Capabilities{
+								Drop: []v1.Capability{"ALL"},
+							},
+							RunAsNonRoot: boolPtr(true),
+							SeccompProfile: &v1.SeccompProfile{
+								Type: v1.SeccompProfileTypeRuntimeDefault,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// Create the pod
+		err := client.Create(context.TODO(), pod)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	// Helper function to create a pointer to a bool
+	func boolPtr(b bool) *bool {
+		return &b
+	}
+
 	Describe("sre-pod-validation", Ordered, func() {
 		const (
 			privilegedNamespace   = "openshift-backplane"
