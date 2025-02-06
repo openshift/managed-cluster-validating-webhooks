@@ -108,7 +108,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 	It("should create a pod with the correct security context", func() {
 		pod := &v1.Pod{
-      		ObjectMeta: metav1.ObjectMeta{
+      			ObjectMeta: metav1.ObjectMeta{
 				Name:      "testpod",
 				Namespace: namespaceName,
 			},
