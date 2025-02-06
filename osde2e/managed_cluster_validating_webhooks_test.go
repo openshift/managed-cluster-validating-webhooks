@@ -109,7 +109,8 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 	It("should create a pod with the correct security context", func() {
 		pod := &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "testpod",
+				Name:      "testpod",
+				Namespace: namespaceName,
 			},
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -150,7 +151,8 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			name := envconf.RandomName("testpod", 12)
 			pod = &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					Name:      name,
+					Namespace: testNsName,
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
