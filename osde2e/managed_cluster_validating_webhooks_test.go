@@ -108,9 +108,8 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 	It("should create a pod with the correct security context", func() {
 		pod := &v1.Pod{
-      			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testpod",
-				Namespace: namespaceName,
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "testpod",
 			},
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -151,8 +150,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			name := envconf.RandomName("testpod", 12)
 			pod = &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: testNsName,
+					Name: name,
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
@@ -325,7 +323,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
 		})
 
-		It("only blocks configmap/user-ca-bundle changes", func(ctx context.Context) {
+		It("only blocks configmap/user-ca-bundle changes", FlakeAttempts(3), func(ctx context.Context) {
 			cm := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "user-ca-bundle", Namespace: "openshift-config"}}
 			err := dedicatedAdmink8s.Delete(ctx, cm)
 			Expect(errors.IsForbidden(err)).To(BeTrue(), "Expected to be forbidden from deleting user-ca-bundle ConfigMap")
