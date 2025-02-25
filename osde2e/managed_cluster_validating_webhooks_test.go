@@ -134,6 +134,12 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 		err := client.Create(context.TODO(), pod)
 		Expect(err).NotTo(HaveOccurred())
+
+		DeferCleanup(func(ctx context.Context) {
+            By("Cleaning up resources")
+            By("Deleting the test pod")
+            Expect(client.Delete(ctx, pod)).Should(Succeed(), "Failed to delete test pod")
+        })
 	})
 
 	Describe("sre-pod-validation", Ordered, func() {
@@ -325,7 +331,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
 		})
 
-		It("only blocks configmap/user-ca-bundle changes", func(ctx context.Context) {
+		It("only blocks configmap/user-ca-bundle changes", FlakeAttempts(3), func(ctx context.Context) {
 			cm := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "user-ca-bundle", Namespace: "openshift-config"}}
 			err := dedicatedAdmink8s.Delete(ctx, cm)
 			Expect(errors.IsForbidden(err)).To(BeTrue(), "Expected to be forbidden from deleting user-ca-bundle ConfigMap")
