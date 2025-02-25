@@ -136,10 +136,10 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		DeferCleanup(func(ctx context.Context) {
-            By("Cleaning up resources")
-            By("Deleting the test pod")
-            Expect(client.Delete(ctx, pod)).Should(Succeed(), "Failed to delete test pod")
-        })
+            	    By("Cleaning up resources")
+                    By("Deleting the test pod")
+                    Expect(client.Delete(ctx, pod)).Should(Succeed(), "Failed to delete test pod")
+                })
 	})
 
 	Describe("sre-pod-validation", Ordered, func() {
