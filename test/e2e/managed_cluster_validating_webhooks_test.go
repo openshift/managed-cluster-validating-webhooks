@@ -58,7 +58,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		testNsName    = "osde2e-temp-ns"
 	)
 
-	BeforeAll(func(ctx context.Context) {
+	BeforeAll(func() {
 		log.SetLogger(GinkgoLogr)
 		var err error
 		client, err = openshift.New(GinkgoLogr)
@@ -76,13 +76,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to setup impersonated unauthenticated user client")
 		dynamicClient, err = dynamic.NewForConfig(cfg)
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to create dynamic client")
-		ns := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testNsName}}
-		err = client.Get(ctx, testNsName, "", ns)
-		if errors.IsNotFound(err) {
-			By(fmt.Sprintf("Creating namespace %s", testNsName))
-			err = client.Create(ctx, ns)
-		}
-		Expect(err).ShouldNot(HaveOccurred(), "Failed to create namespace %s", testNsName)
 	})
 
 	It("exists and is running", func(ctx context.Context) {
@@ -148,6 +141,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			By("Deleting the test pod")
 			Expect(client.Delete(ctx, pod)).Should(Succeed(), "Failed to delete test pod")
 		})
+
 	})
 
 	Describe("sre-pod-validation", Ordered, func() {
@@ -332,6 +326,16 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Entry("as system:admin", "system:admin"),
 			Entry("as backplane-cluster-admin", "backplane-cluster-admin"),
 		)
+
+		BeforeAll(func(ctx context.Context) {
+			ns := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testNsName}}
+			err := client.Get(ctx, testNsName, "", ns)
+			if errors.IsNotFound(err) {
+				By(fmt.Sprintf("Creating namespace %s", testNsName))
+				err = client.Create(ctx, ns)
+			}
+			Expect(err).ShouldNot(HaveOccurred(), "Failed to create namespace %s", testNsName)
+		})
 
 		It("only blocks configmap/user-ca-bundle changes", func(ctx context.Context) {
 			cm := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "user-ca-bundle", Namespace: "openshift-config"}}
