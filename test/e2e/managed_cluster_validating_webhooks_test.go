@@ -48,13 +48,15 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		testNamespace      *v1.Namespace
 	)
 	const (
-		namespaceName = "openshift-validation-webhook"
-		serviceName   = "validation-webhook"
-		daemonsetName = "validation-webhook"
-		configMapName = "webhook-cert"
-		secretName    = "webhook-cert"
-		saName        = "webhook-sa"
-		testNsName    = "osde2e-temp-ns"
+		namespaceName         = "openshift-validation-webhook"
+		serviceName           = "validation-webhook"
+		daemonsetName         = "validation-webhook"
+		configMapName         = "webhook-cert"
+		secretName            = "webhook-cert"
+		saName                = "webhook-sa"
+		testNsName            = "osde2e-temp-ns"
+		privilegedNamespace   = "openshift-backplane"
+		unprivilegedNamespace = "openshift-logging"
 	)
 
 	createNS := func(ns string) {
@@ -122,7 +124,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should create a pod with the correct security context", func() {
+	It("should create a pod with the correct security context", func(ctx context.Context) {
 		pod := &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "testpod",
@@ -148,7 +150,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			},
 		}
 
-		err := client.Create(context.TODO(), pod)
+		err := client.Create(ctx, pod)
 		Expect(err).NotTo(HaveOccurred())
 		err = client.Delete(ctx, pod)
 		Expect(err).NotTo(HaveOccurred())
@@ -156,9 +158,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 	Describe("sre-pod-validation", Ordered, func() {
 		const (
-			privilegedNamespace   = "openshift-backplane"
-			unprivilegedNamespace = "openshift-logging"
-
 			deletePodWaitDuration = 5 * time.Minute
 			createPodWaitDuration = 1 * time.Minute
 		)
@@ -166,11 +165,10 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		var pod *v1.Pod
 
 		BeforeAll(func() {
-			name := envconf.RandomName("testpod", 12)
 			pod = &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: testNsName,
+					Name:      envconf.RandomName("testpod", 12),
+					Namespace: privilegedNamespace,
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
@@ -219,20 +217,17 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			}
 		})
 
-		withNamespace := func(pod *v1.Pod, namespace string) *v1.Pod {
-			pod.SetNamespace(namespace)
-			return pod
-		}
-
 		It("blocks pods scheduled onto master/infra nodes", func(ctx context.Context) {
-			err := dedicatedAdmink8s.Create(ctx, withNamespace(pod, privilegedNamespace))
+			err := dedicatedAdmink8s.Create(ctx, pod)
 			Expect(errors.IsForbidden(err)).To(BeTrue())
 
-			err = userk8s.Create(ctx, withNamespace(pod, privilegedNamespace))
+			err = userk8s.Create(ctx, pod)
 			Expect(errors.IsForbidden(err)).To(BeTrue())
 
-			err = userk8s.Create(ctx, withNamespace(pod, unprivilegedNamespace))
+			pod.SetNamespace(unprivilegedNamespace)
+			err = userk8s.Create(ctx, pod)
 			Expect(errors.IsForbidden(err)).To(BeTrue())
+			pod.SetNamespace(privilegedNamespace)
 		}, SpecTimeout(createPodWaitDuration.Seconds()+deletePodWaitDuration.Seconds()))
 
 		It("allows cluster-admin to schedule pods onto master/infra nodes", func(ctx context.Context) {
@@ -254,7 +249,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			err = client.Create(ctx, sa)
 			Expect(err).ShouldNot(HaveOccurred(), "Unable to create service account")
 
-			pod = withNamespace(pod, privilegedNamespace)
 			err = client.Create(ctx, pod)
 			Expect(err).NotTo(HaveOccurred())
 			err = client.Delete(ctx, pod)
@@ -605,9 +599,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 	})
 
 	Describe("sre-prometheusrule-validation", func() {
-		const privilegedNamespace = "openshift-backplane"
-		const unprivilegedNamespace = "openshift-logging"
-
 		newPrometheusRule := func(namespace string) *monitoringv1.PrometheusRule {
 			return &monitoringv1.PrometheusRule{
 				ObjectMeta: metav1.ObjectMeta{Name: "prometheus-example-app", Namespace: namespace},
