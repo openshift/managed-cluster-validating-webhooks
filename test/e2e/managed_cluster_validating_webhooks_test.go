@@ -330,6 +330,12 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			err := dedicatedAdmink8s.Delete(ctx, cm)
 			Expect(errors.IsForbidden(err)).To(BeTrue(), "Expected to be forbidden from deleting user-ca-bundle ConfigMap")
 
+			By("checking the custom namespace exists")
+			err = wait.For(conditions.New(client.Resources).ResourceMatch(testNamespace, func(object k8s.Object) bool {
+				return true
+			}))
+			Expect(err).ToNot(HaveOccurred())
+
 			cm = &v1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: testNsName},
 				Data:       map[string]string{"test": "test"},
