@@ -48,14 +48,31 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		testNamespace      *v1.Namespace
 	)
 	const (
-		namespaceName = "openshift-validation-webhook"
-		serviceName   = "validation-webhook"
-		daemonsetName = "validation-webhook"
-		configMapName = "webhook-cert"
-		secretName    = "webhook-cert"
-		saName        = "webhook-sa"
-		testNsName    = "osde2e-temp-ns"
+		namespaceName         = "openshift-validation-webhook"
+		serviceName           = "validation-webhook"
+		daemonsetName         = "validation-webhook"
+		configMapName         = "webhook-cert"
+		secretName            = "webhook-cert"
+		testNsName            = "osde2e-temp-ns"
+		privilegedNamespace   = "openshift-backplane"
+		unprivilegedNamespace = "openshift-logging"
 	)
+
+	createNS := func(ns string) {
+		testNamespace = &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+		err := client.Create(context.TODO(), testNamespace)
+		By("checking the custom namespace exists")
+		err = wait.For(conditions.New(client.Resources).ResourceMatch(testNamespace, func(object k8s.Object) bool {
+			return true
+		}))
+		Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
+	}
+
+	deleteNS := func(ns *v1.Namespace) {
+		err := client.Delete(context.TODO(), ns)
+		err = wait.For(conditions.New(client.Resources).ResourceDeleted(ns))
+		Expect(err).ShouldNot(HaveOccurred(), "Unable to delete test namespace")
+	}
 
 	BeforeAll(func() {
 		log.SetLogger(GinkgoLogr)
@@ -106,7 +123,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should create a pod with the correct security context", func() {
+	It("should create a pod with the correct security context", func(ctx context.Context) {
 		pod := &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "testpod",
@@ -132,15 +149,14 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			},
 		}
 
-		err := client.Create(context.TODO(), pod)
+		err := client.Create(ctx, pod)
+		Expect(err).NotTo(HaveOccurred())
+		err = client.Delete(ctx, pod)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("sre-pod-validation", Ordered, func() {
 		const (
-			privilegedNamespace   = "openshift-backplane"
-			unprivilegedNamespace = "openshift-logging"
-
 			deletePodWaitDuration = 5 * time.Minute
 			createPodWaitDuration = 1 * time.Minute
 		)
@@ -148,11 +164,10 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		var pod *v1.Pod
 
 		BeforeAll(func() {
-			name := envconf.RandomName("testpod", 12)
 			pod = &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: testNsName,
+					Name:      envconf.RandomName("testpod", 12),
+					Namespace: privilegedNamespace,
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
@@ -201,42 +216,31 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			}
 		})
 
-		withNamespace := func(pod *v1.Pod, namespace string) *v1.Pod {
-			pod.SetNamespace(namespace)
-			return pod
-		}
-
 		It("blocks pods scheduled onto master/infra nodes", func(ctx context.Context) {
-			err := dedicatedAdmink8s.Create(ctx, withNamespace(pod, privilegedNamespace))
+			err := dedicatedAdmink8s.Create(ctx, pod)
 			Expect(errors.IsForbidden(err)).To(BeTrue())
 
-			err = userk8s.Create(ctx, withNamespace(pod, privilegedNamespace))
+			err = userk8s.Create(ctx, pod)
 			Expect(errors.IsForbidden(err)).To(BeTrue())
 
-			err = userk8s.Create(ctx, withNamespace(pod, unprivilegedNamespace))
+			pod.SetNamespace(unprivilegedNamespace)
+			err = userk8s.Create(ctx, pod)
 			Expect(errors.IsForbidden(err)).To(BeTrue())
+			pod.SetNamespace(privilegedNamespace)
 		}, SpecTimeout(createPodWaitDuration.Seconds()+deletePodWaitDuration.Seconds()))
 
 		It("allows cluster-admin to schedule pods onto master/infra nodes", func(ctx context.Context) {
-			sa := &v1.ServiceAccount{}
-
-			err := client.Get(ctx, saName, namespaceName, sa)
-
-			if err == nil {
-				err = client.Delete(ctx, sa)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete existing Service Account")
-			}
-
-			sa = &v1.ServiceAccount{
+			sa := &v1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      saName,
+					Name:      "webhook-sa",
 					Namespace: namespaceName,
 				},
 			}
-			err = client.Create(ctx, sa)
+			err := client.Create(ctx, sa)
 			Expect(err).ShouldNot(HaveOccurred(), "Unable to create service account")
+			err = client.Delete(ctx, sa)
+			Expect(err).ShouldNot(HaveOccurred(), "Unable to delete service account")
 
-			pod = withNamespace(pod, privilegedNamespace)
 			err = client.Create(ctx, pod)
 			Expect(err).NotTo(HaveOccurred())
 			err = client.Delete(ctx, pod)
@@ -320,9 +324,11 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		)
 
 		BeforeAll(func(ctx context.Context) {
-			testNamespace = &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testNsName}}
-			err := client.Create(ctx, testNamespace)
-			Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
+			createNS(testNsName)
+		})
+
+		AfterAll(func(ctx context.Context) {
+			deleteNS(testNamespace)
 		})
 
 		It("only blocks configmap/user-ca-bundle changes", func(ctx context.Context) {
@@ -521,7 +527,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		updateNamespace := func(ctx context.Context, name string, user string, groups ...string) error {
+		updateNamespace := func(ctx context.Context, name, user string, groups ...string) error {
 			userk8s, err := client.Impersonate(user, groups...)
 			if err != nil {
 				return err
@@ -585,9 +591,6 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 	})
 
 	Describe("sre-prometheusrule-validation", func() {
-		const privilegedNamespace = "openshift-backplane"
-		const unprivilegedNamespace = "openshift-logging"
-
 		newPrometheusRule := func(namespace string) *monitoringv1.PrometheusRule {
 			return &monitoringv1.PrometheusRule{
 				ObjectMeta: metav1.ObjectMeta{Name: "prometheus-example-app", Namespace: namespace},
@@ -613,10 +616,11 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			rule := newPrometheusRule(privilegedNamespace)
 			err = client.Delete(ctx, rule)
 			Expect(err == nil || errors.IsNotFound(err)).To(BeTrue(), "Failed to ensure PrometheusRule deletion")
+			createNS(testNsName)
 		})
 
 		AfterAll(func(ctx context.Context) {
-			client.Delete(ctx, testNamespace)
+			deleteNS(testNamespace)
 		})
 
 		DescribeTable(
@@ -650,7 +654,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		})
 
 		It("allows non-privileged users to manage PrometheusRules in non-privileged namespaces", func(ctx context.Context) {
-			rule := newPrometheusRule("osde2e-temp-ns")
+			rule := newPrometheusRule(testNsName)
 
 			err := dedicatedAdmink8s.Create(ctx, rule)
 			Expect(err).NotTo(HaveOccurred())
