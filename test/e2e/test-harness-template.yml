@@ -31,7 +31,7 @@ objects:
   - apiVersion: batch/v1
     kind: Job
     metadata:
-      name: osde2e-configure-alertmanager-operator-${IMAGE_TAG}-${JOBID}
+      name: validation-webhook-${IMAGE_TAG}-${JOBID}
     spec:
       backoffLimit: 0
       template:
