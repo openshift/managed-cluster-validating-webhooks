@@ -1,13 +1,11 @@
 reviewers:
-- robotmaxtron
-- rogbas
-- tnierman
 - joshbranham
+- robotmaxtron
+- srep-functional-team-rocket
+
 approvers:
-- wanghaoran1988
-- robotmaxtron
-- rogbas
-- tnierman
-- bmeng
-- ravitri
 - joshbranham
+- robotmaxtron
+- tnierman
+- srep-functional-leads
+- srep-team-leads
