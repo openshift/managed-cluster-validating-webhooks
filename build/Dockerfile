@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/openshift/release:golang-1.22 AS builder
+FROM registry.ci.openshift.org/openshift/release:golang-1.23 AS builder
 
 RUN mkdir -p /workdir
 WORKDIR /workdir
@@ -8,7 +8,7 @@ COPY . .
 RUN make build
 
 ####
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5-1742914212
 
 ENV USER_UID=1001 \
     USER_NAME=webhooks
