@@ -36,6 +36,7 @@ var (
 		},
 	}
 	allowedUsers = []string{
+		"system:serviceaccount:openshift-kube-apiserver-operator:kube-apiserver-operator",
 		"system:serviceaccount:openshift-monitoring:cluster-monitoring-operator",
 		"system:serviceaccount:openshift-cluster-version:default",
 		"system:admin",
