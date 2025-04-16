@@ -169,6 +169,14 @@ func TestUser(t *testing.T) {
 			userGroups:      []string{"system:authenticated", "system:serviceaccounts:osde2e-abcde"},
 			shouldBeAllowed: false,
 		},
+		{
+			targetSCC:       "anyuid",
+			testID:          "kube-apiserver-operator-allowed",
+			username:        "system:serviceaccount:openshift-kube-apiserver-operator:kube-apiserver-operator",
+			operation:       admissionv1.Update,
+			userGroups:      []string{},
+			shouldBeAllowed: true,
+		},
 	}
 	runSCCTests(t, tests)
 }
