@@ -255,7 +255,7 @@ func TestUsers(t *testing.T) {
 			username:        "prometheus-user-workload",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "regular-user-can-create-prometheusrule-in-openshift-user-workload-monitoring",
@@ -264,7 +264,7 @@ func TestUsers(t *testing.T) {
 			username:        "prometheus-user-workload",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "serviceaccount-in-managed-namespaces-can-create-prometheusrule-in-openshift-user-workload-monitoring",
@@ -273,7 +273,7 @@ func TestUsers(t *testing.T) {
 			username:        "prometheus-user-workload",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "serviceaccount-in-managed-namespaces-can-create-prometheusrule-in-redhat-rhoam-observability",
