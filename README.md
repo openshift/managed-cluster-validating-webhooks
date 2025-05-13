@@ -34,7 +34,7 @@ Ensure the git branch is current and run `make syncset`. The updated Template wi
 
 Ensure the git branch is current and run `make generate`. The updated lists will be written to [pkg/config/namespaces.go](pkg/config/namespaces.go). [Documentation should also be regenerated](#updating-documentation-files) to ensure the ConfigMaps specified are up-to-date.
 
-## Updating documenation files
+## Updating documentation files
 
 Ensure the git branch is current and run `make docs > docs/webhooks.json && make DOCFLAGS=-hideRules docs > docs/webhooks-short.json`.
 
