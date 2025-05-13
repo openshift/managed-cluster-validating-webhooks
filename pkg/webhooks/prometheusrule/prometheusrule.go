@@ -45,6 +45,9 @@ var (
 		},
 	}
 	log = logf.Log.WithName(WebhookName)
+
+	// These namespaces are partially managed by Red Hat SRE, however we allow customers to define PrometheusRules in them.
+	privilegedNamespacesAllowed = []string{"openshift-customer-monitoring", "openshift-user-workload-monitoring"}
 )
 
 // prometheusruleWebhook validates a prometheusRule change
@@ -80,10 +83,8 @@ func (s *prometheusruleWebhook) authorized(request admissionctl.Request) admissi
 		return admissionctl.Errored(http.StatusBadRequest, err)
 	}
 
-	if hookconfig.IsPrivilegedNamespace(pr.GetNamespace()) &&
-		// TODO: [OSD-13680] Remove this exception for openshift-customer-monitoring
-		pr.GetNamespace() != "openshift-customer-monitoring" &&
-		pr.GetNamespace() != "openshift-user-workload-monitoring" {
+	// This block covers the denial flow for PrivilegedNamespaces, excluding some special case namespaces.
+	if hookconfig.IsPrivilegedNamespace(pr.GetNamespace()) && !slices.Contains(privilegedNamespacesAllowed, pr.GetNamespace()) {
 		log.Info(fmt.Sprintf("%s operation detected on managed namespace: %s", request.Operation, pr.GetNamespace()))
 		if isAllowedUser(request) {
 			ret = admissionctl.Allowed(fmt.Sprintf("User can do operations on PrometheusRules"))

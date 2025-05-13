@@ -258,8 +258,8 @@ func TestUsers(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "regular-user-can-create-prometheusrule-in-openshift-user-workload-monitoring",
-			targetNamespace: "openshift-user-workload-monitoring",
+			testID:          "regular-user-can-create-prometheusrule-in-openshift-customer-monitoring",
+			targetNamespace: "openshift-customer-monitoring",
 			targetResource:  "prometheusrule",
 			username:        "prometheus-user-workload",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
