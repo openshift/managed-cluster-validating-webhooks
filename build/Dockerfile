@@ -8,7 +8,7 @@ COPY . .
 RUN make build
 
 ####
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5-1742914212
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6-1747218906
 
 ENV USER_UID=1001 \
     USER_NAME=webhooks
