@@ -1,5 +1,5 @@
 SHELL := /usr/bin/env bash
-
+include boilerplate/generated-includes.mk
 include test/e2e/project.mk
 # Verbosity
 AT_ = @
@@ -187,3 +187,8 @@ docs:
 	@# To hide the rules: make DOCFLAGS=-hideRules docs
 	@$(MAKE test)
 	@go run $(DOC_BINARY) $(DOCFLAGS)
+
+
+.PHONY: boilerplate-update
+boilerplate-update:
+	@boilerplate/update
