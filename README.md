@@ -1,8 +1,67 @@
 # Managed Cluster Validating Webhooks
 
+# This is a testing PR
+
+Overview & Purpose
+
+The project offers a framework for admission webhooks tailored for OpenShift-managed clusters. Its modularity supports adding new policy-specific webhooks easily.
+
+Though named for validating webhooks, it supports mutating webhooks too, the core difference being their response options (mutate vs reject)
+
+
+Repository Structure
+Key directories and files include:
+cmd/ – main entrypoint(s) for the webhook server.
+pkg/webhooks/ – contains implementations for each webhook.
+build/ – scripts and templates (e.g., selectorsyncset.yaml) needed for deployment.
+config/, designs/, docs/, hack/, test/e2e/ – auxiliary configs, design specs, documentation, tooling, and end-to-end tests.
+Makefile, go.mod, go.sum, LICENSE, OWNERS – build and governance infrastructure.
+pkg/testutils – utility helpers for testing.
+
+Core Components
+
+Webhook Framework (pkg/webhooks/)
+
+Defines a common Webhook interface: methods to identify request types, authenticate users, validate or mutate, and return structured admission responses appropriately.
+
+
+Implements various webhook handlers, for example:
+
+
+namespace.go for namespace-level constraints.
+(Likely others like pod, SCC, network policy, etc.)
+
+
+Each handler encapsulates request examination logic and policy rules.
+
+Server (cmd/webhooks/)
+Initializes the webhook HTTP server, reads TLS certificates, sets up routing for different webhook endpoints (/namespace-validation, /pod-validation, etc.).
+Entrypoint compiles all registered webhooks and configures them in an HTTPS server listening per OpenShift requirements.
+
+Deployment Resources
+Selectorsyncset.yaml 
+A central manifest that defines how resources are deployed on a managed cluster via Hive’s SelectorSyncSet:
+Declares a namespace openshift-validation-webhook, service account, roles, and role bindings.
+Deploys:
+
+
+A Service for webhook traffic over HTTPS.
+A DaemonSet ensuring the webhook server runs on all master/control-plane nodes.
+Multiple ValidatingWebhookConfiguration resources, each targeting a specific API group/resource/operation.
+
+
+Webhook configs define:
+
+
+Client config: service name, namespace, path (e.g., /namespace-validation)
+Rules: targeting specific resources (namespaces, pods, image policies, etc.)
+Failure policies (Ignore or Fail), side effects, request timeouts github.com.
+
+
 A framework supporting [validating admission webhooks](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) for OpenShift.
 
 - [Managed Cluster Validating Webhooks](#managed-cluster-validating-webhooks)
+- [This is a testing PR](#this-is-a-testing-pr)
   - [Updating SelectorSyncSet Template](#updating-selectorsyncset-template)
   - [Updating namespace and service account list](#updating-namespace-and-service-account-list)
   - [Updating documentation files](#updating-documentation-files)
@@ -20,6 +79,7 @@ A framework supporting [validating admission webhooks](https://kubernetes.io/doc
       - [Prevent Overwriting (Hive-Managed Clusters)](#prevent-overwriting-hive-managed-clusters)
       - [Pare Down Your Daemonset (Optional)](#pare-down-your-daemonset-optional)
       - [Deploy the Image](#deploy-the-image)
+    - [Create the ValidatingWebhookConfiguration](#create-the-validatingwebhookconfiguration)
       - [Update Other Resources](#update-other-resources)
       - [Test Your Changes](#test-your-changes)
     - [End to End Testing](#end-to-end-testing)
