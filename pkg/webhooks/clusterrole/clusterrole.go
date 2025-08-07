@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	WebhookName string = "clusterroles-validation"
-	docString   string = `Managed OpenShift Customers may not delete protected ClusterRoles including cluster-admin, view, edit, admin, specific system roles (system:admin, system:node, system:node-proxier, system:kube-scheduler, system:kube-controller-manager), and backplane-* roles`
+	WebhookName     string = "clusterroles-validation"
+	backplanePrefix string = "backplane-"
+	docString       string = `Managed OpenShift Customers may not delete protected ClusterRoles including cluster-admin, view, edit, admin, specific system roles (system:admin, system:node, system:node-proxier, system:kube-scheduler, system:kube-controller-manager), and backplane-* roles`
 )
 
 var (
@@ -47,7 +48,6 @@ var (
 		"admin",
 		"system:admin",
 		"system:node",
-		"system:node-proxier",
 		"system:kube-scheduler",
 		"system:kube-controller-manager",
 	}
@@ -172,12 +172,10 @@ func isProtectedClusterRole(clusterRole *rbacv1.ClusterRole) bool {
 	if slices.Contains(protectedClusterRoles, clusterRole.Name) {
 		return true
 	}
-
 	// Check if it matches backplane pattern
-	if strings.HasPrefix(clusterRole.Name, "backplane-") {
+	if strings.HasPrefix(clusterRole.Name, backplanePrefix) {
 		return true
 	}
-
 	return false
 }
 

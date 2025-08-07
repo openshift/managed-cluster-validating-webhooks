@@ -280,6 +280,36 @@ objects:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
         creationTimestamp: null
+        name: sre-clusterroles-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /clusterroles-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: clusterroles-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          apiVersions:
+          - v1
+          operations:
+          - DELETE
+          resources:
+          - clusterroles
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        creationTimestamp: null
         name: sre-customresourcedefinitions-validation
       webhooks:
       - admissionReviewVersions:
