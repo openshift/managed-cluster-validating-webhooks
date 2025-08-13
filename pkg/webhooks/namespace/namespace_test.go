@@ -717,13 +717,13 @@ func TestAdminUser(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			// admin users gonna admin
+			// cluster-admin users cannot update privilegedNamespaces
 			testID:          "cluster-admin-test",
 			targetNamespace: privilegedNamespace,
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 		{
 			// admin users gonna admin
@@ -762,40 +762,31 @@ func TestAdminUser(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			// Admins should be able to create a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
+			// cluster-admin group members should not be able to create a privileged namespace
+			testID:          "cluster-admin-group-in-ns-test",
 			targetNamespace: "in",
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 		{
-			// Admins should be able to create a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to update a privileged namespace
+			// cluster-admin group members should not be able to update a privileged namespace
 			testID:          "cluster-admin-in-ns-test",
 			targetNamespace: privilegedNamespace,
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 		{
-			// Admins should be able to delete a privileged namespace
+			// cluster-admins group members should not be able to delete a privileged namespace
 			testID:          "cluster-admin-in-ns-test",
 			targetNamespace: privilegedNamespace,
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 	}
 	runNamespaceTests(t, tests)
@@ -825,25 +816,13 @@ func TestLabelCreates(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "cluster-admin-can-create-priv-labelled-ns",
+			testID:          "cluster-admins-group-cannot-create-priv-labelled-ns",
 			targetNamespace: privilegedNamespace,
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
 			labels:          map[string]string{"my-label": "hello"},
-			shouldBeAllowed: true,
-		},
-		{
-			testID:          "cluster-admins-can-create-priv-labelled-ns",
-			targetNamespace: privilegedNamespace,
-			username:        "no-reply@redhat.com",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			labels: map[string]string{
-				"managed.openshift.io/storage-pv-quota-exempt": "true",
-				"managed.openshift.io/storage-lb-quota-exempt": "true",
-			},
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 		{
 			testID:          "admin-test",
