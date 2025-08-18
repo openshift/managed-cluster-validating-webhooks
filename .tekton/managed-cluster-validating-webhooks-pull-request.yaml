@@ -11,12 +11,10 @@ metadata:
     pipelinesascode.tekton.dev/on-cel-expression: | 
       event == "pull_request" 
       && target_branch == "master"
-      && (**/*.go.pathChanged() ||
-          **/go.*.pathChanged() ||
-          *.go.pathChanged() ||
-          go.*.pathChanged() ||
+      && ("{.,**}/*.go".pathChanged() ||
+          "{.,**}/go.*".pathChanged() ||
           "build/Dockerfile".pathChanged() ||
-          ".tekton/managed-cluster-validating-webhooks-pull-request.yaml".pathChanged() ) 
+          ".tekton/managed-cluster-validating-webhooks-pull-request.yaml".pathChanged() )  
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: managed-cluster-validating-webhooks
