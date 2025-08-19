@@ -717,13 +717,13 @@ func TestAdminUser(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			// cluster-admin users cannot update privilegedNamespaces
+			// admin users gonna admin
 			testID:          "cluster-admin-test",
 			targetNamespace: privilegedNamespace,
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			// admin users gonna admin
@@ -762,31 +762,40 @@ func TestAdminUser(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			// cluster-admin group members should not be able to create a privileged namespace
-			testID:          "cluster-admin-group-in-ns-test",
+			// Admins should be able to create a privileged namespace
+			testID:          "cluster-admin-in-ns-test",
 			targetNamespace: "in",
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
-			// cluster-admin group members should not be able to update a privileged namespace
+			// Admins should be able to create a privileged namespace
+			testID:          "cluster-admin-in-ns-test",
+			targetNamespace: privilegedNamespace,
+			username:        "lisa",
+			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// Admins should be able to update a privileged namespace
 			testID:          "cluster-admin-in-ns-test",
 			targetNamespace: privilegedNamespace,
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
-			// cluster-admins group members should not be able to delete a privileged namespace
+			// Admins should be able to delete a privileged namespace
 			testID:          "cluster-admin-in-ns-test",
 			targetNamespace: privilegedNamespace,
 			username:        "lisa",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Delete,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 	}
 	runNamespaceTests(t, tests)
@@ -816,13 +825,25 @@ func TestLabelCreates(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
-			testID:          "cluster-admins-group-cannot-create-priv-labelled-ns",
+			testID:          "cluster-admin-can-create-priv-labelled-ns",
 			targetNamespace: privilegedNamespace,
 			username:        "no-reply@redhat.com",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
 			labels:          map[string]string{"my-label": "hello"},
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "cluster-admins-can-create-priv-labelled-ns",
+			targetNamespace: privilegedNamespace,
+			username:        "no-reply@redhat.com",
+			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			labels: map[string]string{
+				"managed.openshift.io/storage-pv-quota-exempt": "true",
+				"managed.openshift.io/storage-lb-quota-exempt": "true",
+			},
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "admin-test",
@@ -1061,14 +1082,14 @@ func TestLabellingUpdates(t *testing.T) {
 			shouldBeAllowed: false,
 		},
 		{
-			testID:          "cluster-admin-cant-add-removable-label-on-unpriv-ns",
+			testID:          "cluster-admin-can-add-removable-label-on-unpriv-ns",
 			targetNamespace: "my-customer-ns",
 			username:        "test@user",
 			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
 			oldObject:       createOldObject("my-customer-ns", "user-can-remove-removable-label-from-unpriv-ns", map[string]string{}),
 			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "backplane-cluster-admin-can-add-removable-label-on-unpriv-ns",
