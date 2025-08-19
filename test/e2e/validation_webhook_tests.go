@@ -18,6 +18,7 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -348,6 +349,13 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		It("allows backplane-cluster-admin to manage MustGather CRs", func(ctx context.Context) {
 			backplanecadmin, err := client.Impersonate("backplane-cluster-admin", "system:serviceaccounts:backplane-cluster-admin")
 			Expect(err).ShouldNot(HaveOccurred(), "Unable to setup impersonated backplane-cluster-admin client")
+			crdClient, err := apiextensionsclientset.NewForConfig(backplanecadmin.GetConfig())
+			Expect(err).ShouldNot(HaveOccurred(), "Unable to create CRD client")
+			_, err = crdClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, "mustgathers.managed.openshift.io", metav1.GetOptions{})
+			if err != nil {
+				Skip("Skipping test: MustGather CRD not found in cluster")
+			}
+
 			dynamicClient, err = dynamic.NewForConfig(backplanecadmin.GetConfig())
 			Expect(err).ShouldNot(HaveOccurred(), "failed creating the dynamic client: %w", err)
 
