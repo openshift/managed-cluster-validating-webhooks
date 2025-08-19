@@ -27,6 +27,7 @@ const (
 	layeredProductNamespace      string = `^redhat-.*`
 	layeredProductAdminGroupName string = "layered-sre-cluster-admins"
 	docString                    string = `Managed OpenShift Customers may not modify namespaces specified in the %v ConfigMaps because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression %s because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels %s.`
+	clusterAdminGroup            string = "cluster-admins"
 )
 
 // exported vars to be used across packages
@@ -351,7 +352,7 @@ func NewWebhook() *NamespaceWebhook {
 }
 
 func amIAdmin(request admissionctl.Request) bool {
-	if slices.Contains(clusterAdminUsers, request.UserInfo.Username) {
+	if slices.Contains(clusterAdminUsers, request.UserInfo.Username) || slices.Contains(request.UserInfo.Groups, clusterAdminGroup) {
 		return true
 	}
 
