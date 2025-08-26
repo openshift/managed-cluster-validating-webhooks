@@ -1,3 +1,4 @@
+export KONFLUX_BUILDS=true
 SHELL := /usr/bin/env bash
 include boilerplate/generated-includes.mk
 
