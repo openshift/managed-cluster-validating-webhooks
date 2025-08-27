@@ -13,7 +13,7 @@ metadata:
       && ("{.,**}/*.go".pathChanged() ||
           "{.,**}/go.*".pathChanged() ||
           "build/Dockerfile".pathChanged() ||
-          ".tekton/managed-cluster-validating-webhooks-operator-e2e-push.yaml".pathChanged() ) 
+          ".tekton/managed-cluster-validating-webhooks-e2e-push.yaml".pathChanged() ) 
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: managed-cluster-validating-webhooks
