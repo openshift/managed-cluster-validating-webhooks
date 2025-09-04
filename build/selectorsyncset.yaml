@@ -1,13 +1,11 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  creationTimestamp: null
   name: selectorsyncset-template
 objects:
 - apiVersion: hive.openshift.io/v1
   kind: SelectorSyncSet
   metadata:
-    creationTimestamp: null
     labels:
       managed.openshift.io/gitHash: ${IMAGE_TAG}
       managed.openshift.io/gitRepoName: ${REPO_NAME}
@@ -22,7 +20,6 @@ objects:
     - apiVersion: v1
       kind: Namespace
       metadata:
-        creationTimestamp: null
         labels:
           openshift.io/cluster-monitoring: "true"
         name: openshift-validation-webhook
@@ -31,13 +28,11 @@ objects:
     - apiVersion: v1
       kind: ServiceAccount
       metadata:
-        creationTimestamp: null
         name: validation-webhook
         namespace: openshift-validation-webhook
     - apiVersion: rbac.authorization.k8s.io/v1
       kind: Role
       metadata:
-        creationTimestamp: null
         name: validation-webhook
         namespace: openshift-validation-webhook
       rules:
@@ -56,7 +51,6 @@ objects:
     - apiVersion: rbac.authorization.k8s.io/v1
       kind: RoleBinding
       metadata:
-        creationTimestamp: null
         name: validation-webhook:validation-webhook
         namespace: openshift-validation-webhook
       roleRef:
@@ -70,7 +64,6 @@ objects:
     - apiVersion: rbac.authorization.k8s.io/v1
       kind: ClusterRole
       metadata:
-        creationTimestamp: null
         name: validation-webhook
       rules:
       - apiGroups:
@@ -82,7 +75,6 @@ objects:
     - apiVersion: rbac.authorization.k8s.io/v1
       kind: ClusterRoleBinding
       metadata:
-        creationTimestamp: null
         name: validation-webhook:validation-webhook
       roleRef:
         apiGroup: rbac.authorization.k8s.io
@@ -95,7 +87,6 @@ objects:
     - apiVersion: rbac.authorization.k8s.io/v1
       kind: Role
       metadata:
-        creationTimestamp: null
         name: prometheus-k8s
         namespace: openshift-validation-webhook
       rules:
@@ -112,7 +103,6 @@ objects:
     - apiVersion: rbac.authorization.k8s.io/v1
       kind: RoleBinding
       metadata:
-        creationTimestamp: null
         name: prometheus-k8s
         namespace: openshift-validation-webhook
       roleRef:
@@ -126,7 +116,6 @@ objects:
     - apiVersion: monitoring.coreos.com/v1
       kind: ServiceMonitor
       metadata:
-        creationTimestamp: null
         name: validating-webhook-metrics
         namespace: openshift-validation-webhook
       spec:
@@ -145,7 +134,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: webhook-cert
         namespace: openshift-validation-webhook
     - apiVersion: v1
@@ -153,7 +141,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/serving-cert-secret-name: webhook-cert
-        creationTimestamp: null
         labels:
           hypershift.openshift.io/allow-guest-webhooks: "true"
           name: validation-webhook
@@ -173,7 +160,6 @@ objects:
     - apiVersion: apps/v1
       kind: DaemonSet
       metadata:
-        creationTimestamp: null
         labels:
           app: validation-webhook
         name: validation-webhook
@@ -184,7 +170,6 @@ objects:
             app: validation-webhook
         template:
           metadata:
-            creationTimestamp: null
             labels:
               app: validation-webhook
           spec:
@@ -249,7 +234,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-clusterrolebindings-validation
       webhooks:
       - admissionReviewVersions:
@@ -279,7 +263,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-clusterroles-validation
       webhooks:
       - admissionReviewVersions:
@@ -309,7 +292,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-customresourcedefinitions-validation
       webhooks:
       - admissionReviewVersions:
@@ -341,7 +323,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-hiveownership-validation
       webhooks:
       - admissionReviewVersions:
@@ -375,7 +356,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-imagecontentpolicies-validation
       webhooks:
       - admissionReviewVersions:
@@ -417,7 +397,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-ingress-config-validation
       webhooks:
       - admissionReviewVersions:
@@ -449,7 +428,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-namespace-validation
       webhooks:
       - admissionReviewVersions:
@@ -481,7 +459,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-networkpolicies-validation
       webhooks:
       - admissionReviewVersions:
@@ -513,7 +490,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-node-validation-osd
       webhooks:
       - admissionReviewVersions:
@@ -546,7 +522,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-pod-validation
       webhooks:
       - admissionReviewVersions:
@@ -576,7 +551,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-prometheusrule-validation
       webhooks:
       - admissionReviewVersions:
@@ -608,7 +582,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-regular-user-validation
       webhooks:
       - admissionReviewVersions:
@@ -720,7 +693,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-scc-validation
       webhooks:
       - admissionReviewVersions:
@@ -751,7 +723,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-sdn-migration-validation
       webhooks:
       - admissionReviewVersions:
@@ -781,7 +752,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-serviceaccount-validation
       webhooks:
       - admissionReviewVersions:
@@ -811,7 +781,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-techpreviewnoupgrade-validation
       webhooks:
       - admissionReviewVersions:
@@ -841,7 +810,6 @@ objects:
 - apiVersion: hive.openshift.io/v1
   kind: SelectorSyncSet
   metadata:
-    creationTimestamp: null
     labels:
       managed.openshift.io/gitHash: ${IMAGE_TAG}
       managed.openshift.io/gitRepoName: ${REPO_NAME}
@@ -865,7 +833,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-clusterlogging-validation
       webhooks:
       - admissionReviewVersions:
@@ -895,7 +862,6 @@ objects:
 - apiVersion: hive.openshift.io/v1
   kind: SelectorSyncSet
   metadata:
-    creationTimestamp: null
     labels:
       managed.openshift.io/gitHash: ${IMAGE_TAG}
       managed.openshift.io/gitRepoName: ${REPO_NAME}
@@ -917,7 +883,6 @@ objects:
       metadata:
         annotations:
           service.beta.openshift.io/inject-cabundle: "true"
-        creationTimestamp: null
         name: sre-ingresscontroller-validation
       webhooks:
       - admissionReviewVersions:
