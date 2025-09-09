@@ -43,6 +43,27 @@
     "documentString": "Managed OpenShift Customers may not delete the cluster role bindings under the managed namespaces: (^openshift-.*|kube-system)"
   },
   {
+    "webhookName": "clusterroles-validation",
+    "rules": [
+      {
+        "operations": [
+          "DELETE"
+        ],
+        "apiGroups": [
+          "rbac.authorization.k8s.io"
+        ],
+        "apiVersions": [
+          "v1"
+        ],
+        "resources": [
+          "clusterroles"
+        ],
+        "scope": "Cluster"
+      }
+    ],
+    "documentString": "Managed OpenShift Customers may not delete protected ClusterRoles including cluster-admin, view, edit, admin, specific system roles (system:admin, system:node, system:node-proxier, system:kube-scheduler, system:kube-controller-manager), and backplane-* roles"
+  },
+  {
     "webhookName": "customresourcedefinitions-validation",
     "rules": [
       {
@@ -175,7 +196,7 @@
         "scope": "Namespaced"
       }
     ],
-    "documentString": "Managed OpenShift Customer may create IngressControllers without necessary taints. This can cause those workloads to be provisioned on infra or master nodes."
+    "documentString": "Managed OpenShift Customer may create IngressControllers without necessary taints. This can cause those workloads to be provisioned on master nodes."
   },
   {
     "webhookName": "namespace-validation",
@@ -267,6 +288,27 @@
       }
     ],
     "documentString": "Managed OpenShift Customers may use tolerations on Pods that could cause those Pods to be scheduled on infra or master nodes."
+  },
+  {
+    "webhookName": "podimagespec-mutation",
+    "rules": [
+      {
+        "operations": [
+          "CREATE"
+        ],
+        "apiGroups": [
+          ""
+        ],
+        "apiVersions": [
+          "v1"
+        ],
+        "resources": [
+          "pods"
+        ],
+        "scope": "Namespaced"
+      }
+    ],
+    "documentString": "OpenShift debugging tools on Managed OpenShift clusters must be available even if internal image registry is removed."
   },
   {
     "webhookName": "prometheusrule-validation",
@@ -434,7 +476,7 @@
         "scope": "*"
       }
     ],
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [autoscaling.openshift.io network.openshift.io machine.openshift.io admissionregistration.k8s.io addons.managed.openshift.io cloudingress.managed.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io managed.openshift.io ocmagent.managed.openshift.io config.openshift.io machineconfiguration.openshift.io operator.openshift.io cloudcredential.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [splunkforwarder.managed.openshift.io autoscaling.openshift.io ocmagent.managed.openshift.io upgrade.managed.openshift.io config.openshift.io machineconfiguration.openshift.io operator.openshift.io network.openshift.io cloudcredential.openshift.io machine.openshift.io admissionregistration.k8s.io addons.managed.openshift.io cloudingress.managed.openshift.io managed.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
   },
   {
     "webhookName": "scc-validation",
