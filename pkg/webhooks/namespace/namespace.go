@@ -49,6 +49,8 @@ var (
 	removableProtectedLabels = []string{
 		"openshift.io/cluster-monitoring",
 	}
+	// https://issues.redhat.com/browse/SREP-1770 - nvidia-gpu-operator should be allowed to label namespaces
+	labelUserExceptions = []string{"system:serviceaccount:nvidia-gpu-operator:gpu-operator"}
 
 	log = logf.Log.WithName(WebhookName)
 
@@ -230,6 +232,14 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
+
+	// If the user making the request has a specific exception, allow them to change labels on non-platform and non-protected namespaces
+	if allowLabelChanges(request) {
+		ret = admissionctl.Allowed("User allowed to modify namespace labels")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+
 	// Unprivileged users cannot modify certain labels on unprivileged namespaces
 	unauthorized, err := s.unauthorizedLabelChanges(request)
 	if unauthorized {
@@ -361,5 +371,12 @@ func amIAdmin(request admissionctl.Request) bool {
 		}
 	}
 
+	return false
+}
+
+func allowLabelChanges(request admissionctl.Request) bool {
+	if slices.Contains(labelUserExceptions, request.UserInfo.Username) {
+		return true
+	}
 	return false
 }

@@ -1102,6 +1102,41 @@ func TestLabellingUpdates(t *testing.T) {
 			labels:          map[string]string{},
 			shouldBeAllowed: true,
 		},
+		// https://issues.redhat.com/browse/SREP-1770 - test explicit exception for nvidia-gpu-operator
+		{
+			testID:          "nvidia-gpu-operator-can-add-label-to-unprotected-ns",
+			targetNamespace: "nvidia-gpu-operator",
+			username:        "system:serviceaccount:nvidia-gpu-operator:gpu-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject:       createOldObject("nvidia-gpu-operator", "nvidia-gpu-operato-can-add-label-to-unprotected-ns", map[string]string{}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "nvidia-gpu-operator-can-remove-label-from-unprotected-ns",
+			targetNamespace: "nvidia-gpu-operator",
+			username:        "system:serviceaccount:nvidia-gpu-operator:gpu-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject: createOldObject("nvidia-gpu-operator", "nvidia-gpu-operato-can-remove-label-from-unprotected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "true",
+			}),
+			labels:          map[string]string{},
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "nvidia-gpu-operator-cannot-remove-label-from-protected-ns",
+			targetNamespace: "nvidia-gpu-operator",
+			username:        "system:serviceaccount:nvidia-gpu-operator:gpu-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject: createOldObject("openshift-kube-apiserver", "nvidia-gpu-operato-cannot-remove-label-from-protected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "true",
+			}),
+			labels:          map[string]string{},
+			shouldBeAllowed: false,
+		},
 	}
 	runNamespaceTests(t, tests)
 }
