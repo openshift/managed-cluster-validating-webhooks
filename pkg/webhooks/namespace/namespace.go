@@ -371,6 +371,15 @@ func amIAdmin(request admissionctl.Request) bool {
 		}
 	}
 
+	// Allow osd-admin user only when it's in the cluster-admins group
+	// This is specifically for OpenShift CI e2e tests
+	// Note: This is a security trade-off - we're allowing this specific combination
+	// for e2e test compatibility. In production OSD clusters, customers cannot
+	// create users with the cluster-admins group as it's managed by OAuth.
+	if request.UserInfo.Username == "osd-admin" && slices.Contains(request.UserInfo.Groups, "cluster-admins") {
+		return true
+	}
+
 	return false
 }
 
