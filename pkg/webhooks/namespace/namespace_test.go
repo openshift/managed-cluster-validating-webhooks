@@ -1162,3 +1162,37 @@ func TestGetURI(t *testing.T) {
 		t.Fatalf("Hook URI does not begin with a /")
 	}
 }
+
+// TestE2EAdminUser tests the e2e test user exemption
+func TestE2EAdminUser(t *testing.T) {
+	tests := []namespaceTestSuites{
+		{
+			// osd-admin with cluster-admins group should be allowed (for CI e2e tests)
+			testID:          "e2e-osd-admin-with-cluster-admins",
+			targetNamespace: "kube-system",
+			username:        "osd-admin",
+			userGroups:      []string{"cluster-admins", "system:authenticated:oauth", "system:authenticated"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// osd-admin without cluster-admins group should be denied
+			testID:          "osd-admin-without-cluster-admins",
+			targetNamespace: "kube-system",
+			username:        "osd-admin",
+			userGroups:      []string{"system:authenticated:oauth", "system:authenticated"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// Different user with cluster-admins should still be denied (cluster-admins exemption was removed)
+			testID:          "other-user-with-cluster-admins",
+			targetNamespace: "kube-system",
+			username:        "some-other-user",
+			userGroups:      []string{"cluster-admins", "system:authenticated:oauth", "system:authenticated"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+	}
+	runNamespaceTests(t, tests)
+}
