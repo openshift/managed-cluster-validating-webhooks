@@ -870,6 +870,134 @@ objects:
   spec:
     clusterDeploymentSelector:
       matchExpressions:
+      - key: ext-hypershift.openshift.io/cluster-type
+        operator: In
+        values:
+        - management-cluster
+        - service-cluster
+      matchLabels:
+        api.openshift.com/managed: "true"
+    resourceApplyMode: Sync
+    resources:
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        name: sre-hcpnamespace-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /hcpnamespace-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: hcpnamespace-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - ""
+          apiVersions:
+          - '*'
+          operations:
+          - DELETE
+          resources:
+          - namespaces
+          scope: Cluster
+        sideEffects: None
+        timeoutSeconds: 2
+  status: {}
+- apiVersion: hive.openshift.io/v1
+  kind: SelectorSyncSet
+  metadata:
+    labels:
+      managed.openshift.io/gitHash: ${IMAGE_TAG}
+      managed.openshift.io/gitRepoName: ${REPO_NAME}
+      managed.openshift.io/osd: "true"
+    name: managed-cluster-validating-webhooks-3
+  spec:
+    clusterDeploymentSelector:
+      matchExpressions:
+      - key: ext-hypershift.openshift.io/cluster-type
+        operator: In
+        values:
+        - management-cluster
+      matchLabels:
+        api.openshift.com/managed: "true"
+    resourceApplyMode: Sync
+    resources:
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        name: sre-hostedcluster-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /hostedcluster-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: hostedcluster-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - hypershift.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - DELETE
+          resources:
+          - hostedclusters
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 2
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        name: sre-hostedcontrolplane-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /hostedcontrolplane-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: hostedcontrolplane-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - hypershift.openshift.io
+          apiVersions:
+          - '*'
+          operations:
+          - DELETE
+          resources:
+          - hostedcontrolplanes
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 2
+  status: {}
+- apiVersion: hive.openshift.io/v1
+  kind: SelectorSyncSet
+  metadata:
+    labels:
+      managed.openshift.io/gitHash: ${IMAGE_TAG}
+      managed.openshift.io/gitRepoName: ${REPO_NAME}
+      managed.openshift.io/osd: "true"
+    name: managed-cluster-validating-webhooks-4
+  spec:
+    clusterDeploymentSelector:
+      matchExpressions:
       - key: ext-managed.openshift.io/legacy-ingress-support
         operator: In
         values:
@@ -909,6 +1037,55 @@ objects:
           scope: Namespaced
         sideEffects: None
         timeoutSeconds: 1
+  status: {}
+- apiVersion: hive.openshift.io/v1
+  kind: SelectorSyncSet
+  metadata:
+    labels:
+      managed.openshift.io/gitHash: ${IMAGE_TAG}
+      managed.openshift.io/gitRepoName: ${REPO_NAME}
+      managed.openshift.io/osd: "true"
+    name: managed-cluster-validating-webhooks-5
+  spec:
+    clusterDeploymentSelector:
+      matchExpressions:
+      - key: ext-hypershift.openshift.io/cluster-type
+        operator: In
+        values:
+        - service-cluster
+      matchLabels:
+        api.openshift.com/managed: "true"
+    resourceApplyMode: Sync
+    resources:
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+        name: sre-manifestworks-validation
+      webhooks:
+      - admissionReviewVersions:
+        - v1
+        clientConfig:
+          service:
+            name: validation-webhook
+            namespace: openshift-validation-webhook
+            path: /manifestworks-validation
+        failurePolicy: Ignore
+        matchPolicy: Equivalent
+        name: manifestworks-validation.managed.openshift.io
+        rules:
+        - apiGroups:
+          - work.open-cluster-management.io
+          apiVersions:
+          - '*'
+          operations:
+          - DELETE
+          resources:
+          - manifestworks
+          scope: Namespaced
+        sideEffects: None
+        timeoutSeconds: 2
   status: {}
 parameters:
 - name: IMAGE_TAG
