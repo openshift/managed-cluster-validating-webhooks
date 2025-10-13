@@ -52,6 +52,10 @@ var (
 	// https://issues.redhat.com/browse/SREP-1770 - nvidia-gpu-operator should be allowed to label namespaces
 	labelUserExceptions = []string{"system:serviceaccount:nvidia-gpu-operator:gpu-operator"}
 
+	// https://issues.redhat.com/browse/SREP-2070 - multiclusterhub-operator should be allowed to label namespaces
+	// labelUserRegExceptions is the list of exceptions for users created via service accounts
+	labelUserRegExceptions = []string{"multiclusterhub-operator"}
+
 	log = logf.Log.WithName(WebhookName)
 
 	scope = admissionregv1.ClusterScope
@@ -376,6 +380,11 @@ func amIAdmin(request admissionctl.Request) bool {
 
 func allowLabelChanges(request admissionctl.Request) bool {
 	if slices.Contains(labelUserExceptions, request.UserInfo.Username) {
+		return true
+	}
+
+	parts := strings.Split(request.UserInfo.Username, ":")
+	if len(parts) > 0 && slices.Contains(labelUserRegExceptions, parts[len(parts)-1]) {
 		return true
 	}
 	return false
