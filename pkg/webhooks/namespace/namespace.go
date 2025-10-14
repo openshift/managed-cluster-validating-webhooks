@@ -53,7 +53,7 @@ var (
 	labelUserExceptions = []string{"system:serviceaccount:nvidia-gpu-operator:gpu-operator"}
 
 	// https://issues.redhat.com/browse/SREP-2070 - multiclusterhub-operator should be allowed to label namespaces
-	// labelUserRegExceptions is the list of exceptions for users created via service accounts
+	// labelUserRegExceptions is the list of service account names that have exceptions to modify namespace labels. The service account names here is the last column of the full service account name, and the exception will grant on any namespace.
 	labelUserRegExceptions = []string{"multiclusterhub-operator"}
 
 	log = logf.Log.WithName(WebhookName)
