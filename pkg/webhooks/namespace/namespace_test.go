@@ -1158,6 +1158,73 @@ func TestLabellingUpdates(t *testing.T) {
 			labels:          map[string]string{},
 			shouldBeAllowed: false,
 		},
+		// https://issues.redhat.com/browse/SREP-2070 - test explicit exception for multiclusterhub-operator
+		{
+			testID:          "multiclusterhub-operator-can-add-label-to-unprotected-ns",
+			targetNamespace: "open-cluster-management",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject:       createOldObject("open-cluster-management", "multiclusterhub-operator-can-add-label-to-unprotected-ns", map[string]string{}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "multiclusterhub-operator-can-remove-label-from-unprotected-ns",
+			targetNamespace: "open-cluster-management",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject: createOldObject("open-cluster-management", "multiclusterhub-operator-can-remove-label-from-unprotected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "true",
+			}),
+			labels:          map[string]string{},
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "multiclusterhub-operator-can-modify-label-on-unprotected-ns",
+			targetNamespace: "open-cluster-management",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject: createOldObject("open-cluster-management", "multiclusterhub-operator-can-modify-label-on-unprotected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "false",
+			}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "multiclusterhub-operator-different-namespace-can-add-label",
+			targetNamespace: "some-other-namespace",
+			username:        "system:serviceaccount:different-namespace:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject:       createOldObject("some-other-namespace", "multiclusterhub-operator-different-namespace-can-add-label", map[string]string{}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "multiclusterhub-operator-cannot-access-protected-ns",
+			targetNamespace: "openshift-kube-apiserver",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject: createOldObject("openshift-kube-apiserver", "multiclusterhub-operator-cannot-access-protected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "true",
+			}),
+			labels:          map[string]string{},
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "non-excepted-operator-cannot-add-label",
+			targetNamespace: "some-namespace",
+			username:        "system:serviceaccount:some-namespace:some-other-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject:       createOldObject("some-namespace", "non-excepted-operator-cannot-add-label", map[string]string{}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
+			shouldBeAllowed: false,
+		},
 	}
 	runNamespaceTests(t, tests)
 }
