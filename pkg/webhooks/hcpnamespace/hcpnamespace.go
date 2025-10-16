@@ -5,7 +5,6 @@ import (
 	"os"
 	"regexp"
 	"slices"
-	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -52,8 +51,7 @@ var (
 			},
 		},
 	}
-	timeout int32 = 2
-	log           = logf.Log.WithName(WebhookName)
+	log = logf.Log.WithName(WebhookName)
 )
 
 func compileRegexps(patterns []string) []*regexp.Regexp {
@@ -66,8 +64,7 @@ func compileRegexps(patterns []string) []*regexp.Regexp {
 
 // HCPNamespaceWebhook validates HCP namespace deletion operations
 type HCPNamespaceWebhook struct {
-	mu sync.Mutex
-	s  runtime.Scheme
+	s runtime.Scheme
 }
 
 // ObjectSelector implements Webhook interface

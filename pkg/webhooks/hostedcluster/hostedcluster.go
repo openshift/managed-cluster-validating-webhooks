@@ -35,8 +35,7 @@ var (
 			},
 		},
 	}
-	timeout int32 = 2
-	log           = logf.Log.WithName(WebhookName)
+	log = logf.Log.WithName(WebhookName)
 )
 
 // HostedClusterWebhook validates HostedCluster deletion operations

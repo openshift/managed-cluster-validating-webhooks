@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -38,14 +37,12 @@ var (
 			},
 		},
 	}
-	timeout int32 = 2
-	log           = logf.Log.WithName(WebhookName)
+	log = logf.Log.WithName(WebhookName)
 )
 
 // HostedControlPlaneWebhook validates HostedControlPlane deletion operations
 type HostedControlPlaneWebhook struct {
-	mu sync.Mutex
-	s  runtime.Scheme
+	s runtime.Scheme
 }
 
 // ObjectSelector implements Webhook interface
