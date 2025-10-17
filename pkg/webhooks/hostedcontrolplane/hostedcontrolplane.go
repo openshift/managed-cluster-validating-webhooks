@@ -3,6 +3,7 @@ package hostedcontrolplane
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -20,9 +21,13 @@ const (
 )
 
 var (
-	// Service accounts allowed to delete HostedControlPlanes
-	allowedServiceAccounts = []string{
-		"system:serviceaccount:open-cluster-management-agent:klusterlet-work-sa",
+	// Full usernames of Service accounts allowed to delete HostedControlPlanes
+	allowedServiceAccountsUsernames = []string{
+		"system:serviceaccount:open-cluster-management-agent:klusterlet-work-sa", "system:serviceaccount:kube-system:generic-garbage-collector",
+	}
+	// Names of Service accounts allowed to delete HostedControlPlanes
+	allowedServiceAccountsNames = []string{
+		"cluster-api", "control-plane-pki-operator",
 	}
 
 	scope = admissionregv1.NamespacedScope
@@ -99,12 +104,19 @@ func (s *HostedControlPlaneWebhook) authorized(request admissionctl.Request) adm
 	var ret admissionctl.Response
 
 	// Allow authorized service accounts
-	for _, sa := range allowedServiceAccounts {
+	for _, sa := range allowedServiceAccountsUsernames {
 		if request.UserInfo.Username == sa {
 			ret = admissionctl.Allowed("Service account is authorized to delete HostedControlPlane resources")
 			ret.UID = request.AdmissionRequest.UID
 			return ret
 		}
+	}
+
+	saName := strings.Split(request.UserInfo.Username, ":")
+	if len(saName) > 0 && slices.Contains(allowedServiceAccountsNames, saName[len(saName)-1]) {
+		ret = admissionctl.Allowed("Service account is authorized to delete HostedControlPlane resources")
+		ret.UID = request.AdmissionRequest.UID
+		return ret
 	}
 
 	// If not a delete operation, allow it
@@ -119,7 +131,7 @@ func (s *HostedControlPlaneWebhook) authorized(request admissionctl.Request) adm
 		"user", request.UserInfo.Username,
 		"groups", request.UserInfo.Groups)
 
-	ret = admissionctl.Denied(fmt.Sprintf("Only authorized service accounts %s can delete HostedControlPlane resources", strings.Join(allowedServiceAccounts, ", ")))
+	ret = admissionctl.Denied(fmt.Sprintf("Only authorized service accounts %s can delete HostedControlPlane resources", strings.Join(append(allowedServiceAccountsUsernames, allowedServiceAccountsNames...), ", ")))
 	ret.UID = request.AdmissionRequest.UID
 	return ret
 
