@@ -23,9 +23,6 @@ const (
 var (
 	// List of service accounts allowed to delete ManifestWorks
 	allowedServiceAccounts = []string{
-		"system:serviceaccount:open-cluster-management-agent:klusterlet-work-sa",
-		"system:serviceaccount:open-cluster-management-agent:klusterlet",
-		"system:serviceaccount:hypershift:operator",
 		"system:serviceaccount:ocm:ocm",
 		"system:serviceaccount:kube-system:generic-garbage-collector",
 		"system:serviceaccount:multicluster-engine:ocm-foundation-sa",
