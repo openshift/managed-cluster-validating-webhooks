@@ -23,11 +23,14 @@ const (
 var (
 	// Full usernames of Service accounts allowed to delete HostedControlPlanes
 	allowedServiceAccountsUsernames = []string{
-		"system:serviceaccount:open-cluster-management-agent:klusterlet-work-sa", "system:serviceaccount:kube-system:generic-garbage-collector",
+		"system:serviceaccount:open-cluster-management-agent:klusterlet-work-sa",
+		"system:serviceaccount:kube-system:generic-garbage-collector",
+		"system:serviceaccount:hypershift:operator",
 	}
 	// Names of Service accounts allowed to delete HostedControlPlanes
 	allowedServiceAccountsNames = []string{
-		"cluster-api", "control-plane-pki-operator",
+		"cluster-api",
+		"control-plane-pki-operator",
 	}
 
 	scope = admissionregv1.NamespacedScope

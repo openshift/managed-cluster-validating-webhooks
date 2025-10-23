@@ -17,20 +17,14 @@ func TestManifestWorksAuthorized(t *testing.T) {
 		shouldBeAllowed bool
 	}{
 		{
-			name:            "Klusterlet work SA can delete manifestworks",
-			username:        "system:serviceaccount:open-cluster-management-agent:klusterlet-work-sa",
+			name:            "OCM SA can delete manifestworks",
+			username:        "system:serviceaccount:ocm:ocm",
 			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},
 		{
-			name:            "Klusterlet SA can delete manifestworks",
-			username:        "system:serviceaccount:open-cluster-management-agent:klusterlet",
-			operation:       admissionv1.Delete,
-			shouldBeAllowed: true,
-		},
-		{
-			name:            "Hypershift operator can delete manifestworks",
-			username:        "system:serviceaccount:hypershift:operator",
+			name:            "ocm-foundation-s SA can delete manifestworks",
+			username:        "system:serviceaccount:multicluster-engine:ocm-foundation-sa",
 			operation:       admissionv1.Delete,
 			shouldBeAllowed: true,
 		},

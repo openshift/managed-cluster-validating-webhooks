@@ -27,6 +27,7 @@ var (
 		"system:serviceaccount:open-cluster-management-agent:klusterlet",
 		"system:serviceaccount:hypershift:operator",
 		"system:serviceaccount:ocm:ocm",
+		"system:serviceaccount:kube-system:namespace-controller",
 	}
 
 	// Protected namespace patterns
