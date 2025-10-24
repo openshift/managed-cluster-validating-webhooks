@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=registry.ci.openshift.org/openshift/release:rhel-9-release-golang-1.24-openshift-4.20
+ARG BASE_IMAGE=registry.ci.openshift.org/openshift/release:rhel-9-release-golang-1.24-openshift-4.21
 FROM ${BASE_IMAGE} AS builder
 
 RUN mkdir -p /workdir
