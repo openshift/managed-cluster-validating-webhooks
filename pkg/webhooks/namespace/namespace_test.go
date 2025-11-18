@@ -691,111 +691,72 @@ func TestServiceAccounts(t *testing.T) {
 			operation:       admissionv1.Update,
 			shouldBeAllowed: false,
 		},
-	}
-	runNamespaceTests(t, tests)
-}
-
-// TestAdminUser
-func TestAdminUser(t *testing.T) {
-	tests := []namespaceTestSuites{
+		// https://issues.redhat.com/browse/SREP-2070 - test explicit exception for multiclusterhub-operator
 		{
-			// admin users gonna admin
-			testID:          "admin-test",
-			targetNamespace: privilegedNamespace,
-			username:        "kube:admin",
-			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			// admin users gonna admin
-			testID:          "sre-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			// admin users gonna admin
-			testID:          "cluster-admin-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Update,
-			shouldBeAllowed: true,
-		},
-		{
-			// admin users gonna admin
-			testID:          "backplane-cluster-admin-test",
-			targetNamespace: privilegedNamespace,
-			username:        "backplane-cluster-admin",
+			testID:          "multiclusterhub-operator-can-add-label-to-unprotected-ns",
+			targetNamespace: "open-cluster-management",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
+			oldObject:       createOldObject("open-cluster-management", "multiclusterhub-operator-can-add-label-to-unprotected-ns", map[string]string{}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
 			shouldBeAllowed: true,
 		},
 		{
-			// Admins should be able to create a privileged namespace
-			testID:          "admin-com-ns-test",
-			targetNamespace: "com",
-			username:        "backplane-cluster-admin",
+			testID:          "multiclusterhub-operator-can-remove-label-from-unprotected-ns",
+			targetNamespace: "open-cluster-management",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to create a privileged namespace
-			testID:          "admin-com-ns-test",
-			targetNamespace: "com",
-			username:        "lisa",
-			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to create a privileged namespace
-			testID:          "admin-com-io-test",
-			targetNamespace: "io",
-			username:        "kube:admin",
-			userGroups:      []string{"kube:system", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to create a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: "in",
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to create a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
-		},
-		{
-			// Admins should be able to update a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Update,
+			oldObject: createOldObject("open-cluster-management", "multiclusterhub-operator-can-remove-label-from-unprotected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "true",
+			}),
+			labels:          map[string]string{},
 			shouldBeAllowed: true,
 		},
 		{
-			// Admins should be able to delete a privileged namespace
-			testID:          "cluster-admin-in-ns-test",
-			targetNamespace: privilegedNamespace,
-			username:        "lisa",
-			userGroups:      []string{"cluster-admins", "system:authenticated", "system:authenticated:oauth"},
-			operation:       admissionv1.Delete,
+			testID:          "multiclusterhub-operator-can-modify-label-on-unprotected-ns",
+			targetNamespace: "open-cluster-management",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject: createOldObject("open-cluster-management", "multiclusterhub-operator-can-modify-label-on-unprotected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "false",
+			}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
 			shouldBeAllowed: true,
+		},
+		{
+			testID:          "multiclusterhub-operator-different-namespace-can-add-label",
+			targetNamespace: "some-other-namespace",
+			username:        "system:serviceaccount:different-namespace:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject:       createOldObject("some-other-namespace", "multiclusterhub-operator-different-namespace-can-add-label", map[string]string{}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "multiclusterhub-operator-cannot-access-protected-ns",
+			targetNamespace: "openshift-kube-apiserver",
+			username:        "system:serviceaccount:open-cluster-management:multiclusterhub-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject: createOldObject("openshift-kube-apiserver", "multiclusterhub-operator-cannot-access-protected-ns", map[string]string{
+				"openshift.io/cluster-monitoring": "true",
+			}),
+			labels:          map[string]string{},
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "non-excepted-operator-cannot-add-label",
+			targetNamespace: "some-namespace",
+			username:        "system:serviceaccount:some-namespace:some-other-operator",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Update,
+			oldObject:       createOldObject("some-namespace", "non-excepted-operator-cannot-add-label", map[string]string{}),
+			labels:          map[string]string{"openshift.io/cluster-monitoring": "true"},
+			shouldBeAllowed: false,
 		},
 	}
 	runNamespaceTests(t, tests)

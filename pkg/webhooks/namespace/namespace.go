@@ -187,12 +187,6 @@ func (s *NamespaceWebhook) Authorized(request admissionctl.Request) admissionctl
 func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
 
-	// allowLabelChanges allows some service accounts to add/remove some protected labels
-	if allowLabelChanges(request) {
-		ret = admissionctl.Allowed("Privileged service accounts may add/remove protected labels")
-		ret.UID = request.AdmissionRequest.UID
-		return ret
-	}
 	// Picking OldObject or Object will suffice for most validation concerns
 	ns, err := s.renderNamespace(request)
 	if err != nil {
@@ -225,6 +219,13 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		}
 		log.Info("Non-admin attempted to access a privileged namespace matching a regex from this list", "list", hookconfig.PrivilegedNamespaces, "request", request.AdmissionRequest)
 		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed namespaces. Customer workloads should be placed in customer namespaces, and should not match an entry in this list of regular expressions: %v", hookconfig.PrivilegedNamespaces))
+		ret.UID = request.AdmissionRequest.UID
+		return ret
+	}
+
+	// allowLabelChanges allows some service accounts to add/remove some protected labels
+	if allowLabelChanges(request) {
+		ret = admissionctl.Allowed("Privileged service accounts may add/remove protected labels")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
