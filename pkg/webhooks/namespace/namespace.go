@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 
 	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
@@ -45,6 +46,9 @@ var (
 		"managed.openshift.io/storage-pv-quota-exempt",
 		"managed.openshift.io/service-lb-quota-exempt",
 	}
+	// https://issues.redhat.com/browse/SREP-2070 - multiclusterhub-operator should be allowed to label namespaces
+	// labelUserRegExceptions is the list of service account names that have exceptions to modify namespace labels. The service account names here is the last column of the full service account name, and the exception will grant on any namespace.
+	labelUserRegExceptions = []string{"multiclusterhub-operator"}
 
 	log = logf.Log.WithName(WebhookName)
 
@@ -182,13 +186,20 @@ func (s *NamespaceWebhook) Authorized(request admissionctl.Request) admissionctl
 // Is the request authorized?
 func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl.Response {
 	var ret admissionctl.Response
-	// Admins are allowed to perform any operation
-	if amIAdmin(request) {
-		ret = admissionctl.Allowed("Cluster and SRE admins may access")
+
+	// allowLabelChanges allows some service accounts to add/remove some protected labels
+	if allowLabelChanges(request) {
+		ret = admissionctl.Allowed("Privileged service accounts may add/remove protected labels")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	// Privileged ServiceAccounts are allowed to perform any operation
+	// Picking OldObject or Object will suffice for most validation concerns
+	ns, err := s.renderNamespace(request)
+	if err != nil {
+		log.Error(err, "Couldn't render a Namespace from the incoming request")
+		return admissionctl.Errored(http.StatusBadRequest, err)
+	}
+	// service accounts making requests will include their name in the group
 	for _, group := range request.UserInfo.Groups {
 		if privilegedServiceAccountsRe.Match([]byte(group)) {
 			ret = admissionctl.Allowed("Privileged service accounts may access")
@@ -196,14 +207,7 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 			return ret
 		}
 	}
-
-	ns, err := s.renderNamespace(request)
-	if err != nil {
-		log.Error(err, "Couldn't render a Namespace from the incoming request")
-		return admissionctl.Errored(http.StatusBadRequest, err)
-	}
-
-	// Layered Product SRE can access their own namespaces
+	// This must be prior to privileged namespace check
 	if slices.Contains(request.UserInfo.Groups, layeredProductAdminGroupName) &&
 		layeredProductNamespaceRe.Match([]byte(ns.GetName())) {
 		ret = admissionctl.Allowed("Layered product admins may access")
@@ -211,16 +215,26 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		return ret
 	}
 
-	// Unprivileged users cannot modify privileged namespaces
 	// L64-73
 	if hookconfig.IsPrivilegedNamespace(ns.GetName()) {
+
+		if amIAdmin(request) {
+			ret = admissionctl.Allowed("Cluster and SRE admins may access")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
 		log.Info("Non-admin attempted to access a privileged namespace matching a regex from this list", "list", hookconfig.PrivilegedNamespaces, "request", request.AdmissionRequest)
 		ret = admissionctl.Denied(fmt.Sprintf("Prevented from accessing Red Hat managed namespaces. Customer workloads should be placed in customer namespaces, and should not match an entry in this list of regular expressions: %v", hookconfig.PrivilegedNamespaces))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-	// Unprivileged users cannot create namespaces with certain names
 	if BadNamespaceRe.Match([]byte(ns.GetName())) {
+
+		if amIAdmin(request) {
+			ret = admissionctl.Allowed("Cluster and SRE admins may access")
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
 		log.Info("Non-admin attempted to access a potentially harmful namespace (eg matching this regex)", "regex", badNamespace, "request", request.AdmissionRequest)
 		ret = admissionctl.Denied(fmt.Sprintf("Prevented from creating a potentially harmful namespace. Customer namespaces should not match this regular expression, as this would impact DNS resolution: %s", badNamespace))
 		ret.UID = request.AdmissionRequest.UID
@@ -237,6 +251,15 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 	ret = admissionctl.Allowed("RBAC allowed")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
+}
+
+// allowLabelChanges checks if the user is in the list of users allowed to make label changes
+func allowLabelChanges(request admissionctl.Request) bool {
+	parts := strings.Split(request.UserInfo.Username, ":")
+	if len(parts) > 0 && slices.Contains(labelUserRegExceptions, parts[len(parts)-1]) {
+		return true
+	}
+	return false
 }
 
 // unauthorizedLabelChanges returns true if the request should be denied because of a label violation. The error is the reason for denial.
