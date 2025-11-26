@@ -25,4 +25,13 @@ ENTRYPOINT ["/usr/local/bin/entrypoint"]
 USER ${USER_UID}
 
 LABEL io.openshift.managed.name="managed-cluster-validating-webhooks" \
-      io.openshift.managed.description="Validating Webhooks for Openshift Dedicated"
+      io.openshift.managed.description="Validating Webhooks for Openshift Dedicated" \
+      com.redhat.component="managed-cluster-validating-webhooks-container" \
+      name="managed-cluster-validating-webhooks" \
+      version="1.0" \
+      release="1" \
+      summary="Validating Webhooks for OpenShift Dedicated" \
+      description="A framework supporting validating admission webhooks for OpenShift" \
+      io.k8s.description="A framework supporting validating admission webhooks for OpenShift" \
+      io.k8s.display-name="Managed Cluster Validating Webhooks" \
+      io.openshift.tags="openshift,webhooks,validation"
