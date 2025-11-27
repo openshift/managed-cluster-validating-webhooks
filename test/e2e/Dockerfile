@@ -6,4 +6,15 @@ RUN  CGO_ENABLED=0 GOFLAGS="-mod=mod" go test ./test/e2e -v -c --tags=osde2e -o 
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 COPY --from=builder /opt/app-root/src/e2e.test e2e.test
+
+LABEL com.redhat.component="managed-cluster-validating-webhooks-e2e-container" \
+      name="managed-cluster-validating-webhooks-e2e" \
+      version="1.0" \
+      release="1" \
+      summary="E2E tests for Managed Cluster Validating Webhooks" \
+      description="End-to-end tests for validating admission webhooks for OpenShift" \
+      io.k8s.description="End-to-end tests for validating admission webhooks for OpenShift" \
+      io.k8s.display-name="Managed Cluster Validating Webhooks E2E" \
+      io.openshift.tags="openshift,webhooks,validation,e2e,tests"
+
 ENTRYPOINT [ "/e2e.test" ]
