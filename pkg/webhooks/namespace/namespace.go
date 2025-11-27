@@ -2,12 +2,10 @@ package namespace
 
 import (
 	"fmt"
-	"maps"
 	"net/http"
 	"os"
 	"regexp"
 	"slices"
-	"strings"
 	"sync"
 
 	hookconfig "github.com/openshift/managed-cluster-validating-webhooks/pkg/config"
@@ -40,22 +38,13 @@ var (
 	sreAdminGroups              = []string{"system:serviceaccounts:openshift-backplane-srep"}
 	privilegedServiceAccountsRe = regexp.MustCompile(utils.PrivilegedServiceAccountGroups)
 	layeredProductNamespaceRe   = regexp.MustCompile(layeredProductNamespace)
-	// protectedLabels are labels which managed customers should not be allowed change
+	// protectedLabels are labels which managed customers should not be allowed
+	// change by dedicated-admins.
 	protectedLabels = []string{
 		// https://github.com/openshift/managed-cluster-config/tree/master/deploy/resource-quotas
 		"managed.openshift.io/storage-pv-quota-exempt",
 		"managed.openshift.io/service-lb-quota-exempt",
 	}
-	// removableProtectedLabels defines labels that unprivileged users can remove (but not add!) to unprivileged namespaces
-	removableProtectedLabels = []string{
-		"openshift.io/cluster-monitoring",
-	}
-	// https://issues.redhat.com/browse/SREP-1770 - nvidia-gpu-operator should be allowed to label namespaces
-	labelUserExceptions = []string{"system:serviceaccount:nvidia-gpu-operator:gpu-operator"}
-
-	// https://issues.redhat.com/browse/SREP-2070 - multiclusterhub-operator should be allowed to label namespaces
-	// labelUserRegExceptions is the list of service account names that have exceptions to modify namespace labels. The service account names here is the last column of the full service account name, and the exception will grant on any namespace.
-	labelUserRegExceptions = []string{"multiclusterhub-operator"}
 
 	log = logf.Log.WithName(WebhookName)
 
@@ -237,17 +226,9 @@ func (s *NamespaceWebhook) authorized(request admissionctl.Request) admissionctl
 		ret.UID = request.AdmissionRequest.UID
 		return ret
 	}
-
-	// If the user making the request has a specific exception, allow them to change labels on non-platform and non-protected namespaces
-	if allowLabelChanges(request) {
-		ret = admissionctl.Allowed("User allowed to modify namespace labels")
-		ret.UID = request.AdmissionRequest.UID
-		return ret
-	}
-
-	// Unprivileged users cannot modify certain labels on unprivileged namespaces
+	// Check labels.
 	unauthorized, err := s.unauthorizedLabelChanges(request)
-	if unauthorized {
+	if !amIAdmin(request) && unauthorized {
 		ret = admissionctl.Denied(fmt.Sprintf("Denied. Err %+v", err))
 		ret.UID = request.AdmissionRequest.UID
 		return ret
@@ -270,70 +251,57 @@ func (s *NamespaceWebhook) unauthorizedLabelChanges(req admissionctl.Request) (b
 		return true, err
 	}
 	if req.Operation == admissionv1.Create {
-		// Ensure no protected labels are set at creation-time
-		protectedLabelsFound := protectedLabelsOnNamespace(newNamespace)
-		removableProtectedLabelsFound := removableProtectedLabelsOnNamespace(newNamespace)
-
-		if len(protectedLabelsFound) == 0 && len(removableProtectedLabelsFound) == 0 {
+		// For creations, we look to newNamespace and ensure no protectedLabels are set
+		// We don't care about oldNamespace.
+		protectedLabelsFound := doesNamespaceContainProtectedLabels(newNamespace)
+		if len(protectedLabelsFound) == 0 {
 			return false, nil
 		}
-		return true, fmt.Errorf("Managed OpenShift customers may not directly set certain protected labels (%s) on Namespaces", strings.Join(append(protectedLabels, removableProtectedLabels...), ", "))
-	}
-	if req.Operation == admissionv1.Update {
-		// Check whether protected labels had their key or value altered
-		protectedLabelsFoundInOld := protectedLabelsOnNamespace(oldNamespace)
-		protectedLabelsFoundInNew := protectedLabelsOnNamespace(newNamespace)
-		protectedLabelsUnchanged := maps.Equal(protectedLabelsFoundInOld, protectedLabelsFoundInNew)
-		if !protectedLabelsUnchanged {
-			return true, fmt.Errorf("Managed OpenShift customers may not add or remove the following protected labels from Namespaces: (%s)", protectedLabels)
+		// There were some found
+		return true, fmt.Errorf("Managed OpenShift customers may not directly set certain protected labels (%s) on Namespaces", protectedLabels)
+	} else if req.Operation == admissionv1.Update {
+		// For Updates we must see if the new object is making a change to the old one for any protected labels.
+		// First, let's see if the old object had any protected labels we ought to
+		// care about. If it has, then we can use that resulting list to compare to
+		// the newNamespace for any changes. However, just because the oldNamespace
+		// did not have any protected labels doesn't necessarily mean that we can
+		// ignore potential setting of those labels' values in the newNamespace.
+
+		// protectedLabelsFoundInOld is a slice of all instances of protectedLabels
+		// that appeared in the oldNamespace that we need to be sure have not
+		// changed.
+		protectedLabelsFoundInOld := doesNamespaceContainProtectedLabels(oldNamespace)
+		// protectedLabelsFoundInNew is a slice of all instances of protectedLabels
+		// that appeared in the newNamespace that we need to be sure do not have a
+		// value different than oldNamespace.
+		protectedLabelsFoundInNew := doesNamespaceContainProtectedLabels(newNamespace)
+
+		// First check: Were any protectedLabels deleted?
+		if len(protectedLabelsFoundInOld) != len(protectedLabelsFoundInNew) {
+			// If we have x protectedLabels in the oldNamespace then we expect to also
+			// have x protectedLabels in the newNamespace. Any difference is a removal or addition
+			return true, fmt.Errorf("Managed OpenShift customers may not add or remove protected labels (%s) from Namespaces", protectedLabels)
 		}
-
-		// Check whether a removableProtectedLabel was added
-		removableProtectedLabelsFoundInOld := removableProtectedLabelsOnNamespace(oldNamespace)
-		removableProtectedLabelsFoundInNew := removableProtectedLabelsOnNamespace(newNamespace)
-		removableProtectedLabelsAdded := unauthorizedRemovableProtectedLabelChange(removableProtectedLabelsFoundInOld, removableProtectedLabelsFoundInNew)
-
-		if removableProtectedLabelsAdded {
-			return true, fmt.Errorf("Managed OpenShift customers may only remove the following protected labels from Namespaces: (%s)", removableProtectedLabels)
+		// Next check: Compare values to ensure there are no changes in the protected labels
+		for _, labelKey := range protectedLabelsFoundInOld {
+			if oldNamespace.Labels[labelKey] != newNamespace.ObjectMeta.Labels[labelKey] {
+				return true, fmt.Errorf("Managed OpenShift customers may not change the value or certain protected labels (%s) on Namespaces. %s changed from %s to %s", protectedLabels, labelKey, oldNamespace.Labels[labelKey], newNamespace.ObjectMeta.Labels[labelKey])
+			}
 		}
 	}
 	return false, nil
 }
 
-// unauthorizedRemovableProtectedLabelChange returns true if a protectedRemovableLabel was added or had it's value changed
-func unauthorizedRemovableProtectedLabelChange(oldLabels, newLabels map[string]string) bool {
-	// All we need to validate is that every given new label was present in the set of old labels
-	for key, newValue := range newLabels {
-		oldValue, found := oldLabels[key]
-		if !found {
-			return true
-		}
-		if newValue != oldValue {
-			return true
+// doesNamespaceContainProtectedLabels checks the namespace for any instances of
+// protectedLabels and returns a slice of any instances of matches
+func doesNamespaceContainProtectedLabels(ns *corev1.Namespace) []string {
+	foundLabelNames := make([]string, 0)
+	for _, label := range protectedLabels {
+		if _, found := ns.ObjectMeta.Labels[label]; found {
+			foundLabelNames = append(foundLabelNames, label)
 		}
 	}
-	return false
-}
-
-// protectedLabelsInNamespace returns any protectedLabels present in the namespace object
-func protectedLabelsOnNamespace(ns *corev1.Namespace) map[string]string {
-	return labelSetInNamespace(ns, protectedLabels)
-}
-
-// removableProtectedLabelsInNamespace returns any removableProtectedLabels in the namespace object
-func removableProtectedLabelsOnNamespace(ns *corev1.Namespace) map[string]string {
-	return labelSetInNamespace(ns, removableProtectedLabels)
-}
-
-func labelSetInNamespace(ns *corev1.Namespace, labels []string) map[string]string {
-	foundLabels := map[string]string{}
-	for _, label := range labels {
-		value, found := ns.Labels[label]
-		if found {
-			foundLabels[label] = value
-		}
-	}
-	return foundLabels
+	return foundLabelNames
 }
 
 // SyncSetLabelSelector returns the label selector to use in the SyncSet.
@@ -376,17 +344,5 @@ func amIAdmin(request admissionctl.Request) bool {
 		}
 	}
 
-	return false
-}
-
-func allowLabelChanges(request admissionctl.Request) bool {
-	if slices.Contains(labelUserExceptions, request.UserInfo.Username) {
-		return true
-	}
-
-	parts := strings.Split(request.UserInfo.Username, ":")
-	if len(parts) > 0 && slices.Contains(labelUserRegExceptions, parts[len(parts)-1]) {
-		return true
-	}
 	return false
 }
