@@ -22,7 +22,7 @@ const (
 	// perform restricted actions.
 	// Centralized osde2e tests have a serviceaccount like "system:serviceaccounts:osde2e-abcde"
 	// Decentralized osde2e tests have a serviceaccount like "system:serviceaccounts:osde2e-h-abcde"
-	PrivilegedServiceAccountGroups string = `^system:serviceaccounts:(kube-.*|openshift|openshift-.*|default|redhat-.*|osde2e-(h-)?[a-z0-9]{5})`
+	PrivilegedServiceAccountGroups string = `^system:serviceaccounts:(kube-.*|openshift|openshift-.*|default|redhat-.*|osde2e-(h-)?[a-z0-9]{5})|endpoint-observability-operator`
 )
 
 var (
