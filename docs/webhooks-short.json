@@ -16,8 +16,20 @@
     "documentString": "Managed OpenShift Customers may not change CustomResourceDefinitions managed by Red Hat."
   },
   {
+    "webhookName": "hcpnamespace-validation",
+    "documentString": "Validates HCP namespace deletion operations are only performed by authorized service accounts"
+  },
+  {
     "webhookName": "hiveownership-validation",
     "documentString": "Managed OpenShift customers may not edit certain managed resources. A managed resource has a \"hive.openshift.io/managed\": \"true\" label."
+  },
+  {
+    "webhookName": "hostedcluster-validation",
+    "documentString": "Validates HostedCluster deletion operations are only performed by authorized service accounts"
+  },
+  {
+    "webhookName": "hostedcontrolplane-validation",
+    "documentString": "Validates HostedControlPlane deletion operations are only performed by authorized service accounts"
   },
   {
     "webhookName": "imagecontentpolicies-validation",
@@ -32,8 +44,16 @@
     "documentString": "Managed OpenShift Customer may create IngressControllers without necessary taints. This can cause those workloads to be provisioned on master nodes."
   },
   {
+    "webhookName": "manifestworks-validation",
+    "documentString": "Validates ManifestWorks deletion operations are only performed by authorized service accounts"
+  },
+  {
     "webhookName": "namespace-validation",
     "documentString": "Managed OpenShift Customers may not modify namespaces specified in the [openshift-monitoring/managed-namespaces openshift-monitoring/ocp-namespaces] ConfigMaps because customer workloads should be placed in customer-created namespaces. Customers may not create namespaces identified by this regular expression (^com$|^io$|^in$) because it could interfere with critical DNS resolution. Additionally, customers may not set or change the values of these Namespace labels [managed.openshift.io/storage-pv-quota-exempt managed.openshift.io/service-lb-quota-exempt]."
+  },
+  {
+    "webhookName": "network-operator-validation",
+    "documentString": "Managed OpenShift customers may not modify critical fields in the network.operator CRD (such as spec.migration.networkType) because it can disrupt Cluster Network Operator operations and CNI migrations. Even cluster-admin users are blocked from modifying these critical fields."
   },
   {
     "webhookName": "networkpolicies-validation",
@@ -57,7 +77,7 @@
   },
   {
     "webhookName": "regular-user-validation",
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [upgrade.managed.openshift.io config.openshift.io operator.openshift.io network.openshift.io admissionregistration.k8s.io addons.managed.openshift.io cloudingress.managed.openshift.io managed.openshift.io splunkforwarder.managed.openshift.io autoscaling.openshift.io machineconfiguration.openshift.io cloudcredential.openshift.io machine.openshift.io ocmagent.managed.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [cloudcredential.openshift.io machine.openshift.io admissionregistration.k8s.io addons.managed.openshift.io managed.openshift.io ocmagent.managed.openshift.io splunkforwarder.managed.openshift.io machineconfiguration.openshift.io cloudingress.managed.openshift.io upgrade.managed.openshift.io autoscaling.openshift.io config.openshift.io operator.openshift.io network.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
   },
   {
     "webhookName": "scc-validation",
