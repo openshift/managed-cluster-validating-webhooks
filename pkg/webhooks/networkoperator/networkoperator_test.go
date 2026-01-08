@@ -110,7 +110,7 @@ func TestAuthorized(t *testing.T) {
 			ExpectAllowed: false,
 		},
 		{
-			Name: "privileged service account modifying migration.networkType should be denied",
+			Name: "SRE service account modifying migration.networkType should be allowed",
 			Request: admissionctl.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
 					UserInfo: authenticationv1.UserInfo{
@@ -154,7 +154,7 @@ func TestAuthorized(t *testing.T) {
 					},
 				},
 			},
-			ExpectAllowed: false,
+			ExpectAllowed: true,
 		},
 		{
 			Name: "modifying migration.mode should be denied",
@@ -410,6 +410,50 @@ func TestAuthorized(t *testing.T) {
 							"spec": {
 								"migration": {
 									"networkType": "OVNKubernetes"
+								}
+							}
+						}`),
+					},
+				},
+			},
+			ExpectAllowed: true,
+		},
+		{
+			Name: "backplane-cluster-admin modifying migration.networkType should be allowed",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "backplane-cluster-admin",
+					},
+					Kind: metav1.GroupVersionKind{
+						Group: "operator.openshift.io",
+						Kind:  "Network",
+					},
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OVNKubernetes"
+								}
+							}
+						}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OpenShiftSDN"
 								}
 							}
 						}`),
