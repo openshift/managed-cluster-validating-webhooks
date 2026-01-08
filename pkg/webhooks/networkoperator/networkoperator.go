@@ -3,6 +3,7 @@ package networkoperator
 import (
 	"net/http"
 	"os"
+	"slices"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -17,7 +18,7 @@ import (
 
 const (
 	WebhookName string = "network-operator-validation"
-	docString   string = `Managed OpenShift customers may not modify critical fields in the network.operator CRD (such as spec.migration.networkType) because it can disrupt Cluster Network Operator operations and CNI migrations. Even cluster-admin users are blocked from modifying these critical fields.`
+	docString   string = `Managed OpenShift customers may not modify critical fields in the network.operator CRD (such as spec.migration.networkType) because it can disrupt Cluster Network Operator operations and CNI migrations. Only backplane-cluster-admin and SRE service accounts are allowed to modify these critical fields. Regular cluster-admin users (system:admin) are explicitly blocked.`
 )
 
 var (
@@ -35,6 +36,17 @@ var (
 			},
 		},
 	}
+
+	// Users allowed to modify critical migration fields
+	// backplane-cluster-admin and system:admin are allowed
+	allowedUsers = []string{
+		"backplane-cluster-admin",
+	}
+
+	// Groups allowed to modify critical migration fields
+	sreAdminGroups = []string{
+		"system:serviceaccounts:openshift-backplane-srep",
+	}
 )
 
 type NetworkOperatorWebhook struct {
@@ -43,7 +55,8 @@ type NetworkOperatorWebhook struct {
 
 // Authorized will determine if the request is allowed
 func (w *NetworkOperatorWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
-	// Block ALL users including cluster-admin from modifying critical migration fields
+	// Block regular cluster-admin users (system:admin) from modifying critical migration fields
+	// Only backplane-cluster-admin and SRE service accounts are allowed
 	if request.Operation == admissionv1.Update {
 		decoder := admissionctl.NewDecoder(&w.s)
 		object := &operatorv1.Network{}
@@ -64,6 +77,25 @@ func (w *NetworkOperatorWebhook) Authorized(request admissionctl.Request) admiss
 
 		// Check if critical migration fields have been modified
 		if hasCriticalMigrationFieldChanges(oldObject, object) {
+			// Log user information for debugging
+			log.Info("Critical migration field change detected",
+				"username", request.AdmissionRequest.UserInfo.Username,
+				"userInfoUsername", request.UserInfo.Username,
+				"groups", request.AdmissionRequest.UserInfo.Groups,
+				"userInfoGroups", request.UserInfo.Groups,
+			)
+
+			// Allow only backplane-cluster-admin and SRE admin groups to modify critical migration fields
+			// Regular cluster-admin (system:admin) is explicitly blocked
+			if isAllowedUserGroup(request) {
+				log.Info("User is allowed to modify critical migration fields")
+				return utils.WebhookResponse(request, true, "Privileged users are allowed to modify critical migration fields")
+			}
+
+			log.Info("User is denied access to modify critical migration fields",
+				"username", request.AdmissionRequest.UserInfo.Username,
+				"groups", request.AdmissionRequest.UserInfo.Groups,
+			)
 			return utils.WebhookResponse(
 				request,
 				false,
@@ -148,13 +180,62 @@ func hasCriticalMigrationFieldChanges(oldObj, newObj *operatorv1.Network) bool {
 	return false
 }
 
+// isAllowedUserGroup checks if the user or group is allowed to modify critical migration fields
+func isAllowedUserGroup(request admissionctl.Request) bool {
+	// Prioritize AdmissionRequest.UserInfo as it contains the actual impersonated user info
+	// This is consistent with other webhooks in this repository
+	username := request.AdmissionRequest.UserInfo.Username
+	if username == "" {
+		username = request.UserInfo.Username
+	}
+
+	// Check groups from both UserInfo and AdmissionRequest.UserInfo
+	// Some webhooks use request.UserInfo.Groups directly, so we check both
+	groups := request.AdmissionRequest.UserInfo.Groups
+	if len(groups) == 0 {
+		groups = request.UserInfo.Groups
+	}
+
+	// Also check request.UserInfo.Groups directly (some webhooks use this pattern)
+	allGroups := append(request.AdmissionRequest.UserInfo.Groups, request.UserInfo.Groups...)
+
+	log.Info("Checking user authorization",
+		"username", username,
+		"admissionRequestGroups", request.AdmissionRequest.UserInfo.Groups,
+		"userInfoGroups", request.UserInfo.Groups,
+		"allGroups", allGroups,
+		"allowedUsers", allowedUsers,
+		"sreAdminGroups", sreAdminGroups,
+	)
+
+	if slices.Contains(allowedUsers, username) {
+		log.Info("User is in allowedUsers list", "username", username)
+		return true
+	}
+
+	// Check all groups (from both sources)
+	for _, group := range sreAdminGroups {
+		if slices.Contains(allGroups, group) {
+			log.Info("User is in allowed group", "group", group)
+			return true
+		}
+	}
+	log.Info("User is not authorized", "username", username, "allGroups", allGroups)
+	return false
+}
+
 // GetURI returns the URI for the webhook
 func (w *NetworkOperatorWebhook) GetURI() string { return "/network-operator-validation" }
 
 // Validate will validate the incoming request
 func (w *NetworkOperatorWebhook) Validate(req admissionctl.Request) bool {
 	valid := true
-	valid = valid && (req.UserInfo.Username != "")
+	// Check AdmissionRequest.UserInfo first for consistency with Authorized method
+	username := req.AdmissionRequest.UserInfo.Username
+	if username == "" {
+		username = req.UserInfo.Username
+	}
+	valid = valid && (username != "")
 	valid = valid && (req.Kind.Kind == "Network")
 	valid = valid && (req.Kind.Group == "operator.openshift.io")
 
