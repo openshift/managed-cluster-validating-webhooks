@@ -189,38 +189,39 @@ func isAllowedUserGroup(request admissionctl.Request) bool {
 		username = request.UserInfo.Username
 	}
 
-	// Check groups from both UserInfo and AdmissionRequest.UserInfo
-	// Some webhooks use request.UserInfo.Groups directly, so we check both
-	groups := request.AdmissionRequest.UserInfo.Groups
-	if len(groups) == 0 {
-		groups = request.UserInfo.Groups
-	}
-
-	// Also check request.UserInfo.Groups directly (some webhooks use this pattern)
-	allGroups := append(request.AdmissionRequest.UserInfo.Groups, request.UserInfo.Groups...)
-
 	log.Info("Checking user authorization",
 		"username", username,
+		"admissionRequestUsername", request.AdmissionRequest.UserInfo.Username,
+		"userInfoUsername", request.UserInfo.Username,
 		"admissionRequestGroups", request.AdmissionRequest.UserInfo.Groups,
 		"userInfoGroups", request.UserInfo.Groups,
-		"allGroups", allGroups,
 		"allowedUsers", allowedUsers,
 		"sreAdminGroups", sreAdminGroups,
 	)
 
+	// Check username first
 	if slices.Contains(allowedUsers, username) {
 		log.Info("User is in allowedUsers list", "username", username)
 		return true
 	}
 
-	// Check all groups (from both sources)
+	// Check groups from AdmissionRequest.UserInfo first (for impersonation)
 	for _, group := range sreAdminGroups {
-		if slices.Contains(allGroups, group) {
-			log.Info("User is in allowed group", "group", group)
+		if slices.Contains(request.AdmissionRequest.UserInfo.Groups, group) {
+			log.Info("User is in allowed group (from AdmissionRequest)", "group", group)
 			return true
 		}
 	}
-	log.Info("User is not authorized", "username", username, "allGroups", allGroups)
+
+	// Check groups from UserInfo as fallback (avoid duplicates by checking separately)
+	for _, group := range sreAdminGroups {
+		if slices.Contains(request.UserInfo.Groups, group) {
+			log.Info("User is in allowed group (from UserInfo)", "group", group)
+			return true
+		}
+	}
+
+	log.Info("User is not authorized", "username", username)
 	return false
 }
 
