@@ -373,6 +373,7 @@ clusterlogging-validation
 hiveownership-validation
 imagecontentpolicies-validation
 namespace-validation
+network-operator-validation
 pod-validation
 prometheusrule-validation
 regular-user-validation
@@ -387,6 +388,7 @@ At this point, we have:
 * hiveownership-validation
 * imagecontentpolicies-validation
 * namespace-validation
+* network-operator-validation
 * pod-validation
 * prometheusrule-validation
 * regular-user-validation
