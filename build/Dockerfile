@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=registry.access.redhat.com/ubi9/go-toolset:1.25
+ARG BASE_IMAGE=registry.ci.openshift.org/openshift/release:rhel-9-release-golang-1.25-openshift-4.21
 FROM ${BASE_IMAGE} AS builder
 
 WORKDIR /opt/app-root/src
