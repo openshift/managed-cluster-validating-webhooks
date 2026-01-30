@@ -132,12 +132,18 @@ func (s *ManifestWorksWebhook) authorized(request admissionctl.Request) admissio
 // SyncSetLabelSelector returns the label selector to use in the SyncSet.
 func (s *ManifestWorksWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	customLabelSelector := utils.DefaultLabelSelector()
-	customLabelSelector.MatchExpressions = append(customLabelSelector.MatchExpressions,
+	customLabelSelector.MatchExpressions = append(customLabelSelector.MatchExpressions, []metav1.LabelSelectorRequirement{
 		metav1.LabelSelectorRequirement{
 			Key:      "ext-hypershift.openshift.io/cluster-type",
 			Operator: metav1.LabelSelectorOpIn,
 			Values:   []string{"service-cluster"},
-		})
+		},
+		metav1.LabelSelectorRequirement{
+			Key:      "api.openshift.com/environment",
+			Operator: metav1.LabelSelectorOpNotIn,
+			Values:   []string{"integration"},
+		},
+	}...)
 	return customLabelSelector
 }
 
