@@ -284,10 +284,10 @@ func (w *NetworkOperatorWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
-func (w *NetworkOperatorWebhook) ClassicEnabled() bool { return true }
+func (w *NetworkOperatorWebhook) ClassicEnabled() bool { return false }
 
 // HypershiftEnabled will return boolean value for hypershift enabled configurations
-func (w *NetworkOperatorWebhook) HypershiftEnabled() bool { return true }
+func (w *NetworkOperatorWebhook) HypershiftEnabled() bool { return false }
 
 // NewWebhook creates a new webhook
 func NewWebhook() *NetworkOperatorWebhook {
