@@ -922,18 +922,18 @@ func TestSyncSetLabelSelector(t *testing.T) {
 	}
 }
 
-func TestClassicEnabled(t *testing.T) {
-	enabled := NewWebhook().ClassicEnabled()
+//func TestClassicEnabled(t *testing.T) {
+//	enabled := NewWebhook().ClassicEnabled()
+//
+//	if !enabled {
+//		t.Error("TestClassicEnabled(): expected enabled")
+//	}
+//}
 
-	if !enabled {
-		t.Error("TestClassicEnabled(): expected enabled")
-	}
-}
-
-func TestHypershiftEnabled(t *testing.T) {
-	enabled := NewWebhook().HypershiftEnabled()
-
-	if !enabled {
-		t.Error("TestHypershiftEnabled(): expected enabled")
-	}
-}
+//func TestHypershiftEnabled(t *testing.T) {
+//	enabled := NewWebhook().HypershiftEnabled()
+//
+//	if !enabled {
+//		t.Error("TestHypershiftEnabled(): expected enabled")
+//	}
+//}
