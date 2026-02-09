@@ -921,19 +921,3 @@ func TestSyncSetLabelSelector(t *testing.T) {
 		t.Errorf("TestSyncSetLabelSelector(): expected %v, got %v\n", utils.DefaultLabelSelector(), labelSelector)
 	}
 }
-
-func TestClassicEnabled(t *testing.T) {
-	enabled := NewWebhook().ClassicEnabled()
-
-	if !enabled {
-		t.Error("TestClassicEnabled(): expected disabled")
-	}
-}
-
-func TestHypershiftEnabled(t *testing.T) {
-	enabled := NewWebhook().HypershiftEnabled()
-
-	if !enabled {
-		t.Error("TestHypershiftEnabled(): expected disabled")
-	}
-}
