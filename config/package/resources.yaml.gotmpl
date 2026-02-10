@@ -5,7 +5,6 @@ metadata:
   annotations:
     package-operator.run/phase: config
     service.beta.openshift.io/inject-cabundle: "true"
-  creationTimestamp: null
   name: webhook-cert
 ---
 apiVersion: v1
@@ -14,7 +13,6 @@ metadata:
   annotations:
     package-operator.run/phase: deploy
     service.beta.openshift.io/serving-cert-secret-name: webhook-cert
-  creationTimestamp: null
   labels:
     hypershift.openshift.io/allow-guest-webhooks: "true"
     name: validation-webhook
@@ -36,7 +34,6 @@ kind: Deployment
 metadata:
   annotations:
     package-operator.run/phase: deploy
-  creationTimestamp: null
   labels:
     app: validation-webhook
   name: validation-webhook
@@ -51,7 +48,6 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: validation-webhook
     spec:
@@ -147,7 +143,6 @@ metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-clusterrolebindings-validation
 webhooks:
 - admissionReviewVersions:
@@ -177,7 +172,35 @@ metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
+  name: sre-clusterroles-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/clusterroles-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: clusterroles-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    apiVersions:
+    - v1
+    operations:
+    - DELETE
+    resources:
+    - clusterroles
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
   name: sre-ingress-config-validation
 webhooks:
 - admissionReviewVersions:
@@ -204,44 +227,11 @@ webhooks:
   timeoutSeconds: 2
 ---
 apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  annotations:
-    package-operator.run/phase: webhooks
-    service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
-  name: sre-namespace-validation
-webhooks:
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    caBundle: '{{.config.serviceca | b64enc }}'
-    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/namespace-validation
-  failurePolicy: Ignore
-  matchPolicy: Equivalent
-  name: namespace-validation.managed.openshift.io
-  rules:
-  - apiGroups:
-    - ""
-    apiVersions:
-    - '*'
-    operations:
-    - CREATE
-    - UPDATE
-    - DELETE
-    resources:
-    - namespaces
-    scope: Cluster
-  sideEffects: None
-  timeoutSeconds: 2
----
-apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-podimagespec-mutation
 webhooks:
 - admissionReviewVersions:
@@ -271,7 +261,6 @@ metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-regular-user-validation
 webhooks:
 - admissionReviewVersions:
@@ -383,7 +372,6 @@ metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-scc-validation
 webhooks:
 - admissionReviewVersions:
@@ -414,7 +402,6 @@ metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-service-mutation
 webhooks:
 - admissionReviewVersions:
@@ -445,7 +432,6 @@ metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-serviceaccount-validation
 webhooks:
 - admissionReviewVersions:
@@ -475,7 +461,6 @@ metadata:
   annotations:
     package-operator.run/phase: webhooks
     service.beta.openshift.io/inject-cabundle: "false"
-  creationTimestamp: null
   name: sre-techpreviewnoupgrade-validation
 webhooks:
 - admissionReviewVersions:
