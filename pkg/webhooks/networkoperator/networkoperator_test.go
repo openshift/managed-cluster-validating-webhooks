@@ -419,6 +419,53 @@ func TestAuthorized(t *testing.T) {
 			ExpectAllowed: true,
 		},
 		{
+			Name: "Cluster Network Operator (CNO) service account modifying migration.networkType should be allowed",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "system:serviceaccount:openshift-network-operator:cluster-network-operator",
+						Groups: []string{
+							"system:serviceaccounts:openshift-network-operator",
+						},
+					},
+					Kind: metav1.GroupVersionKind{
+						Group: "operator.openshift.io",
+						Kind:  "Network",
+					},
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OVNKubernetes"
+								}
+							}
+						}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OpenShiftSDN"
+								}
+							}
+						}`),
+					},
+				},
+			},
+			ExpectAllowed: true,
+		},
+		{
 			Name: "backplane-cluster-admin modifying migration.networkType should be allowed",
 			Request: admissionctl.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
