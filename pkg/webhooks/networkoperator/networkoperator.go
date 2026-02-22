@@ -18,7 +18,7 @@ import (
 
 const (
 	WebhookName string = "network-operator-validation"
-	docString   string = `Managed OpenShift customers may not modify critical fields in the network.operator CRD (such as spec.migration.networkType) because it can disrupt Cluster Network Operator operations and CNI migrations. Only backplane-cluster-admin and SRE service accounts are allowed to modify these critical fields. Regular cluster-admin users (system:admin) are explicitly blocked.`
+	docString   string = `Managed OpenShift customers may not modify critical fields in the network.operator CRD (such as spec.migration.networkType) because it can disrupt Cluster Network Operator operations and CNI migrations. Only backplane-cluster-admin, SRE service accounts, and the Cluster Network Operator (CNO) service account are allowed to modify these critical fields. Regular cluster-admin users (system:admin) are explicitly blocked.`
 )
 
 var (
@@ -43,9 +43,11 @@ var (
 		"backplane-cluster-admin",
 	}
 
-	// Groups allowed to modify critical migration fields
+	// Groups allowed to modify critical migration fields (SRE and the Cluster Network Operator)
 	sreAdminGroups = []string{
 		"system:serviceaccounts:openshift-backplane-srep",
+		// CNO runs in openshift-network-operator and must be able to patch network.operator for CNI migration
+		"system:serviceaccounts:openshift-network-operator",
 	}
 )
 
@@ -284,10 +286,10 @@ func (w *NetworkOperatorWebhook) SyncSetLabelSelector() metav1.LabelSelector {
 	return utils.DefaultLabelSelector()
 }
 
-func (w *NetworkOperatorWebhook) ClassicEnabled() bool { return false }
+func (w *NetworkOperatorWebhook) ClassicEnabled() bool { return true }
 
 // HypershiftEnabled will return boolean value for hypershift enabled configurations
-func (w *NetworkOperatorWebhook) HypershiftEnabled() bool { return false }
+func (w *NetworkOperatorWebhook) HypershiftEnabled() bool { return true }
 
 // NewWebhook creates a new webhook
 func NewWebhook() *NetworkOperatorWebhook {
