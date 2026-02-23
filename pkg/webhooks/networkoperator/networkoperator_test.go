@@ -466,6 +466,53 @@ func TestAuthorized(t *testing.T) {
 			ExpectAllowed: true,
 		},
 		{
+			Name: "Managed Upgrade Operator service account modifying migration.networkType should be allowed",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "system:serviceaccount:openshift-managed-upgrade-operator:managed-upgrade-operator",
+						Groups: []string{
+							"system:serviceaccounts:openshift-managed-upgrade-operator",
+						},
+					},
+					Kind: metav1.GroupVersionKind{
+						Group: "operator.openshift.io",
+						Kind:  "Network",
+					},
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OVNKubernetes"
+								}
+							}
+						}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OpenShiftSDN"
+								}
+							}
+						}`),
+					},
+				},
+			},
+			ExpectAllowed: true,
+		},
+		{
 			Name: "backplane-cluster-admin modifying migration.networkType should be allowed",
 			Request: admissionctl.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{

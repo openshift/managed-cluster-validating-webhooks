@@ -43,11 +43,13 @@ var (
 		"backplane-cluster-admin",
 	}
 
-	// Groups allowed to modify critical migration fields (SRE and the Cluster Network Operator)
+	// Groups allowed to modify critical migration fields (SRE, CNO, and Managed Upgrade Operator)
 	sreAdminGroups = []string{
 		"system:serviceaccounts:openshift-backplane-srep",
 		// CNO runs in openshift-network-operator and must be able to patch network.operator for CNI migration
 		"system:serviceaccounts:openshift-network-operator",
+		// Managed Upgrade Operator may need to modify network.operator during upgrades
+		"system:serviceaccounts:openshift-managed-upgrade-operator",
 	}
 )
 
