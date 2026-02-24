@@ -47,9 +47,9 @@ var (
 	sreAdminGroups = []string{
 		"system:serviceaccounts:openshift-backplane-srep",
 		// CNO runs in openshift-network-operator and must be able to patch network.operator for CNI migration
-		"system:serviceaccounts:openshift-network-operator",
+		"system:serviceaccounts:openshift-network-operator:cluster-network-operator",
 		// Managed Upgrade Operator may need to modify network.operator during upgrades
-		"system:serviceaccounts:openshift-managed-upgrade-operator",
+		"system:serviceaccounts:openshift-managed-upgrade-operator:managed-upgrade-operator",
 	}
 )
 
@@ -60,7 +60,7 @@ type NetworkOperatorWebhook struct {
 // Authorized will determine if the request is allowed
 func (w *NetworkOperatorWebhook) Authorized(request admissionctl.Request) admissionctl.Response {
 	// Block regular cluster-admin users (system:admin) from modifying critical migration fields
-	// Only backplane-cluster-admin and SRE service accounts are allowed
+	// Only backplane-cluster-admin, SRE, CNO, and MUO service accounts are allowed
 	if request.Operation == admissionv1.Update {
 		decoder := admissionctl.NewDecoder(&w.s)
 		object := &operatorv1.Network{}
@@ -89,7 +89,7 @@ func (w *NetworkOperatorWebhook) Authorized(request admissionctl.Request) admiss
 				"userInfoGroups", request.UserInfo.Groups,
 			)
 
-			// Allow only backplane-cluster-admin and SRE admin groups to modify critical migration fields
+			// Allow only backplane-cluster-admin, SRE, CNO, and MUO service accounts to modify critical migration fields
 			// Regular cluster-admin (system:admin) is explicitly blocked
 			if isAllowedUserGroup(request) {
 				log.Info("User is allowed to modify critical migration fields")
