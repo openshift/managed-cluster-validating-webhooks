@@ -37,19 +37,18 @@ var (
 		},
 	}
 
-	// Users allowed to modify critical migration fields
-	// backplane-cluster-admin and system:admin are allowed
+	// Users allowed to modify critical migration fields (exact username match).
+	// Includes backplane-cluster-admin and CNO/MUO service accounts (username format: system:serviceaccount:<namespace>:<name>).
 	allowedUsers = []string{
 		"backplane-cluster-admin",
+		"system:serviceaccount:openshift-network-operator:cluster-network-operator",
+		"system:serviceaccount:openshift-managed-upgrade-operator:managed-upgrade-operator",
 	}
 
-	// Groups allowed to modify critical migration fields (SRE, CNO, and Managed Upgrade Operator)
+	// Groups allowed to modify critical migration fields (SRE service accounts only).
+	// Kubernetes only assigns system:serviceaccounts and system:serviceaccounts:<namespace>; CNO/MUO are in allowedUsers.
 	sreAdminGroups = []string{
 		"system:serviceaccounts:openshift-backplane-srep",
-		// CNO runs in openshift-network-operator and must be able to patch network.operator for CNI migration
-		"system:serviceaccounts:openshift-network-operator:cluster-network-operator",
-		// Managed Upgrade Operator may need to modify network.operator during upgrades
-		"system:serviceaccounts:openshift-managed-upgrade-operator:managed-upgrade-operator",
 	}
 )
 

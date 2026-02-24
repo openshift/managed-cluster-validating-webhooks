@@ -427,7 +427,6 @@ func TestAuthorized(t *testing.T) {
 						Username: "system:serviceaccount:openshift-network-operator:cluster-network-operator",
 						Groups: []string{
 							"system:serviceaccounts:openshift-network-operator",
-							"system:serviceaccounts:openshift-network-operator:cluster-network-operator",
 						},
 					},
 					Kind: metav1.GroupVersionKind{
@@ -475,7 +474,6 @@ func TestAuthorized(t *testing.T) {
 						Username: "system:serviceaccount:openshift-managed-upgrade-operator:managed-upgrade-operator",
 						Groups: []string{
 							"system:serviceaccounts:openshift-managed-upgrade-operator",
-							"system:serviceaccounts:openshift-managed-upgrade-operator:managed-upgrade-operator",
 						},
 					},
 					Kind: metav1.GroupVersionKind{
