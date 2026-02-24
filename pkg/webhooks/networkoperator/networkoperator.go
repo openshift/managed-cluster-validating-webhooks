@@ -18,7 +18,7 @@ import (
 
 const (
 	WebhookName string = "network-operator-validation"
-	docString   string = `Managed OpenShift customers may not modify critical fields in the network.operator CRD (such as spec.migration.networkType) because it can disrupt Cluster Network Operator operations and CNI migrations. Only backplane-cluster-admin, SRE service accounts, and the Cluster Network Operator (CNO) service account are allowed to modify these critical fields. Regular cluster-admin users (system:admin) are explicitly blocked.`
+	docString   string = `Managed OpenShift customers may not modify critical fields in the network.operator CRD (such as spec.migration.networkType) because it can disrupt Cluster Network Operator operations and CNI migrations. Only backplane-cluster-admin, SRE, Cluster Network Operator (CNO), and Managed Upgrade Operator (MUO) service accounts are allowed to modify these critical fields. Regular cluster-admin users (system:admin) are explicitly blocked.`
 )
 
 var (

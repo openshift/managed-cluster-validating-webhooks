@@ -2,6 +2,7 @@ package networkoperator
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -426,6 +427,7 @@ func TestAuthorized(t *testing.T) {
 						Username: "system:serviceaccount:openshift-network-operator:cluster-network-operator",
 						Groups: []string{
 							"system:serviceaccounts:openshift-network-operator",
+							"system:serviceaccounts:openshift-network-operator:cluster-network-operator",
 						},
 					},
 					Kind: metav1.GroupVersionKind{
@@ -466,13 +468,14 @@ func TestAuthorized(t *testing.T) {
 			ExpectAllowed: true,
 		},
 		{
-			Name: "Managed Upgrade Operator service account modifying migration.networkType should be allowed",
+			Name: "Managed Upgrade Operator (MUO) service account modifying migration.networkType should be allowed",
 			Request: admissionctl.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
 					UserInfo: authenticationv1.UserInfo{
 						Username: "system:serviceaccount:openshift-managed-upgrade-operator:managed-upgrade-operator",
 						Groups: []string{
 							"system:serviceaccounts:openshift-managed-upgrade-operator",
+							"system:serviceaccounts:openshift-managed-upgrade-operator:managed-upgrade-operator",
 						},
 					},
 					Kind: metav1.GroupVersionKind{
@@ -1005,6 +1008,12 @@ func TestDoc(t *testing.T) {
 
 	if len(docs) == 0 {
 		t.Error("TestDoc(): expected content, received none")
+	}
+	// Doc should mention all allowed identities: backplane-cluster-admin, SRE, CNO, MUO
+	for _, sub := range []string{"backplane-cluster-admin", "SRE", "Cluster Network Operator", "CNO", "Managed Upgrade Operator", "MUO"} {
+		if !strings.Contains(docs, sub) {
+			t.Errorf("TestDoc(): expected doc to contain %q", sub)
+		}
 	}
 }
 
