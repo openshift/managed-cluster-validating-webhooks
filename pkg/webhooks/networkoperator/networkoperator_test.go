@@ -2,6 +2,7 @@ package networkoperator
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -410,6 +411,100 @@ func TestAuthorized(t *testing.T) {
 							"spec": {
 								"migration": {
 									"networkType": "OVNKubernetes"
+								}
+							}
+						}`),
+					},
+				},
+			},
+			ExpectAllowed: true,
+		},
+		{
+			Name: "Cluster Network Operator (CNO) service account modifying migration.networkType should be allowed",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "system:serviceaccount:openshift-network-operator:cluster-network-operator",
+						Groups: []string{
+							"system:serviceaccounts:openshift-network-operator",
+						},
+					},
+					Kind: metav1.GroupVersionKind{
+						Group: "operator.openshift.io",
+						Kind:  "Network",
+					},
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OVNKubernetes"
+								}
+							}
+						}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OpenShiftSDN"
+								}
+							}
+						}`),
+					},
+				},
+			},
+			ExpectAllowed: true,
+		},
+		{
+			Name: "Managed Upgrade Operator (MUO) service account modifying migration.networkType should be allowed",
+			Request: admissionctl.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UserInfo: authenticationv1.UserInfo{
+						Username: "system:serviceaccount:openshift-managed-upgrade-operator:managed-upgrade-operator",
+						Groups: []string{
+							"system:serviceaccounts:openshift-managed-upgrade-operator",
+						},
+					},
+					Kind: metav1.GroupVersionKind{
+						Group: "operator.openshift.io",
+						Kind:  "Network",
+					},
+					Operation: admissionv1.Update,
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OVNKubernetes"
+								}
+							}
+						}`),
+					},
+					OldObject: runtime.RawExtension{
+						Raw: []byte(`{
+							"apiVersion": "operator.openshift.io/v1",
+							"kind": "Network",
+							"metadata": {
+								"name": "cluster"
+							},
+							"spec": {
+								"migration": {
+									"networkType": "OpenShiftSDN"
 								}
 							}
 						}`),
@@ -911,6 +1006,12 @@ func TestDoc(t *testing.T) {
 
 	if len(docs) == 0 {
 		t.Error("TestDoc(): expected content, received none")
+	}
+	// Doc should mention all allowed identities: backplane-cluster-admin, SRE, CNO, MUO
+	for _, sub := range []string{"backplane-cluster-admin", "SRE", "Cluster Network Operator", "CNO", "Managed Upgrade Operator", "MUO"} {
+		if !strings.Contains(docs, sub) {
+			t.Errorf("TestDoc(): expected doc to contain %q", sub)
+		}
 	}
 }
 
