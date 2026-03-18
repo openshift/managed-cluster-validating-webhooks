@@ -66,6 +66,25 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			return true
 		}))
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
+
+		By("waiting for namespace permissions to be ready")
+		probe := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "ns-ready-probe", Namespace: ns}}
+		ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+		defer cancel()
+		for {
+			createErr := client.Create(ctx, probe)
+			if createErr == nil {
+				_ = client.Delete(context.TODO(), probe)
+				break
+			}
+			if !errors.IsForbidden(createErr) {
+				Expect(createErr).ShouldNot(HaveOccurred(), "Unexpected error probing namespace readiness")
+			}
+			if ctx.Err() != nil {
+				Expect(createErr).ShouldNot(HaveOccurred(), "Timed out waiting for namespace permissions")
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
 	}
 
 	deleteNS := func(ns *v1.Namespace) {
