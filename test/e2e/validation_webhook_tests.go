@@ -77,11 +77,11 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				_ = client.Delete(context.TODO(), probe)
 				break
 			}
-			if !errors.IsForbidden(createErr) {
-				Expect(createErr).ShouldNot(HaveOccurred(), "Unexpected error probing namespace readiness")
-			}
 			if ctx.Err() != nil {
 				Expect(createErr).ShouldNot(HaveOccurred(), "Timed out waiting for namespace permissions")
+			}
+			if !errors.IsForbidden(createErr) {
+				Expect(createErr).ShouldNot(HaveOccurred(), "Unexpected error probing namespace readiness")
 			}
 			time.Sleep(200 * time.Millisecond)
 		}
