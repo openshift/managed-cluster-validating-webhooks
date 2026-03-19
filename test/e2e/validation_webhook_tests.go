@@ -72,9 +72,9 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 		defer cancel()
 		for {
-			createErr := client.Create(ctx, probe)
+			createErr := dedicatedAdmink8s.Create(ctx, probe)
 			if createErr == nil {
-				_ = client.Delete(context.TODO(), probe)
+				_ = dedicatedAdmink8s.Delete(context.TODO(), probe)
 				break
 			}
 			if ctx.Err() != nil {
