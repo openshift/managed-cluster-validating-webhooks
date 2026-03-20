@@ -69,7 +69,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 		By("waiting for namespace permissions to be ready")
 		probe := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "ns-ready-probe", Namespace: ns}}
-		ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.TODO(), 120*time.Second)
 		defer cancel()
 		for {
 			createErr := dedicatedAdmink8s.Create(ctx, probe)
@@ -83,7 +83,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			if !errors.IsForbidden(createErr) {
 				Expect(createErr).ShouldNot(HaveOccurred(), "Unexpected error probing namespace readiness")
 			}
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(2 * time.Second)
 		}
 	}
 
