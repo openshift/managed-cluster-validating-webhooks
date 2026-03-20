@@ -43,7 +43,7 @@ func NewDispatcher(hooks webhooks.RegisteredWebhooks) *Dispatcher {
 func (d *Dispatcher) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	log.Info("Handling request", "request", r.RequestURI)
+	log.V(1).Info("Handling request", "request", r.RequestURI)
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
