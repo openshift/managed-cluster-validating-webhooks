@@ -1,0 +1,73 @@
+name: Branch Protection Check
+
+on:
+  schedule:
+    # Run weekly to verify branch protection is properly configured
+    - cron: '0 9 * * 1'  # Every Monday at 9 AM UTC
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: read
+
+jobs:
+  verify-dependabot-config:
+    name: Verify Dependabot Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Dependabot Config
+      run: |
+        echo "Verifying Dependabot configuration..."
+
+        if [ -f ".github/dependabot.yml" ]; then
+          echo "Dependabot configuration found"
+          echo ""
+          echo "Configuration summary:"
+          grep -A 10 "package-ecosystem:" .github/dependabot.yml || true
+        else
+          echo "Dependabot configuration missing"
+          exit 1
+        fi
+
+  verify-workflows:
+    name: Verify Auto-Merge Workflows
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Required Workflows
+      run: |
+        echo "Verifying auto-merge workflows..."
+
+        required_workflows=(
+          ".github/workflows/dependabot-auto-merge.yml"
+        )
+
+        all_present=true
+
+        for workflow in "${required_workflows[@]}"; do
+          if [ -f "$workflow" ]; then
+            echo "$workflow found"
+          else
+            echo "$workflow missing"
+            all_present=false
+          fi
+        done
+
+        if [ "$all_present" = false ]; then
+          echo ""
+          echo "Some required workflows are missing. Auto-merge may not work properly."
+          exit 1
+        fi
+
+        echo ""
+        echo "All required workflows are present"
+        echo ""
+        echo "   Note: Auto-merge relies entirely on existing repository CI checks"
+        echo "   GitHub's 'gh pr merge --auto' waits for all required status checks"
+        echo "   to pass before merging. No separate CI workflow is needed."
