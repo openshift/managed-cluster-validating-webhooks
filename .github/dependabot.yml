@@ -7,8 +7,29 @@ updates:
       - "ok-to-test"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
     ignore:
       - dependency-name: "app-sre/boilerplate"
         # don't upgrade boilerplate via these means
       - dependency-name: "openshift/origin-operator-registry"
         # don't upgrade origin-operator-registry via these means
+  - package-ecosystem: gomod
+    directory: "/"
+    labels:
+      - "area/dependency"
+      - "ok-to-test"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    # Group related updates together to reduce PR volume
+    groups:
+      aws-sdk:
+        patterns:
+          - "github.com/aws/aws-sdk-go-v2*"
+      kubernetes:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
+      openshift:
+        patterns:
+          - "github.com/openshift/*"
