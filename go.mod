@@ -1,6 +1,6 @@
 module github.com/openshift/managed-cluster-validating-webhooks
 
-go 1.25.3
+go 1.25.7
 
 require (
 	github.com/evanphx/json-patch v4.12.0+incompatible
