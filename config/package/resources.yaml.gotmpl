@@ -227,6 +227,36 @@ webhooks:
   timeoutSeconds: 2
 ---
 apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    package-operator.run/phase: webhooks
+    service.beta.openshift.io/inject-cabundle: "false"
+  name: sre-network-operator-validation
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: '{{.config.serviceca | b64enc }}'
+    url: https://validation-webhook.{{.package.metadata.namespace}}.svc.cluster.local/network-operator-validation
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: network-operator-validation.managed.openshift.io
+  rules:
+  - apiGroups:
+    - operator.openshift.io
+    apiVersions:
+    - '*'
+    operations:
+    - UPDATE
+    resources:
+    - network
+    - networks
+    scope: Cluster
+  sideEffects: None
+  timeoutSeconds: 2
+---
+apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:

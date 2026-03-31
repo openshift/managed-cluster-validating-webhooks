@@ -9,6 +9,10 @@ echo "Using go version $(go version)"
 
 cd "${REPO_ROOT}"
 
+# Prow may set GOFLAGS=-mod=vendor which breaks us since we use modules
+unset GOFLAGS
+export GOFLAGS=-mod=mod
+
 # Run tests
 make test
 
