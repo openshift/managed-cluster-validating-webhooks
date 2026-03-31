@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	timeout int32 = 2
+	timeout int32 = 3
 	log           = logf.Log.WithName(WebhookName)
 	scope         = admissionregv1.ClusterScope
 	rules         = []admissionregv1.RuleWithOperations{
