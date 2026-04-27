@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=registry.access.redhat.com/ubi9/go-toolset:1.25.8-1776763740
+ARG BASE_IMAGE=registry.access.redhat.com/ubi9/go-toolset:1.25.9-1777043046
 FROM ${BASE_IMAGE} AS builder
 
 WORKDIR /opt/app-root/src
