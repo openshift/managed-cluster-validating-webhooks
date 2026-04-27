@@ -45,6 +45,7 @@ var (
 	clusterVersionUsers = []string{
 		"system:serviceaccount:openshift-managed-upgrade-operator:managed-upgrade-operator",
 		"system:serviceaccount:openshift-cluster-version:default",
+		"system:serviceaccount:openshift-cluster-version:cluster-version-operator",
 	}
 	ceeGroup = "system:serviceaccounts:openshift-backplane-cee"
 
