@@ -131,13 +131,13 @@ For example, the [service-mutation webhook](pkg/webhooks/service/service.go) enf
 }
 ```
 
-MutatingWebhooks are indicated by their name: if your Webhook's `Name()` function returns a string ending in `-mutation`, then [resources.go](build/resources.go) will generate a MutatingWebhookConfiguration (instead of a ValidatingWebhookConfiguration) when building the [SelectorSyncSet](build/selectorsyncset.yaml) and [PKO package](docs/hypershift.md). Beyond that, this repo does not descriminate between MutatingWebhooks and ValidatingWebhooks, and you may assume any documentation in this repo applies to both Webhook types unless otherwise noted.
+MutatingWebhooks are indicated by their name: if your Webhook's `Name()` function returns a string ending in `-mutation`, then [resources.go](build/resources.go) will generate a MutatingWebhookConfiguration (instead of a ValidatingWebhookConfiguration) when building the [SelectorSyncSet](build/selectorsyncset.yaml) and [PKO package](docs/hypershift.md). Beyond that, this repo does not discriminate between MutatingWebhooks and ValidatingWebhooks, and you may assume any documentation in this repo applies to both Webhook types unless otherwise noted.
 
 ## Is The Request Valid and Authorized
 
 The key difference between "valid" and "authorized" is that the former is asking if the incoming request is well-formed whereas the latter is asking if the user making the request is allowed to do so. Each webhook may have a different idea of what a "valid" request looks like, but some common feature may be if the request has a username set.
 
-`Validate` and `Authorized` serve as two entry points for the webserver: First it will ask if the request is valid and then it will ask if it is authorized. Thus, we can speak more about fulfulling the interface requirements for these two methods.
+`Validate` and `Authorized` serve as two entry points for the webserver: First it will ask if the request is valid and then it will ask if it is authorized. Thus, we can speak more about fulfilling the interface requirements for these two methods.
 
 ### Building a Response
 
@@ -181,7 +181,7 @@ Unit tests are important to ensure that webhooks behave as expected, and to help
 * `CreateHTTPRequest`
 * `SendHTTPRequest`
 
-The first function, `CanCanNot`, is very simple and designed to make test failure messages gramatically correct for. The three other functions are much more important to the testing process.
+The first function, `CanCanNot`, is very simple and designed to make test failure messages grammatically correct for. The three other functions are much more important to the testing process.
 
 The three helper functions are intended to provide for more integration style tests than true unit tests, as they assist in turning a specific set of test criteria a JSON representation and sending via `net/http/httptest` to the webhook's `Authorized`. When using `testutils.SendHTTPRequest`, the response is a `Response` object that can be used in the test suite to access the result of the webhook.
 
@@ -300,7 +300,7 @@ $ oc describe pod -n openshift-validation-webhook | grep '^ *Image:'
 ```
 
 ### Create the ValidatingWebhookConfiguration
-Once the image is pulled to your cluster, you will need to create the ValidatingWebhookConfiguration.  You should notice that the `build/selectorysyncset.yaml` file will have a new section containing your webhook's ValidatingWebhookConfiguration.  It should look something similar to this.
+Once the image is pulled to your cluster, you will need to create the ValidatingWebhookConfiguration.  You should notice that the `build/selectorsyncset.yaml` file will have a new section containing your webhook's ValidatingWebhookConfiguration.  It should look something similar to this.
 ```
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -334,7 +334,7 @@ webhooks:
   timeoutSeconds: 2
 ```
 
-Save this part of the selectorsyncset.yaml as a its own yaml file and apply it to your cluster.
+Save this part of the selectorsyncset.yaml as its own yaml file and apply it to your cluster.
 
 ```
 oc apply -f my_webhook.yaml
