@@ -51,6 +51,7 @@ var (
 		"deployer",
 	}
 	exceptionNamespaces = []string{
+		"default",
 		"openshift-logging",
 		"openshift-user-workload-monitoring",
 		"openshift-operators",
