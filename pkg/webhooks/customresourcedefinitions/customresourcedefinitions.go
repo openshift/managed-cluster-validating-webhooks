@@ -94,7 +94,6 @@ func (s *customresourcedefinitionsruleWebhook) authorized(request admissionctl.R
 		return ret
 	}
 
-	log.Info("Allowing access", "request", request.AdmissionRequest)
 	ret = admissionctl.Allowed("Non managed CustomResourceDefinition")
 	ret.UID = request.AdmissionRequest.UID
 	return ret

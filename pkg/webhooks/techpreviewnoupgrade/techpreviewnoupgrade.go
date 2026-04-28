@@ -124,8 +124,6 @@ func (s *TechPreviewNoUpgradeWebhook) authorized(request admissionctl.Request) a
 		return ret
 	}
 
-	log.Info("Allowing access", "request", request.AdmissionRequest)
-
 	ret = admissionctl.Allowed("FeatureGate operation is allowed")
 	ret.UID = request.AdmissionRequest.UID
 
