@@ -104,7 +104,6 @@ func (s *networkpoliciesruleWebhook) authorized(request admissionctl.Request) ad
 		}
 	}
 
-	log.Info("Allowing access", "request", request.AdmissionRequest)
 	ret = admissionctl.Allowed("Non managed namespace")
 	ret.UID = request.AdmissionRequest.UID
 	return ret
