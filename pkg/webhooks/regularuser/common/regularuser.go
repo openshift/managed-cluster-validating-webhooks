@@ -27,16 +27,19 @@ import (
 // in the 'osd' package.
 
 const (
-	WebhookName         = "regular-user-validation"
-	docString           = `Managed OpenShift customers may not manage any objects in the following APIGroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
-	mustGatherKind      = "MustGather"
-	mustGatherGroup     = "managed.openshift.io"
-	clusterVersionKind  = "ClusterVersion"
-	clusterVersionGroup = "config.openshift.io"
-	customDomainKind    = "CustomDomain"
-	customDomainGroup   = "managed.openshift.io"
-	netNamespaceKind    = "NetNamespace"
-	netNamespaceGroup   = "network.openshift.io"
+	WebhookName           = "regular-user-validation"
+	docString             = `Managed OpenShift customers may not manage any objects in the following APIGroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
+	mustGatherKind        = "MustGather"
+	mustGatherGroup       = "managed.openshift.io"
+	clusterVersionKind    = "ClusterVersion"
+	clusterVersionGroup   = "config.openshift.io"
+	customDomainKind      = "CustomDomain"
+	customDomainGroup     = "managed.openshift.io"
+	netNamespaceKind      = "NetNamespace"
+	netNamespaceGroup     = "network.openshift.io"
+	machineConfigKind     = "MachineConfig"
+	machineConfigPoolKind = "MachineConfigPool"
+	machineConfigGroup    = "machineconfiguration.openshift.io"
 )
 
 var (
@@ -218,6 +221,16 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		return ret
 	}
 
+	// Check MachineConfig resources first - only cluster-admins group allowed
+	if request.Kind.Group == machineConfigGroup {
+		if isMachineConfigAuthorized(request) {
+			return utils.WebhookResponse(request, true, "")
+		} else {
+			log.Info("Denying access", "request", request.AdmissionRequest)
+			return utils.WebhookResponse(request, false, "Prevented from accessing Red Hat managed resources. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support")
+		}
+	}
+
 	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "kube:") {
 		ret = admissionctl.Allowed("kube: users are allowed")
 		ret.UID = request.AdmissionRequest.UID
@@ -321,6 +334,21 @@ func isClusterVersionAuthorized(request admissionctl.Request) bool {
 	}
 
 	if strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:") && !strings.HasPrefix(request.AdmissionRequest.UserInfo.Username, "system:serviceaccount:") {
+		return true
+	}
+
+	return false
+}
+
+// isMachineConfigAuthorized allows cluster-admins group and backplane-cluster-admin user to modify MachineConfig resources
+func isMachineConfigAuthorized(request admissionctl.Request) bool {
+	// Allow cluster-admins group
+	if slices.Contains(request.UserInfo.Groups, "cluster-admins") {
+		return true
+	}
+
+	// Allow backplane-cluster-admin user
+	if slices.Contains(adminUsers, request.AdmissionRequest.UserInfo.Username) {
 		return true
 	}
 

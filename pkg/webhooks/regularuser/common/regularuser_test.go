@@ -107,7 +107,6 @@ func runRegularuserTests(t *testing.T, tests []regularuserTests) {
 			t.Fatalf("%s No tracking UID associated with the response.", test.testID)
 		}
 	}
-	t.Skip()
 }
 
 // TestFirstBlock looks at the first block of permissions in the rules grouping.
@@ -194,7 +193,7 @@ func TestMachineConfig(t *testing.T) {
 			username:        "kube:system",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
 			operation:       admissionv1.Create,
-			shouldBeAllowed: true,
+			shouldBeAllowed: false,
 		},
 		{
 			testID:          "machineconfig-clusteradmin-user",
@@ -205,7 +204,7 @@ func TestMachineConfig(t *testing.T) {
 			username:        "test-cluster-admin-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth", "cluster-admins"},
 			operation:       admissionv1.Create,
-			shouldBeAllowed: false,
+			shouldBeAllowed: true,
 		},
 		{
 			testID:          "machineconfig-unpriv-user",
@@ -215,6 +214,28 @@ func TestMachineConfig(t *testing.T) {
 			targetGroup:     "machineconfiguration.openshift.io",
 			username:        "test-user",
 			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			testID:          "machineconfig-backplane-cluster-admin",
+			targetResource:  "machineconfigs",
+			targetKind:      "MachineConfig",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			testID:          "machineconfig-srep-serviceaccount",
+			targetResource:  "machineconfigs",
+			targetKind:      "MachineConfig",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
+			username:        "system:serviceaccount:openshift-backplane-srep:test-sa",
+			userGroups:      []string{"system:authenticated", "system:serviceaccounts", "system:serviceaccounts:openshift-backplane-srep"},
 			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
