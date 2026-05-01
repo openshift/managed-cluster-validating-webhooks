@@ -50,6 +50,11 @@ var (
 		"system:serviceaccount:openshift-cluster-version:default",
 		"system:serviceaccount:openshift-cluster-version:cluster-version-operator",
 	}
+	machineConfigUsers = []string{
+		"system:serviceaccount:openshift-cluster-node-tuning-operator:cluster-node-tuning-operator",
+		"system:serviceaccount:openshift-machine-config-operator:machine-config-controller",
+		"system:admin",
+	}
 	ceeGroup = "system:serviceaccounts:openshift-backplane-cee"
 
 	scope = admissionregv1.AllScopes
@@ -340,7 +345,8 @@ func isClusterVersionAuthorized(request admissionctl.Request) bool {
 	return false
 }
 
-// isMachineConfigAuthorized allows cluster-admins group and backplane-cluster-admin user to modify MachineConfig resources
+// isMachineConfigAuthorized allows cluster-admins group, backplane-cluster-admin user,
+// and specific serviceaccounts to modify MachineConfig resources
 func isMachineConfigAuthorized(request admissionctl.Request) bool {
 	// Allow cluster-admins group
 	if slices.Contains(request.UserInfo.Groups, "cluster-admins") {
@@ -349,6 +355,11 @@ func isMachineConfigAuthorized(request admissionctl.Request) bool {
 
 	// Allow backplane-cluster-admin user
 	if slices.Contains(adminUsers, request.AdmissionRequest.UserInfo.Username) {
+		return true
+	}
+
+	// Allow specific serviceaccounts that need to manage machineconfigs
+	if slices.Contains(machineConfigUsers, request.AdmissionRequest.UserInfo.Username) {
 		return true
 	}
 
