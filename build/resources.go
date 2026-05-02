@@ -478,9 +478,10 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 						{
 							// Since we're referencing images by digest, we don't
 							// have to worry about them changing underneath us.
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Name:            "webhooks",
-							Image:           "REPLACED_BY_PIPELINE",
+							ImagePullPolicy:          corev1.PullIfNotPresent,
+							TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+							Name:                     "webhooks",
+							Image:                    "REPLACED_BY_PIPELINE",
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "service-certs",
@@ -616,9 +617,10 @@ func createDaemonSet() *appsv1.DaemonSet {
 						{
 							// Since we're referencing images by digest, we don't
 							// have to worry about them changing underneath us.
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Name:            "webhooks",
-							Image:           "${REGISTRY_IMG}@${IMAGE_DIGEST}",
+							ImagePullPolicy:          corev1.PullIfNotPresent,
+							TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+							Name:                     "webhooks",
+							Image:                    "${REGISTRY_IMG}@${IMAGE_DIGEST}",
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "service-certs",

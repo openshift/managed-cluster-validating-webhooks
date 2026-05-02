@@ -101,6 +101,7 @@ spec:
         ports:
         - containerPort: 5000
         resources: {}
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /service-certs
           name: service-certs
