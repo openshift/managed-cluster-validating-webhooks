@@ -5,7 +5,6 @@
 # =============================================================================
 aliases:
   srep-functional-team-aurora:
-    - abyrne55
     - dakotalongRH
     - joshbranham
     - luis-falcon
@@ -71,7 +70,6 @@ aliases:
     - jbpratt
     - yiqinzhang
   srep-functional-leads:
-    - abyrne55
     - clcollins
     - Nikokolas3270
     - theautoroboto
