@@ -10,11 +10,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/openshift/operator-custom-metrics/pkg/metrics"
 	klog "k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	ctrl "sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/dispatcher"
@@ -75,6 +77,8 @@ func main() {
 		WithCollectors(localmetrics.MetricsList).
 		GetConfig()
 
+	ctx := ctrl.SetupSignalHandler()
+
 	// get the namespace we're running in to confirm if running in a cluster
 	if _, err := k8sutil.GetOperatorNamespace(); err != nil {
 		if errors.Is(err, k8sutil.ErrRunLocal) {
@@ -83,7 +87,7 @@ func main() {
 			log.Error(err, "Failed to get operator namespace")
 		}
 	} else {
-		if err := metrics.ConfigureMetrics(context.TODO(), *metricsServer); err != nil {
+		if err := metrics.ConfigureMetrics(ctx, *metricsServer); err != nil {
 			log.Error(err, "Failed to configure metrics")
 		} else {
 			log.Info("Successfully configured metrics")
@@ -105,8 +109,33 @@ func main() {
 		server.TLSConfig = &tls.Config{
 			RootCAs: certpool,
 		}
-		log.Error(server.ListenAndServeTLS(*tlsCert, *tlsKey), "Error serving TLS")
-	} else {
-		log.Error(server.ListenAndServe(), "Error serving non-TLS connection")
 	}
+
+	// Start server in background
+	errCh := make(chan error, 1)
+	go func() {
+		if *useTLS {
+			errCh <- server.ListenAndServeTLS(*tlsCert, *tlsKey)
+		} else {
+			errCh <- server.ListenAndServe()
+		}
+	}()
+
+	// Wait for signal or server error
+	select {
+	case err := <-errCh:
+		log.Error(err, "Server failed")
+		os.Exit(1)
+	case <-ctx.Done():
+		log.Info("Shutdown signal received, draining connections")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Error(err, "Server shutdown error")
+		os.Exit(1)
+	}
+	log.Info("Server stopped gracefully")
 }
