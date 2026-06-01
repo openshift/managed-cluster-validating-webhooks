@@ -21,7 +21,7 @@ import (
 
 const (
 	WebhookName string = "serviceaccount-validation"
-	docString   string = `Managed OpenShift Customers may not delete the service accounts under the managed namespaces。`
+	docString   string = `Managed OpenShift Customers may not create or delete service accounts in managed namespaces (excluding exception namespaces: default, openshift-logging, openshift-user-workload-monitoring, openshift-operators).`
 )
 
 var (
@@ -30,7 +30,7 @@ var (
 	scope         = admissionregv1.NamespacedScope
 	rules         = []admissionregv1.RuleWithOperations{
 		{
-			Operations: []admissionregv1.OperationType{"DELETE"},
+			Operations: []admissionregv1.OperationType{"CREATE", "DELETE"},
 			Rule: admissionregv1.Rule{
 				APIGroups:   []string{""},
 				APIVersions: []string{"v1"},
@@ -115,6 +115,15 @@ func (s *serviceAccountWebhook) authorized(request admissionctl.Request) admissi
 	}
 
 	if isProtectedNamespace(request) && !isAllowedUserGroup(request) {
+		// Block CREATE operations in protected namespaces
+		if request.Operation == admissionv1.Create {
+			log.Info(fmt.Sprintf("CREATE operation denied for service account in protected namespace: %v", request.Namespace))
+			ret = admissionctl.Denied(fmt.Sprintf("Creating service accounts in managed namespace %v is not allowed", request.Namespace))
+			ret.UID = request.AdmissionRequest.UID
+			return ret
+		}
+
+		// Block DELETE operations in protected namespaces (existing logic)
 		if request.Operation == admissionv1.Delete && !isAllowedServiceAccount(sa) {
 			log.Info(fmt.Sprintf("Deleting operation detected on proteced serviceaccount: %v", sa.Name))
 			ret = admissionctl.Denied(fmt.Sprintf("Deleting protected service account under namespace %v is not allowed", request.Namespace))
@@ -134,8 +143,12 @@ func (s *serviceAccountWebhook) renderServiceAccount(request admissionctl.Reques
 	sa := &corev1.ServiceAccount{}
 
 	var err error
+	// For DELETE: use OldObject (the object being deleted)
+	// For CREATE: use Object (the object being created)
 	if len(request.OldObject.Raw) > 0 {
 		err = decoder.DecodeRaw(request.OldObject, sa)
+	} else if len(request.Object.Raw) > 0 {
+		err = decoder.Decode(request, sa)
 	}
 	if err != nil {
 		return nil, err

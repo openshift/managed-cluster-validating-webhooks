@@ -148,3 +148,99 @@ func TestSADeletion(t *testing.T) {
 	}
 	runServiceAccountTests(t, tests)
 }
+
+func TestSACreation(t *testing.T) {
+	tests := []serviceAccountTestSuites{
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "user-cannot-create-sa-in-protected-ns",
+			username:        "user1",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			namespace:       "openshift-ingress-operator",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "user-can-create-sa-in-normal-ns",
+			username:        "user1",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			namespace:       "my-namespace",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "user-can-create-sa-in-default-ns",
+			username:        "user1",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			namespace:       "default",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "user-can-create-sa-in-openshift-logging",
+			username:        "user1",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			namespace:       "openshift-logging",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "user-can-create-sa-in-openshift-operators",
+			username:        "user1",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			namespace:       "openshift-operators",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "user-can-create-sa-in-openshift-user-workload-monitoring",
+			username:        "user1",
+			userGroups:      []string{"system:authenticated", "system:authenticated:oauth"},
+			namespace:       "openshift-user-workload-monitoring",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "sre-can-create-sa-in-protected-ns",
+			username:        "user1",
+			userGroups:      []string{"system:serviceaccounts:openshift-backplane-srep"},
+			namespace:       "openshift-ingress-operator",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "backplane-admin-can-create-sa-in-protected-ns",
+			username:        "backplane-cluster-admin",
+			userGroups:      []string{"system:authenticated"},
+			namespace:       "openshift-ingress-operator",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "system-user-can-create-sa-in-protected-ns",
+			username:        "system:serviceaccount:kube-system:controller",
+			userGroups:      []string{"system:serviceaccounts"},
+			namespace:       "openshift-ingress-operator",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			targetSA:        "my-custom-sa",
+			testID:          "kube-user-can-create-sa-in-protected-ns",
+			username:        "kube:admin",
+			userGroups:      []string{"system:authenticated"},
+			namespace:       "openshift-ingress-operator",
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+	}
+	runServiceAccountTests(t, tests)
+}
