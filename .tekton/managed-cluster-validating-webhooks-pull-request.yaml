@@ -32,7 +32,7 @@ spec:
     value: .
   - name: build-args
     value:
-    - BASE_IMAGE=brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.25
+    - BASE_IMAGE=brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.26
   pipelineSpec:
     description: |
       This pipeline is ideal for building container images from a Containerfile while maintaining trust after pipeline customization.
@@ -96,7 +96,7 @@ spec:
       name: build-image-index
       type: string
     - default:
-      - BASE_IMAGE=brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.25
+      - BASE_IMAGE=brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.26
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
       type: array
