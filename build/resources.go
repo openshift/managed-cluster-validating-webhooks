@@ -279,9 +279,6 @@ func createServiceMonitor() *monitoringv1.ServiceMonitor {
 		Spec: monitoringv1.ServiceMonitorSpec{
 			Endpoints: []monitoringv1.Endpoint{
 				{
-					BearerTokenSecret: corev1.SecretKeySelector{
-						Key: "",
-					},
 					Port: "metrics",
 				},
 			},
