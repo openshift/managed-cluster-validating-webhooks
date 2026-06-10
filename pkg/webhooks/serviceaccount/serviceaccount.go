@@ -52,6 +52,7 @@ var (
 	}
 	exceptionNamespaces = []string{
 		"default",
+		"kube-system",
 		"openshift-logging",
 		"openshift-user-workload-monitoring",
 		"openshift-operators",
