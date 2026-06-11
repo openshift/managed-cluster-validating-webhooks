@@ -14,8 +14,6 @@ updates:
       time: "03:00"
       timezone: "UTC"
     ignore:
-      - dependency-name: "redhat-services-prod/openshift/boilerplate"
-        # don't upgrade boilerplate via these means
-      - dependency-name: "openshift4/ose-operator-registry"
-        # don't upgrade ose-operator-registry via these means
+      - dependency-name: "ubi9/go-toolset"
+        # builder go-toolset base is pinned in Dockerfile, not via Dependabot
 # END boilerplate-managed
