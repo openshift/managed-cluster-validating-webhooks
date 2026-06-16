@@ -17,11 +17,24 @@ import (
 
 const (
 	WebhookName = "imagecontentpolicies-validation"
-	WebhookDoc  = "Managed OpenShift customers may not create ImageContentSourcePolicy, ImageDigestMirrorSet, or ImageTagMirrorSet resources that configure mirrors that would conflict with system registries (e.g. quay.io, registry.redhat.io, registry.access.redhat.com, etc). For more details, see https://docs.openshift.com/"
-	// unauthorizedRepositoryMirrors is a regex that is used to reject certain specified repository mirrors.
-	// Only registry.redhat.io exactly is blocked, while all other contained regexes
-	// follow a similar pattern, i.e. rejecting quay.io or quay.io/.*
-	unauthorizedRepositoryMirrors = `(^registry\.redhat\.io$|^quay\.io(/.*)?$|^registry\.access\.redhat\.com(/.*)?)`
+	WebhookDoc  = "Managed OpenShift customers may not create ImageContentSourcePolicy, ImageDigestMirrorSet, or ImageTagMirrorSet resources that configure mirrors for system registries (registry.redhat.io, registry.access.redhat.com, registry.ci.openshift.org, registry.connect.redhat.com) or managed service image repositories on quay.io (openshift-release-dev, openshift, app-sre, redhat-services-prod/openshift, redhat-services-prod/splunk-audit-exporter-tenant, etc.). This protects cluster stability by preventing redirection of critical platform and operator images. Customer-owned quay.io organizations are permitted. For more details, see https://docs.openshift.com/"
+	// unauthorizedRepositoryMirrors blocks entire Red Hat registries and specific quay.io organization paths
+	// used by the managed OpenShift platform and Red Hat services.
+	// Red Hat registries: registry.redhat.io, registry.access.redhat.com, registry.ci.openshift.org, registry.connect.redhat.com
+	// Quay.io blocked orgs: app-sre, observatorium, openshift-logging, openshift-release-dev, openshift, prometheus,
+	//                       redhat-services-prod/openshift, redhat-services-prod/splunk-audit-exporter-tenant
+	unauthorizedRepositoryMirrors = `(^registry\.redhat\.io(/.*)?$|` +
+		`^registry\.access\.redhat\.com(/.*)?$|` +
+		`^registry\.ci\.openshift\.org(/.*)?$|` +
+		`^registry\.connect\.redhat\.com(/.*)?$|` +
+		`^quay\.io/app-sre(/.*)?$|` +
+		`^quay\.io/observatorium(/.*)?$|` +
+		`^quay\.io/openshift-logging(/.*)?$|` +
+		`^quay\.io/openshift-release-dev(/.*)?$|` +
+		`^quay\.io/openshift(/.*)?$|` +
+		`^quay\.io/prometheus(/.*)?$|` +
+		`^quay\.io/redhat-services-prod/openshift(/.*)?$|` +
+		`^quay\.io/redhat-services-prod/splunk-audit-exporter-tenant(/.*)?$)`
 )
 
 type ImageContentPoliciesWebhook struct {

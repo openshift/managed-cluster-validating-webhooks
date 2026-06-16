@@ -22,23 +22,7 @@ func Test_authorizeImageDigestMirrorSet(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "quay.io",
-			idms: configv1.ImageDigestMirrorSet{
-				Spec: configv1.ImageDigestMirrorSetSpec{
-					ImageDigestMirrors: []configv1.ImageDigestMirrors{
-						{
-							Source: "quay.io",
-						},
-						{
-							Source: "quay.io/something",
-						},
-					},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "registry.redhat.io",
+			name: "blocked: registry.redhat.io",
 			idms: configv1.ImageDigestMirrorSet{
 				Spec: configv1.ImageDigestMirrorSetSpec{
 					ImageDigestMirrors: []configv1.ImageDigestMirrors{
@@ -51,15 +35,12 @@ func Test_authorizeImageDigestMirrorSet(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "registry.access.redhat.com",
+			name: "blocked: registry.redhat.io with path",
 			idms: configv1.ImageDigestMirrorSet{
 				Spec: configv1.ImageDigestMirrorSetSpec{
 					ImageDigestMirrors: []configv1.ImageDigestMirrors{
 						{
-							Source: "registry.access.redhat.com",
-						},
-						{
-							Source: "registry.access.redhat.com/something",
+							Source: "registry.redhat.io/openshift4/ose-cli",
 						},
 					},
 				},
@@ -67,15 +48,158 @@ func Test_authorizeImageDigestMirrorSet(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "example.com",
+			name: "blocked: registry.access.redhat.com",
 			idms: configv1.ImageDigestMirrorSet{
 				Spec: configv1.ImageDigestMirrorSetSpec{
 					ImageDigestMirrors: []configv1.ImageDigestMirrors{
 						{
-							Source: "registry.redhat.io/something",
+							Source: "registry.access.redhat.com",
 						},
 						{
+							Source: "registry.access.redhat.com/ubi8/pause",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: registry.ci.openshift.org",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "registry.ci.openshift.org/ocp/release-5",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: registry.connect.redhat.com",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "registry.connect.redhat.com/dynatrace/dynatrace-operator",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/openshift-release-dev",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "quay.io/openshift-release-dev/ocp-release",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/openshift",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "quay.io/openshift/origin-kube-state-metrics",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/app-sre",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "quay.io/app-sre/managed-cluster-validating-webhooks",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/redhat-services-prod/openshift",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "quay.io/redhat-services-prod/openshift/addon-operator",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/prometheus",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "quay.io/prometheus/blackbox-exporter",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "allowed: quay.io/redhat-services-prod/some-org",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "quay.io/redhat-services-prod/some-org/my-image",
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "allowed: example.com",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
 							Source: "example.com",
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "allowed: gcr.io",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "gcr.io/my-project/my-app",
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "allowed: docker.io",
+			idms: configv1.ImageDigestMirrorSet{
+				Spec: configv1.ImageDigestMirrorSetSpec{
+					ImageDigestMirrors: []configv1.ImageDigestMirrors{
+						{
+							Source: "docker.io/library/nginx",
 						},
 					},
 				},
@@ -100,23 +224,7 @@ func Test_authorizeImageTagMirrorSet(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "quay.io",
-			itms: configv1.ImageTagMirrorSet{
-				Spec: configv1.ImageTagMirrorSetSpec{
-					ImageTagMirrors: []configv1.ImageTagMirrors{
-						{
-							Source: "quay.io",
-						},
-						{
-							Source: "quay.io/something",
-						},
-					},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "registry.redhat.io",
+			name: "blocked: registry.redhat.io",
 			itms: configv1.ImageTagMirrorSet{
 				Spec: configv1.ImageTagMirrorSetSpec{
 					ImageTagMirrors: []configv1.ImageTagMirrors{
@@ -129,15 +237,12 @@ func Test_authorizeImageTagMirrorSet(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "registry.access.redhat.com",
+			name: "blocked: registry.redhat.io with path",
 			itms: configv1.ImageTagMirrorSet{
 				Spec: configv1.ImageTagMirrorSetSpec{
 					ImageTagMirrors: []configv1.ImageTagMirrors{
 						{
-							Source: "registry.access.redhat.com",
-						},
-						{
-							Source: "registry.access.redhat.com/something",
+							Source: "registry.redhat.io/rhacm2/config-policy-controller-rhel9",
 						},
 					},
 				},
@@ -145,15 +250,119 @@ func Test_authorizeImageTagMirrorSet(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "example.com",
+			name: "blocked: registry.access.redhat.com",
 			itms: configv1.ImageTagMirrorSet{
 				Spec: configv1.ImageTagMirrorSetSpec{
 					ImageTagMirrors: []configv1.ImageTagMirrors{
 						{
-							Source: "registry.redhat.io/something",
+							Source: "registry.access.redhat.com",
 						},
 						{
+							Source: "registry.access.redhat.com/ubi8/pause",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: registry.ci.openshift.org",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "registry.ci.openshift.org/ocp/release-5",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: registry.connect.redhat.com",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "registry.connect.redhat.com/dynatrace/dynatrace-operator",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/openshift-logging",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "quay.io/openshift-logging/eventrouter",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/observatorium",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "quay.io/observatorium/token-refresher",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/redhat-services-prod/splunk-audit-exporter-tenant",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "quay.io/redhat-services-prod/splunk-audit-exporter-tenant/splunk-audit-exporter/splunk-audit-exporter",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "allowed: quay.io/redhat-services-prod/some-org",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "quay.io/redhat-services-prod/some-org",
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "allowed: example.com",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
 							Source: "example.com",
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "allowed: quay.io/customer-org",
+			itms: configv1.ImageTagMirrorSet{
+				Spec: configv1.ImageTagMirrorSetSpec{
+					ImageTagMirrors: []configv1.ImageTagMirrors{
+						{
+							Source: "quay.io/customer-org/my-app",
 						},
 					},
 				},
@@ -178,23 +387,7 @@ func Test_authorizeImageContentSourcePolicy(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "quay.io",
-			icsp: operatorv1alpha1.ImageContentSourcePolicy{
-				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
-					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
-						{
-							Source: "quay.io",
-						},
-						{
-							Source: "quay.io/something",
-						},
-					},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "registry.redhat.io",
+			name: "blocked: registry.redhat.io",
 			icsp: operatorv1alpha1.ImageContentSourcePolicy{
 				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
 					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
@@ -210,7 +403,7 @@ func Test_authorizeImageContentSourcePolicy(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "registry.access.redhat.com",
+			name: "blocked: registry.access.redhat.com",
 			icsp: operatorv1alpha1.ImageContentSourcePolicy{
 				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
 					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
@@ -226,7 +419,59 @@ func Test_authorizeImageContentSourcePolicy(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "example.com",
+			name: "blocked: registry.ci.openshift.org",
+			icsp: operatorv1alpha1.ImageContentSourcePolicy{
+				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
+					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
+						{
+							Source: "registry.ci.openshift.org/ocp/release-5",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: registry.connect.redhat.com",
+			icsp: operatorv1alpha1.ImageContentSourcePolicy{
+				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
+					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
+						{
+							Source: "registry.connect.redhat.com/dynatrace/dynatrace-operator",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "blocked: quay.io/app-sre",
+			icsp: operatorv1alpha1.ImageContentSourcePolicy{
+				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
+					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
+						{
+							Source: "quay.io/app-sre/suricata",
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "allowed: quay.io/redhat-services-prod/some-org",
+			icsp: operatorv1alpha1.ImageContentSourcePolicy{
+				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
+					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
+						{
+							Source: "quay.io/redhat-services-prod/some-org",
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "allowed: example.com",
 			icsp: operatorv1alpha1.ImageContentSourcePolicy{
 				Spec: operatorv1alpha1.ImageContentSourcePolicySpec{
 					RepositoryDigestMirrors: []operatorv1alpha1.RepositoryDigestMirrors{
@@ -361,7 +606,7 @@ func TestImageContentPolicy(t *testing.T) {
 			name: "unauthorized-creation-idms",
 			op:   admissionv1.Create,
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "quay.io")),
+				Raw: []byte(fmt.Sprintf(rawImageDigestMirrorSet, "quay.io/openshift-release-dev/ocp-release")),
 			},
 			gvk:     idmsgvk,
 			gvr:     idmsgvr,
@@ -407,7 +652,7 @@ func TestImageContentPolicy(t *testing.T) {
 			name: "unauthorized-creation-itms",
 			op:   admissionv1.Create,
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "quay.io")),
+				Raw: []byte(fmt.Sprintf(rawImageTagMirrorSet, "quay.io/app-sre/compliance-monkey")),
 			},
 			gvk:     itmsgvk,
 			gvr:     itmsgvr,
@@ -453,7 +698,7 @@ func TestImageContentPolicy(t *testing.T) {
 			name: "unauthorized-creation-icp",
 			op:   admissionv1.Create,
 			obj: &runtime.RawExtension{
-				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "quay.io")),
+				Raw: []byte(fmt.Sprintf(rawImageContentSourcePolicy, "registry.redhat.io/openshift4/ose-cli")),
 			},
 			gvk:     icspgvk,
 			gvr:     icspgvr,

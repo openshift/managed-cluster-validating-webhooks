@@ -213,7 +213,7 @@
         "scope": "Cluster"
       }
     ],
-    "documentString": "Managed OpenShift customers may not create ImageContentSourcePolicy, ImageDigestMirrorSet, or ImageTagMirrorSet resources that configure mirrors that would conflict with system registries (e.g. quay.io, registry.redhat.io, registry.access.redhat.com, etc). For more details, see https://docs.openshift.com/"
+    "documentString": "Managed OpenShift customers may not create ImageContentSourcePolicy, ImageDigestMirrorSet, or ImageTagMirrorSet resources that configure mirrors for system registries (registry.redhat.io, registry.access.redhat.com, registry.ci.openshift.org, registry.connect.redhat.com) or managed service image repositories on quay.io (openshift-release-dev, openshift, app-sre, redhat-services-prod/openshift, redhat-services-prod/splunk-audit-exporter-tenant, etc.). This protects cluster stability by preventing redirection of critical platform and operator images. Customer-owned quay.io organizations are permitted. For more details, see https://docs.openshift.com/"
   },
   {
     "webhookName": "ingress-config-validation",
@@ -582,7 +582,7 @@
         "scope": "*"
       }
     ],
-    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [addons.managed.openshift.io cloudingress.managed.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io operator.openshift.io network.openshift.io machine.openshift.io managed.openshift.io ocmagent.managed.openshift.io autoscaling.openshift.io config.openshift.io machineconfiguration.openshift.io cloudcredential.openshift.io admissionregistration.k8s.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
+    "documentString": "Managed OpenShift customers may not manage any objects in the following APIGroups [config.openshift.io operator.openshift.io cloudcredential.openshift.io admissionregistration.k8s.io ocmagent.managed.openshift.io autoscaling.openshift.io machineconfiguration.openshift.io network.openshift.io machine.openshift.io addons.managed.openshift.io cloudingress.managed.openshift.io managed.openshift.io splunkforwarder.managed.openshift.io upgrade.managed.openshift.io], nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects."
   },
   {
     "webhookName": "scc-validation",
