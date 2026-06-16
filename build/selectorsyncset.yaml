@@ -801,7 +801,6 @@ objects:
           apiVersions:
           - v1
           operations:
-          - CREATE
           - DELETE
           resources:
           - serviceaccounts
