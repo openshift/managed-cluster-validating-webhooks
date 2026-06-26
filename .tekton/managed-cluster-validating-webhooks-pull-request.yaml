@@ -161,7 +161,7 @@ spec:
         - name: name
           value: git-clone-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.2@sha256:3506468c326f83edf529c2af476ae6b0fa81073422d2fb85ab16218c9579b020
+          value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.1@sha256:a11dac7d914d0165362cdcc4c50860a30320f59a32ed0778bf895004d3f74591
         - name: kind
           value: task
         resolver: bundles
