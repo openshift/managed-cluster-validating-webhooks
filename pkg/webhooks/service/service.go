@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
-	"gomodules.xyz/jsonpatch/v2"
+	"gomodules.xyz/jsonpatch/v3"
 
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
