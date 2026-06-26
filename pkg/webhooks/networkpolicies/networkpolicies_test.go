@@ -82,6 +82,12 @@ func (t crudTest) redhatServiceAccount() crudTest {
 	return t
 }
 
+func (t crudTest) rhoaiServiceAccount() crudTest {
+	t.testData.username = "system:serviceaccount:redhat-ods-operator:redhat-ods-operator-controller-manager"
+	t.testData.userGroups = []string{"system:serviceaccounts:redhat-ods-operator", "system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+
 func (t crudTest) namespace(namespace string) crudTest {
 	t.testData.targetNamespace = namespace
 	return t
@@ -244,6 +250,24 @@ func TestUsers(t *testing.T) {
 		updateFrom(createRawJSONString("openshift-ingress", map[string]string{"ingresscontroller.operator.openshift.io/deployment-ingresscontroller": "default"})).
 		podSelector("ingresscontroller.operator.openshift.io/deployment-ingresscontroller", "custom").
 		regularUser().shouldBeAllowed())
+
+	// Privileged service accounts (redhat-*, openshift-*) should be allowed
+	// to create NetworkPolicies in openshift-ingress without the ingress
+	// controller label. This is needed for operators like RHOAI that deploy
+	// pods (kube-auth-proxy, payload-processing) into openshift-ingress.
+	tests = append(tests, newCrudTest("rhoai-sa-openshift-ingress-no-ingress-label").
+		namespace("openshift-ingress").
+		podSelector("app", "kube-auth-proxy").
+		rhoaiServiceAccount().shouldBeAllowedCRUD()...)
+	tests = append(tests, newCrudTest("privileged-sa-openshift-ingress-no-ingress-label").
+		namespace("openshift-ingress").
+		podSelector("app", "payload-processing").
+		allowedServiceAccount().shouldBeAllowedCRUD()...)
+	// Unprivileged SAs should still be denied
+	tests = append(tests, newCrudTest("unprivileged-sa-openshift-ingress-no-ingress-label").
+		namespace("openshift-ingress").
+		podSelector("app", "some-pod").
+		unprivilegedServiceAccount().shouldBeDeniedCRUD()...)
 
 	runNetworkPolicyTests(t, tests)
 }

@@ -96,6 +96,16 @@ func (s *networkpoliciesruleWebhook) authorized(request admissionctl.Request) ad
 	}
 
 	if np.GetNamespace() == "openshift-ingress" {
+		// Allow privileged service accounts (e.g. redhat-*, openshift-*) to
+		// manage NetworkPolicies for non-ingress-controller pods deployed in
+		// this namespace, such as kube-auth-proxy or payload-processing.
+		for _, group := range request.UserInfo.Groups {
+			if privilegedServiceAccountGroupsRe.Match([]byte(group)) {
+				ret = admissionctl.Allowed(fmt.Sprintf("Privileged service accounts in group(s) '%s' can operate on NetworkPolicies in openshift-ingress", strings.Join(request.UserInfo.Groups, ", ")))
+				ret.UID = request.AdmissionRequest.UID
+				return ret
+			}
+		}
 		ingressName, labelFound := np.Spec.PodSelector.MatchLabels["ingresscontroller.operator.openshift.io/deployment-ingresscontroller"]
 		if !labelFound || ingressName == "default" {
 			ret = admissionctl.Denied(fmt.Sprintf("User '%s' prevented from creating network policy that may impact default ingress, which is managed by Red Hat. This is in an effort to prevent harmful actions that may cause unintended consequences or affect the stability of the cluster. If you have any questions about this, please reach out to Red Hat support at https://access.redhat.com/support", request.UserInfo.Username))
