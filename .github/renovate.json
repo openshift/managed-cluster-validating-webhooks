@@ -5,12 +5,27 @@
   ],
   "packageRules": [
     {
-      "description": "KFLUXSPRT-8235: Prow/Tide repo — pre-label lgtm/approved; Tide merges after CI (no Renovate/platform automerge)",
-      "matchManagers": ["gomod", "tekton"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "description": "KFLUXSPRT-8235: Prow/Tide repo \u2014 pre-label lgtm/approved; Tide merges after CI (no Renovate/platform automerge)",
+      "matchManagers": [
+        "gomod",
+        "tekton"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
       "automerge": false,
       "platformAutomerge": false,
-      "addLabels": ["lgtm", "approved"]
+      "addLabels": [
+        "lgtm",
+        "approved"
+      ]
     }
+  ],
+  "enabledManagers": [
+    "tekton",
+    "gomod"
   ]
 }
