@@ -52,6 +52,22 @@ var (
 			}
 		]
 	}`
+
+	// testBackplaneClusterRoleJSON represents a backplane-* protected ClusterRole
+	testBackplaneClusterRoleJSON = `{
+		"apiVersion": "rbac.authorization.k8s.io/v1",
+		"kind": "ClusterRole",
+		"metadata": {
+			"name": "backplane-lpsre-admins-project"
+		},
+		"rules": [
+			{
+				"apiGroups": [""],
+				"resources": ["pods"],
+				"verbs": ["get", "list"]
+			}
+		]
+	}`
 )
 
 func runClusterRoleTests(t *testing.T, tests []ClusterRoleTestSuites) {
@@ -68,9 +84,12 @@ func runClusterRoleTests(t *testing.T, tests []ClusterRoleTestSuites) {
 		}
 
 		var clusterRoleJSON string
-		if test.targetClusterRole == "cluster-admin" {
+		switch test.targetClusterRole {
+		case "cluster-admin":
 			clusterRoleJSON = testClusterRoleJSON
-		} else {
+		case "backplane-lpsre-admins-project":
+			clusterRoleJSON = testBackplaneClusterRoleJSON
+		default:
 			clusterRoleJSON = testOtherClusterRoleJSON
 		}
 
@@ -161,6 +180,22 @@ func TestClusterRoleDeletionPositive(t *testing.T) {
 			testID:            "system-user-allow",
 			username:          "system:kube-controller-manager",
 			userGroups:        []string{"system:authenticated"},
+			operation:         admissionv1.Delete,
+			shouldBeAllowed:   true,
+			targetClusterRole: "cluster-admin",
+		},
+		{
+			testID:            "hive-system-admin-allow-backplane-role",
+			username:          "system:admin",
+			userGroups:        []string{"system:authenticated", "system:masters"},
+			operation:         admissionv1.Delete,
+			shouldBeAllowed:   true,
+			targetClusterRole: "backplane-lpsre-admins-project",
+		},
+		{
+			testID:            "hive-system-admin-allow-protected-role",
+			username:          "system:admin",
+			userGroups:        []string{"system:authenticated", "system:masters"},
 			operation:         admissionv1.Delete,
 			shouldBeAllowed:   true,
 			targetClusterRole: "cluster-admin",
