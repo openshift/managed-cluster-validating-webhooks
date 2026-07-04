@@ -55,6 +55,7 @@ var (
 	// Users allowed to delete protected ClusterRoles
 	allowedUsers = []string{
 		"backplane-cluster-admin",
+		"system:admin",
 	}
 
 	// Groups allowed to delete protected ClusterRoles
