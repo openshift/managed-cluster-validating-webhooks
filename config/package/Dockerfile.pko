@@ -18,3 +18,5 @@ LABEL com.redhat.component="openshift-managed-cluster-validating-webhooks" \
 
 # Only package manifests — exclude Dockerfile/Containerfile from the image.
 COPY *.yaml* /package/
+
+USER 1001

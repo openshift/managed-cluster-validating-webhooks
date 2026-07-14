@@ -18,3 +18,5 @@ LABEL com.redhat.component="openshift-managed-cluster-validating-webhooks" \
       version="${VERSION}"
 
 ADD *.yaml* /package/
+
+USER 1001
