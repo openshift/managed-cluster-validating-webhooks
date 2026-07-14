@@ -100,7 +100,33 @@ spec:
         name: webhooks
         ports:
         - containerPort: 5000
-        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          seccompProfile:
+            type: RuntimeDefault
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        livenessProbe:
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          tcpSocket:
+            port: 5000
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          tcpSocket:
+            port: 5000
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /service-certs

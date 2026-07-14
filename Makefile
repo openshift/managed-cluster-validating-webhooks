@@ -93,8 +93,13 @@ build-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 build-package-image: clean $(GO_SOURCES) $(EXTRA_DEPS)
 	# Local/Jenkins builds bake the webhook image into the package. Konflux
 	# builds leave '{{ .config.image }}' and rely on Package config from SaaS.
-	$(shell sed -i -e "s#{{ .config.image }}#$(IMG):$(IMAGETAG)#g" $(PACKAGE_RESOURCE_DESTINATION))
-	$(CONTAINER_ENGINE) build --platform=linux/amd64 -t $(PKG_IMG):$(IMAGETAG) -f $(join $(CURDIR),/build/Dockerfile.pko) $(join $(CURDIR),/config/package) && \
+	sed -i -e "s#{{ .config.image }}#$(IMG):$(IMAGETAG)#g" $(PACKAGE_RESOURCE_DESTINATION)
+	$(CONTAINER_ENGINE) build --platform=linux/amd64 \
+		--build-arg VERSION=$(IMAGETAG) \
+		--build-arg RELEASE=$(IMAGETAG) \
+		-t $(PKG_IMG):$(IMAGETAG) \
+		-f $(join $(CURDIR),/config/package/Dockerfile.pko) \
+		$(join $(CURDIR),/config/package) && \
 	$(CONTAINER_ENGINE) tag $(PKG_IMG):$(IMAGETAG) $(PKG_IMG):latest
 	# Restore the template file modified for the package build
 	git checkout $(PACKAGE_RESOURCE_DESTINATION)

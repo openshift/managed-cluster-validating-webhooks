@@ -1,6 +1,11 @@
-# Prefer build/Dockerfile.pko (Konflux + make build-package-image).
-# Kept for compatibility with older docs/scripts that reference this path.
+# Compatibility wrapper for older docs/scripts. Prefer Dockerfile.pko in this directory.
+ARG VERSION=unknown
+ARG RELEASE=unknown
+
 FROM scratch
+
+ARG VERSION
+ARG RELEASE
 
 LABEL com.redhat.component="openshift-managed-cluster-validating-webhooks" \
       io.k8s.description="managed-cluster-validating-webhooks PKO Package for OpenShift Dedicated / ROSA HCP" \
@@ -9,7 +14,7 @@ LABEL com.redhat.component="openshift-managed-cluster-validating-webhooks" \
       name="openshift/managed-cluster-validating-webhooks-pko" \
       url="https://github.com/openshift/managed-cluster-validating-webhooks" \
       vendor="Red Hat, Inc." \
-      release="v0.0.0" \
-      version="v0.0.0"
+      release="${RELEASE}" \
+      version="${VERSION}"
 
 ADD *.yaml* /package/

@@ -44,6 +44,14 @@ metadata:
   namespace: validation-webhook
 spec:
   image: quay.io/$USER/managed-cluster-validating-webhooks-hs-package:$TAG
+  config:
+    # Required: webhook runtime image (Konflux/SaaS supplies this via OPERATOR_IMAGE:IMAGE_TAG)
+    image: quay.io/$USER/managed-cluster-validating-webhooks:$TAG
+    # Required: PEM-encoded service CA used for webhook client auth (see ObjectTemplate sources in production)
+    serviceca: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
 ```
 
 ## ACM Policy for Package distribution

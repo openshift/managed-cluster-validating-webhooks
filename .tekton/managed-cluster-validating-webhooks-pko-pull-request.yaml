@@ -24,9 +24,13 @@ spec:
   - name: output-image
     value: quay.io/redhat-user-workloads/managed-cluster-validating-webhooks-tenant/openshift/managed-cluster-validating-webhooks-pko:on-pr-{{revision}}
   - name: dockerfile
-    value: build/Dockerfile.pko
+    value: Dockerfile.pko
   - name: path-context
     value: config/package
+  - name: build-args
+    value:
+    - VERSION={{revision}}
+    - RELEASE={{revision}}
   - name: skip-preflight-cert-check
     value: 'true'
   - name: image-expires-after
@@ -43,7 +47,7 @@ spec:
     - name: url
       value: https://github.com/openshift/boilerplate
     - name: revision
-      value: master
+      value: 5b58d5f28eb2b26c90caf079e1b052a8b1d03db0
     - name: pathInRepo
       value: pipelines/docker-build-oci-ta/pipeline.yaml
 status: {}
