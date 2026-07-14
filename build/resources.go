@@ -473,12 +473,14 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 					},
 					Containers: []corev1.Container{
 						{
-							// Since we're referencing images by digest, we don't
-							// have to worry about them changing underneath us.
+							// Image is supplied at install time via Package
+							// spec.config.image (Konflux/SaaS), matching other
+							// SRE PKO packages. Local/Jenkins package builds may
+							// still sed-substitute this placeholder.
 							ImagePullPolicy:          corev1.PullIfNotPresent,
 							TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 							Name:                     "webhooks",
-							Image:                    "REPLACED_BY_PIPELINE",
+							Image:                    "{{ .config.image }}",
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "service-certs",

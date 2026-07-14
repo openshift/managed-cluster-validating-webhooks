@@ -95,7 +95,7 @@ spec:
         env:
         - name: KUBECONFIG
           value: /etc/hosted-kubernetes/kubeconfig
-        image: REPLACED_BY_PIPELINE
+        image: '{{ .config.image }}'
         imagePullPolicy: IfNotPresent
         name: webhooks
         ports:
