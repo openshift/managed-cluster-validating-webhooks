@@ -14,10 +14,14 @@ spec:
   config:
     openAPIV3Schema:
       properties:
+        image:
+          description: Container image for the validation-webhook Deployment
+          type: string
         serviceca:
           description: Service Certificate Authority used for webhook client authentication
           type: string
       required:
+      - image
       - serviceca
       type: object
   availabilityProbes:

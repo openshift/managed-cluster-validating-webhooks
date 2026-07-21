@@ -95,12 +95,38 @@ spec:
         env:
         - name: KUBECONFIG
           value: /etc/hosted-kubernetes/kubeconfig
-        image: REPLACED_BY_PIPELINE
+        image: '{{ .config.image }}'
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          tcpSocket:
+            port: 5000
         name: webhooks
         ports:
         - containerPort: 5000
-        resources: {}
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          tcpSocket:
+            port: 5000
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          seccompProfile:
+            type: RuntimeDefault
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /service-certs

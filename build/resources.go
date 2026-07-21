@@ -17,6 +17,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -473,12 +474,54 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 					},
 					Containers: []corev1.Container{
 						{
-							// Since we're referencing images by digest, we don't
-							// have to worry about them changing underneath us.
+							// Image is supplied at install time via Package
+							// spec.config.image (Konflux/SaaS), matching other
+							// SRE PKO packages. Local/Jenkins package builds may
+							// still sed-substitute this placeholder.
 							ImagePullPolicy:          corev1.PullIfNotPresent,
 							TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 							Name:                     "webhooks",
-							Image:                    "REPLACED_BY_PIPELINE",
+							Image:                    "{{ .config.image }}",
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: pointer.Bool(false),
+								ReadOnlyRootFilesystem:   pointer.Bool(true),
+								RunAsNonRoot:             pointer.Bool(true),
+								RunAsUser:                pointer.Int64(1001),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: corev1.SeccompProfileTypeRuntimeDefault,
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("10m"),
+									corev1.ResourceMemory: resource.MustParse("50Mi"),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("500m"),
+									corev1.ResourceMemory: resource.MustParse("512Mi"),
+								},
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.FromInt(int(*listenPort)),
+									},
+								},
+								InitialDelaySeconds: 10,
+								PeriodSeconds:       30,
+							},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.FromInt(int(*listenPort)),
+									},
+								},
+								InitialDelaySeconds: 5,
+								PeriodSeconds:       10,
+							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "service-certs",

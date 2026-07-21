@@ -7,6 +7,10 @@ parameters:
     required: true
   - name: IMAGE_DIGEST
     required: true
+  - name: OPERATOR_IMAGE
+    required: true
+  - name: IMAGE_TAG
+    required: true
 objects:
   - apiVersion: hive.openshift.io/v1
     kind: SelectorSyncSet
@@ -79,7 +83,7 @@ objects:
                                 name: validation-webhooks
                               spec:
                                 image: ${REGISTRY_IMG}@${IMAGE_DIGEST}
-                                config: {{toJson .config}}
+                                config: {{ merge (dict "image" "${OPERATOR_IMAGE}:${IMAGE_TAG}") .config | toJson }}
                             sources:
                             - apiVersion: v1
                               kind: ConfigMap
