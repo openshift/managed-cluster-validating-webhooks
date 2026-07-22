@@ -486,7 +486,6 @@ func createPackagedDeployment(replicas int32, phase string) *appsv1.Deployment {
 								AllowPrivilegeEscalation: pointer.Bool(false),
 								ReadOnlyRootFilesystem:   pointer.Bool(true),
 								RunAsNonRoot:             pointer.Bool(true),
-								RunAsUser:                pointer.Int64(1001),
 								Capabilities: &corev1.Capabilities{
 									Drop: []corev1.Capability{"ALL"},
 								},
