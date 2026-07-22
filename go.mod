@@ -13,7 +13,7 @@ require (
 	github.com/openshift/hive/apis v0.0.0-20260710225308-c701d130493f
 	github.com/openshift/operator-custom-metrics v0.5.1
 	github.com/openshift/osde2e-common v0.0.0-20231010150014-8a4449a371e6
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.92.1
 	github.com/prometheus/client_golang v1.24.0
 	gomodules.xyz/jsonpatch/v2 v2.5.0
 	k8s.io/api v0.36.2
