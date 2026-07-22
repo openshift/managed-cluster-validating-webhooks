@@ -1,11 +1,8 @@
 reviewers:
-- joshbranham
-- srep-functional-team-rocket
 - srep-functional-team-thor
+- rosa-staff-engineers
 
 approvers:
-- joshbranham
 - tnierman
-- srep-functional-leads
-- srep-team-leads
 - srep-functional-team-thor
+- rosa-staff-engineers
