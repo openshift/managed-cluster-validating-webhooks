@@ -14,7 +14,7 @@ require (
 	github.com/openshift/operator-custom-metrics v0.5.1
 	github.com/openshift/osde2e-common v0.0.0-20231010150014-8a4449a371e6
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
-	github.com/prometheus/client_golang v1.24.0
+	github.com/prometheus/client_golang v1.24.1
 	gomodules.xyz/jsonpatch/v2 v2.5.0
 	k8s.io/api v0.36.2
 	k8s.io/apiextensions-apiserver v0.36.2
@@ -63,7 +63,7 @@ require (
 	github.com/openshift/installer v1.4.22-ec5 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.0 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
