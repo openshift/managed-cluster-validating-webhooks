@@ -2,12 +2,14 @@ package dispatcher
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
@@ -39,6 +41,18 @@ func (f *fakeWebhook) SyncSetLabelSelector() metav1.LabelSelector { return metav
 func (f *fakeWebhook) ClassicEnabled() bool                       { return true }
 func (f *fakeWebhook) HypershiftEnabled() bool                    { return false }
 
+type blockingWebhook struct {
+	fakeWebhook
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (b *blockingWebhook) Authorized(_ admissionctl.Request) admissionctl.Response {
+	b.entered <- struct{}{}
+	<-b.release
+	return admissionctl.Allowed("ok")
+}
+
 func newTestDispatcher() *Dispatcher {
 	hooks := webhooks.RegisteredWebhooks{
 		"test-validation": func() webhooks.Webhook { return &fakeWebhook{} },
@@ -46,7 +60,8 @@ func newTestDispatcher() *Dispatcher {
 	return NewDispatcher(hooks)
 }
 
-func validAdmissionReviewBody() []byte {
+func validAdmissionReviewBody(t testing.TB) []byte {
+	t.Helper()
 	ar := admissionv1.AdmissionReview{
 		Request: &admissionv1.AdmissionRequest{
 			UID: types.UID("test-uid"),
@@ -63,7 +78,10 @@ func validAdmissionReviewBody() []byte {
 			Operation: admissionv1.Create,
 		},
 	}
-	b, _ := json.Marshal(ar)
+	b, err := json.Marshal(ar)
+	if err != nil {
+		t.Fatalf("failed to marshal AdmissionReview: %v", err)
+	}
 	return b
 }
 
@@ -75,7 +93,7 @@ func TestHandleRequest_OversizedBody(t *testing.T) {
 		oversized[i] = 'A'
 	}
 
-	req := httptest.NewRequest("POST", "/test-hook", bytes.NewReader(oversized))
+	req := httptest.NewRequestWithContext(context.Background(), "POST", "/test-hook", bytes.NewReader(oversized))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -89,8 +107,8 @@ func TestHandleRequest_OversizedBody(t *testing.T) {
 func TestHandleRequest_ValidRequest(t *testing.T) {
 	d := newTestDispatcher()
 
-	body := validAdmissionReviewBody()
-	req := httptest.NewRequest("POST", "/test-hook", bytes.NewReader(body))
+	body := validAdmissionReviewBody(t)
+	req := httptest.NewRequestWithContext(context.Background(), "POST", "/test-hook", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -112,7 +130,7 @@ func TestHandleRequest_ValidRequest(t *testing.T) {
 func TestHandleRequest_UnknownURI(t *testing.T) {
 	d := newTestDispatcher()
 
-	req := httptest.NewRequest("POST", "/unknown-hook", strings.NewReader("{}"))
+	req := httptest.NewRequestWithContext(context.Background(), "POST", "/unknown-hook", strings.NewReader("{}"))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -124,30 +142,38 @@ func TestHandleRequest_UnknownURI(t *testing.T) {
 }
 
 func TestHandleRequest_ConcurrentRequests(t *testing.T) {
-	d := newTestDispatcher()
-	body := validAdmissionReviewBody()
+	bw := &blockingWebhook{
+		entered: make(chan struct{}, 2),
+		release: make(chan struct{}),
+	}
+	hooks := webhooks.RegisteredWebhooks{
+		"test-validation": func() webhooks.Webhook { return bw },
+	}
+	d := NewDispatcher(hooks)
+	body := validAdmissionReviewBody(t)
 
-	const concurrency = 20
 	var wg sync.WaitGroup
-	wg.Add(concurrency)
-	errors := make(chan string, concurrency)
-
-	for i := 0; i < concurrency; i++ {
+	wg.Add(2)
+	for i := 0; i < 2; i++ {
 		go func() {
 			defer wg.Done()
-			req := httptest.NewRequest("POST", "/test-hook", bytes.NewReader(body))
+			req := httptest.NewRequestWithContext(context.Background(), "POST", "/test-hook", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 			d.HandleRequest(w, req)
-			if w.Code != http.StatusOK {
-				errors <- "expected 200"
-			}
 		}()
 	}
 
-	wg.Wait()
-	close(errors)
-	for e := range errors {
-		t.Error(e)
+	// Both goroutines should enter Authorized concurrently.
+	// With a global mutex this would deadlock on the second send.
+	for i := 0; i < 2; i++ {
+		select {
+		case <-bw.entered:
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for concurrent handler entry — requests may be serialized")
+		}
 	}
+
+	close(bw.release)
+	wg.Wait()
 }
