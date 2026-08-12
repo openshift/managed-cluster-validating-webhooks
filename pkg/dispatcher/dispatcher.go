@@ -15,7 +15,7 @@ import (
 
 var log = logf.Log.WithName("dispatcher")
 
-const maxBodyBytes = 1 << 20 // 1 MiB
+const maxBodyBytes = 3 * 1024 * 1024 // 3 MiB, matches kube-apiserver MaxRequestBodyBytes default
 
 // Dispatcher struct
 type Dispatcher struct {
