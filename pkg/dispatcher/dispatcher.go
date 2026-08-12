@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sync"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -16,10 +15,11 @@ import (
 
 var log = logf.Log.WithName("dispatcher")
 
+const maxBodyBytes = 3 * 1024 * 1024 // 3 MiB, matches kube-apiserver MaxRequestBodyBytes default
+
 // Dispatcher struct
 type Dispatcher struct {
 	hooks *map[string]webhooks.WebhookFactory // uri -> hookfactory
-	mu    sync.Mutex
 }
 
 // NewDispatcher new dispatcher
@@ -41,8 +41,7 @@ func NewDispatcher(hooks webhooks.RegisteredWebhooks) *Dispatcher {
 // request, or some internal problem) it is appropriate to use the HTTP status
 // code to communicate.
 func (d *Dispatcher) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	log.V(1).Info("Handling request", "request", r.RequestURI)
 	url, err := url.Parse(r.RequestURI)
 	if err != nil {
