@@ -95,7 +95,10 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr: net.JoinHostPort(*listenAddress, *listenPort),
+		Addr:              net.JoinHostPort(*listenAddress, *listenPort),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
 	}
 	if *useTLS {
 		cafile, err := os.ReadFile(*caCert)
