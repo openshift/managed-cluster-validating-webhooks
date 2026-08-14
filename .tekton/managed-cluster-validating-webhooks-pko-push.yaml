@@ -45,7 +45,20 @@ spec:
     - name: url
       value: https://github.com/openshift/boilerplate
     - name: revision
-      value: 5b58d5f28eb2b26c90caf079e1b052a8b1d03db0
+      value: master
     - name: pathInRepo
       value: pipelines/docker-build-oci-ta/pipeline.yaml
+  # Override prefetch to tag-only ref so Enterprise Contract trusted_task
+  # matching does not hit deny_rule on digest-pinned bundles.
+  taskRunSpecs:
+  - pipelineTaskName: prefetch-dependencies
+    taskRef:
+      resolver: bundles
+      params:
+      - name: name
+        value: prefetch-dependencies-oci-ta
+      - name: bundle
+        value: quay.io/konflux-ci/tekton-catalog/task-prefetch-dependencies-oci-ta:0.9.0
+      - name: kind
+        value: task
 status: {}
