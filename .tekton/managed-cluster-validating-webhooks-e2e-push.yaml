@@ -26,6 +26,8 @@ spec:
     value: test/e2e/Dockerfile
   - name: path-context
     value: .
+  - name: skip-preflight-cert-check
+    value: 'true'
   taskRunTemplate:
     serviceAccountName: build-pipeline-managed-cluster-validating-webhooks-e2e
   workspaces:

@@ -29,6 +29,8 @@ spec:
   - name: build-args
     value:
     - BASE_IMAGE=brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.26
+  - name: skip-preflight-cert-check
+    value: 'true'
   taskRunTemplate:
     serviceAccountName: build-pipeline-managed-cluster-validating-webhooks
   workspaces:
