@@ -54,6 +54,15 @@ var (
 		"system:serviceaccount:openshift-cluster-node-tuning-operator:cluster-node-tuning-operator",
 		"system:serviceaccount:openshift-machine-config-operator:machine-config-controller",
 		"system:admin",
+		// The OpenShift Sandboxed Containers operator creates/modifies MachineConfig
+		// resources when a KataConfig is reconciled. Its CSV currently runs the
+		// controller as the `default` ServiceAccount in the fixed
+		// `openshift-sandboxed-containers-operator` namespace, so this entry matches
+		// the complete Kubernetes identity (namespace + ServiceAccount) and does not
+		// wildcard other namespaces or service accounts. A future dedicated OSC
+		// ServiceAccount may coexist with this entry; remove it only once no
+		// supported OSC version still relies on this identity.
+		"system:serviceaccount:openshift-sandboxed-containers-operator:default",
 	}
 	ceeGroup = "system:serviceaccounts:openshift-backplane-cee"
 
