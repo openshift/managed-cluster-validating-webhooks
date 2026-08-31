@@ -50,7 +50,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 	const (
 		namespaceName         = "openshift-validation-webhook"
 		serviceName           = "validation-webhook"
-		daemonsetName         = "validation-webhook"
+		deploymentName        = "validation-webhook"
 		configMapName         = "webhook-cert"
 		secretName            = "webhook-cert"
 		testNsName            = "osde2e-temp-ns"
@@ -131,14 +131,12 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		err = client.Get(ctx, serviceName, namespaceName, &v1.Service{})
 		Expect(err).ToNot(HaveOccurred())
 
-		By("checking the daemonset exists")
-		ds := &appsv1.DaemonSet{ObjectMeta: metav1.ObjectMeta{Name: daemonsetName, Namespace: namespaceName}}
-		err = wait.For(conditions.New(client.Resources).ResourceMatch(ds, func(object k8s.Object) bool {
-			d := object.(*appsv1.DaemonSet)
-			desiredNumScheduled := d.Status.DesiredNumberScheduled
-			return d.Status.CurrentNumberScheduled == desiredNumScheduled &&
-				d.Status.NumberReady == desiredNumScheduled &&
-				d.Status.NumberAvailable == desiredNumScheduled
+		By("checking the deployment exists and is ready")
+		dep := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: deploymentName, Namespace: namespaceName}}
+		err = wait.For(conditions.New(client.Resources).ResourceMatch(dep, func(object k8s.Object) bool {
+			d := object.(*appsv1.Deployment)
+			return d.Status.ReadyReplicas > 0 &&
+				d.Status.ReadyReplicas == d.Status.Replicas
 		}))
 		Expect(err).ToNot(HaveOccurred())
 	})
