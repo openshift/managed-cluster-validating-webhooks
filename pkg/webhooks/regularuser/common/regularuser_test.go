@@ -272,6 +272,44 @@ func TestMachineConfig(t *testing.T) {
 			operation:       admissionv1.Create,
 			shouldBeAllowed: false,
 		},
+		{
+			// OSC operator uses the `default` SA in the fixed
+			// openshift-sandboxed-containers-operator namespace (ROSAENG-61186).
+			testID:          "machineconfig-osc-serviceaccount",
+			targetResource:  "machineconfigs",
+			targetKind:      "MachineConfig",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
+			username:        "system:serviceaccount:openshift-sandboxed-containers-operator:default",
+			userGroups:      []string{"system:authenticated", "system:serviceaccounts", "system:serviceaccounts:openshift-sandboxed-containers-operator"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: true,
+		},
+		{
+			// The exception is scoped to the exact identity: the same `default` SA
+			// in a different namespace must remain denied.
+			testID:          "machineconfig-osc-serviceaccount-wrong-namespace",
+			targetResource:  "machineconfigs",
+			targetKind:      "MachineConfig",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
+			username:        "system:serviceaccount:some-other-namespace:default",
+			userGroups:      []string{"system:authenticated", "system:serviceaccounts", "system:serviceaccounts:some-other-namespace"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
+		{
+			// A different SA within the OSC namespace must remain denied.
+			testID:          "machineconfig-osc-serviceaccount-wrong-sa",
+			targetResource:  "machineconfigs",
+			targetKind:      "MachineConfig",
+			targetVersion:   "v1",
+			targetGroup:     "machineconfiguration.openshift.io",
+			username:        "system:serviceaccount:openshift-sandboxed-containers-operator:some-other-sa",
+			userGroups:      []string{"system:authenticated", "system:serviceaccounts", "system:serviceaccounts:openshift-sandboxed-containers-operator"},
+			operation:       admissionv1.Create,
+			shouldBeAllowed: false,
+		},
 	}
 	runRegularuserTests(t, tests)
 }
