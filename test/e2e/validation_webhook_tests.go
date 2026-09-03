@@ -131,13 +131,20 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		err = client.Get(ctx, serviceName, namespaceName, &v1.Service{})
 		Expect(err).ToNot(HaveOccurred())
 
-		By("checking the deployment exists and is ready")
-		dep := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: deploymentName, Namespace: namespaceName}}
-		err = wait.For(conditions.New(client.Resources).ResourceMatch(dep, func(object k8s.Object) bool {
-			d := object.(*appsv1.Deployment)
-			return d.Status.ReadyReplicas > 0 &&
-				d.Status.ReadyReplicas == d.Status.Replicas
-		}))
+		By("checking the workload (deployment or daemonset) exists and is ready")
+		// Classic ROSA STS clusters deploy MCVW as a DaemonSet via SelectorSyncSet;
+		// HCP and PKO-installed clusters use a Deployment. Accept either.
+		err = wait.For(func(ctx context.Context) (bool, error) {
+			dep := &appsv1.Deployment{}
+			if getErr := client.Get(ctx, deploymentName, namespaceName, dep); getErr == nil {
+				return dep.Status.ReadyReplicas > 0 && dep.Status.ReadyReplicas == dep.Status.Replicas, nil
+			}
+			ds := &appsv1.DaemonSet{}
+			if getErr := client.Get(ctx, deploymentName, namespaceName, ds); getErr == nil {
+				return ds.Status.NumberReady > 0, nil
+			}
+			return false, nil
+		})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
