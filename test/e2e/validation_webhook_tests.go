@@ -68,6 +68,73 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		}))
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
 
+		// Pre-flight: verify dedicated-admins RBAC is working at cluster level.
+		// This catches broken RBAC early (seconds) instead of timing out the
+		// 5-minute namespace-level probe, which would cascade-skip 18+ tests.
+		By("pre-flight: checking dedicated-admins RBAC is working at cluster level")
+		sarGVR := schema.GroupVersionResource{
+			Group:    "authorization.k8s.io",
+			Version:  "v1",
+			Resource: "subjectaccessreviews",
+		}
+		sar := &unstructured.Unstructured{}
+		sar.SetUnstructuredContent(map[string]interface{}{
+			"apiVersion": "authorization.k8s.io/v1",
+			"kind":       "SubjectAccessReview",
+			"spec": map[string]interface{}{
+				"user":   "test-user@redhat.com",
+				"groups": []interface{}{"dedicated-admins", "system:authenticated"},
+				"resourceAttributes": map[string]interface{}{
+					"verb":      "create",
+					"resource":  "configmaps",
+					"namespace": "default",
+				},
+			},
+		})
+		preflightCtx, preflightCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer preflightCancel()
+		sarResult, sarErr := dynamicClient.Resource(sarGVR).Create(preflightCtx, sar, metav1.CreateOptions{})
+		if sarErr != nil {
+			fmt.Fprintf(GinkgoWriter, "WARNING: SubjectAccessReview pre-flight check failed: %v (continuing with namespace-level check)\n", sarErr)
+		} else {
+			allowed, _, nestedErr := unstructured.NestedBool(sarResult.Object, "status", "allowed")
+			if nestedErr != nil {
+				fmt.Fprintf(GinkgoWriter, "WARNING: failed to decode SAR .status.allowed: %v (continuing with namespace-level check)\n", nestedErr)
+			} else if !allowed {
+				reason, _, _ := unstructured.NestedString(sarResult.Object, "status", "reason")
+				fmt.Fprintf(GinkgoWriter, "\n=== RBAC Pre-flight Check Failed ===\n")
+				fmt.Fprintf(GinkgoWriter, "SubjectAccessReview: dedicated-admins cannot create configmaps in 'default' namespace\n")
+				if reason != "" {
+					fmt.Fprintf(GinkgoWriter, "Reason: %s\n", reason)
+				}
+				// Dump ClusterRoleBindings containing "dedicated-admin" for debugging
+				crbGVR := schema.GroupVersionResource{
+					Group:    "rbac.authorization.k8s.io",
+					Version:  "v1",
+					Resource: "clusterrolebindings",
+				}
+				crbList, listErr := dynamicClient.Resource(crbGVR).List(preflightCtx, metav1.ListOptions{})
+				if listErr != nil {
+					fmt.Fprintf(GinkgoWriter, "Failed to list ClusterRoleBindings: %v\n", listErr)
+				} else {
+					fmt.Fprintf(GinkgoWriter, "ClusterRoleBindings containing 'dedicated-admin':\n")
+					found := false
+					for _, crb := range crbList.Items {
+						if strings.Contains(crb.GetName(), "dedicated-admin") {
+							found = true
+							fmt.Fprintf(GinkgoWriter, "  - %s (roleRef: %v)\n", crb.GetName(), crb.Object["roleRef"])
+						}
+					}
+					if !found {
+						fmt.Fprintf(GinkgoWriter, "  (none found — rbac-permissions-operator may not be running)\n")
+					}
+				}
+				fmt.Fprintf(GinkgoWriter, "=== End RBAC Pre-flight Check ===\n\n")
+				Skip("Cluster does not have working dedicated-admins RBAC — skipping (likely a lease pool issue, not a webhook test failure)")
+			}
+			fmt.Fprintf(GinkgoWriter, "Pre-flight check passed: dedicated-admins can create configmaps in 'default' namespace\n")
+		}
+
 		By("waiting for namespace permissions to be ready")
 		probe := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "ns-ready-probe", Namespace: ns}}
 		var lastErr error
