@@ -5,6 +5,7 @@ package osde2etests
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -69,23 +70,42 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 
 		By("waiting for namespace permissions to be ready")
 		probe := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "ns-ready-probe", Namespace: ns}}
-		deadline := time.Now().Add(120 * time.Second)
-		for {
-			attemptCtx, attemptCancel := context.WithTimeout(context.Background(), 10*time.Second)
-			createErr := dedicatedAdmink8s.Create(attemptCtx, probe)
-			attemptCancel()
-			if createErr == nil {
-				_ = dedicatedAdmink8s.Delete(context.Background(), probe)
-				break
+		var lastErr error
+
+		// Log RBAC diagnostics if the permission probe times out
+		defer func() {
+			if lastErr != nil {
+				fmt.Fprintf(GinkgoWriter, "\n=== RBAC Diagnostic for namespace %s ===\n", ns)
+				fmt.Fprintf(GinkgoWriter, "Last probe error: %v\n", lastErr)
+				rbGVR := schema.GroupVersionResource{
+					Group:    "rbac.authorization.k8s.io",
+					Version:  "v1",
+					Resource: "rolebindings",
+				}
+				rbList, listErr := dynamicClient.Resource(rbGVR).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
+				if listErr != nil {
+					fmt.Fprintf(GinkgoWriter, "Failed to list RoleBindings: %v\n", listErr)
+				} else {
+					fmt.Fprintf(GinkgoWriter, "RoleBindings in namespace %s (%d total):\n", ns, len(rbList.Items))
+					for _, rb := range rbList.Items {
+						fmt.Fprintf(GinkgoWriter, "  - %s (roleRef: %v)\n", rb.GetName(), rb.Object["roleRef"])
+					}
+				}
+				fmt.Fprintf(GinkgoWriter, "=== End RBAC Diagnostic ===\n\n")
 			}
-			if time.Now().After(deadline) {
-				Expect(createErr).ShouldNot(HaveOccurred(), "Timed out waiting for namespace permissions")
-			}
-			if !errors.IsForbidden(createErr) && !strings.Contains(createErr.Error(), "context deadline exceeded") {
-				Expect(createErr).ShouldNot(HaveOccurred(), "Unexpected error probing namespace readiness")
-			}
-			time.Sleep(2 * time.Second)
-		}
+		}()
+
+		Eventually(func() error {
+			attemptCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			lastErr = dedicatedAdmink8s.Create(attemptCtx, probe)
+			return lastErr
+		}, 5*time.Minute, 5*time.Second).Should(Succeed(),
+			"timed out waiting for dedicated-admin permissions in namespace %s", ns)
+
+		// Probe succeeded — clean up and clear lastErr so defer skips diagnostics
+		_ = dedicatedAdmink8s.Delete(context.TODO(), probe)
+		lastErr = nil
 	}
 
 	deleteNS := func(ns *v1.Namespace) {
