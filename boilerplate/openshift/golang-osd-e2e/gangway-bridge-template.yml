@@ -103,7 +103,9 @@ objects:
                         sleep "$retry_after"
                         RATE_LIMITED_WAITED=1
                       else
-                        log "Rate limited (429) — no valid Retry-After header"
+                        log "Rate limited (429) — no valid Retry-After header, using default 60s backoff"
+                        sleep 60
+                        RATE_LIMITED_WAITED=1
                       fi
                       return 1   # falls through to outer retry with backoff
                     fi
