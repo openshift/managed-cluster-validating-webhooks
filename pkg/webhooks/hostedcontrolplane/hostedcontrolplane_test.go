@@ -23,6 +23,30 @@ func TestHostedControlPlaneAuthorized(t *testing.T) {
 			shouldBeAllowed: true,
 		},
 		{
+			name:            "Allowed short-name service account can delete hostedcontrolplane",
+			username:        "system:serviceaccount:openshift-cluster-api:cluster-api",
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: true,
+		},
+		{
+			name:            "Short name without service account username format cannot delete hostedcontrolplane",
+			username:        "oidc:cluster-api",
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			name:            "Short name with an empty namespace cannot delete hostedcontrolplane",
+			username:        "system:serviceaccount::cluster-api",
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
+			name:            "Short name with extra username components cannot delete hostedcontrolplane",
+			username:        "system:serviceaccount:openshift-cluster-api:cluster-api:extra",
+			operation:       admissionv1.Delete,
+			shouldBeAllowed: false,
+		},
+		{
 			name:            "Random user cannot delete hostedcontrolplane",
 			username:        "unknown-user",
 			operation:       admissionv1.Delete,
