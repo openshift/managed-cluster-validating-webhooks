@@ -152,6 +152,198 @@ func TestFirstBlock(t *testing.T) {
 	runRegularuserTests(t, tests)
 }
 
+func TestControlPlaneMachineSetInstanceTypeUpdates(t *testing.T) {
+	tests := []struct {
+		name            string
+		operation       admissionv1.Operation
+		groups          []string
+		oldInstanceType string
+		newInstanceType string
+		oldStrategy     string
+		newStrategy     string
+		oldMetadata     string
+		newMetadata     string
+		shouldAllow     bool
+	}{
+		{
+			name:            "dedicated-admin-can-move-to-equivalent-m6i-type",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.2xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     true,
+		},
+		{
+			name:            "cluster-admin-can-upsize",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "cluster-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     true,
+		},
+		{
+			name:            "cluster-admin-cannot-update-from-metal-type",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "cluster-admins"},
+			oldInstanceType: "m5.metal",
+			newInstanceType: "m6i.24xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     false,
+		},
+		{
+			name:            "cluster-admin-cannot-update-to-metal-type",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "cluster-admins"},
+			oldInstanceType: "m5.24xlarge",
+			newInstanceType: "m6i.metal",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     false,
+		},
+		{
+			name:            "dedicated-admin-cannot-downsize",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m6i.2xlarge",
+			newInstanceType: "m5.large",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     false,
+		},
+		{
+			name:            "dedicated-admin-cannot-use-m5-variant",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m5a.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     false,
+		},
+		{
+			name:            "regular-user-cannot-update-instance-type",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     false,
+		},
+		{
+			name:            "dedicated-admin-cannot-change-another-field",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "OnDelete",
+			shouldAllow:     false,
+		},
+		{
+			name:            "dedicated-admin-cannot-add-finalizer",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			newMetadata:     `, "finalizers": ["example.com/protect"]`,
+			shouldAllow:     false,
+		},
+		{
+			name:            "dedicated-admin-can-update-with-api-managed-metadata-changes",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			oldMetadata:     `, "generation": 1, "resourceVersion": "1"`,
+			newMetadata:     `, "generation": 2, "resourceVersion": "2"`,
+			shouldAllow:     true,
+		},
+		{
+			name:            "dedicated-admin-can-update-with-managed-fields-changes",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			oldMetadata:     `, "managedFields": [{"manager": "old-manager"}]`,
+			newMetadata:     `, "managedFields": [{"manager": "new-manager"}]`,
+			shouldAllow:     true,
+		},
+		{
+			name:            "dedicated-admin-cannot-reset-managed-fields",
+			operation:       admissionv1.Update,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			newMetadata:     `, "managedFields": [{}]`,
+			shouldAllow:     false,
+		},
+		{
+			name:            "dedicated-admin-cannot-create-control-plane-machine-set",
+			operation:       admissionv1.Create,
+			groups:          []string{"system:authenticated", "dedicated-admins"},
+			oldInstanceType: "m5.xlarge",
+			newInstanceType: "m6i.2xlarge",
+			oldStrategy:     "RollingUpdate",
+			newStrategy:     "RollingUpdate",
+			shouldAllow:     false,
+		},
+	}
+
+	gvk := metav1.GroupVersionKind{Group: machineGroup, Version: "v1", Kind: controlPlaneMachineSetKind}
+	gvr := metav1.GroupVersionResource{Group: machineGroup, Version: "v1", Resource: "controlplanemachinesets"}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			hook := NewWebhook()
+			object := controlPlaneMachineSetObject(test.newInstanceType, test.newStrategy, test.newMetadata)
+			oldObject := controlPlaneMachineSetObject(test.oldInstanceType, test.oldStrategy, test.oldMetadata)
+			request, err := testutils.CreateHTTPRequest(hook.GetURI(), test.name, gvk, gvr, test.operation, "customer-admin", test.groups, "openshift-machine-api", object, oldObject)
+			if err != nil {
+				t.Fatalf("creating request: %v", err)
+			}
+
+			response, err := testutils.SendHTTPRequest(request, hook)
+			if err != nil {
+				t.Fatalf("sending request: %v", err)
+			}
+			if response.Allowed != test.shouldAllow {
+				t.Fatalf("allowed = %t, want %t", response.Allowed, test.shouldAllow)
+			}
+		})
+	}
+}
+
+func controlPlaneMachineSetObject(instanceType, strategy, metadata string) *runtime.RawExtension {
+	return &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
+"apiVersion": "machine.openshift.io/v1",
+"kind": "ControlPlaneMachineSet",
+"metadata": {"name": "cluster", "namespace": "openshift-machine-api"%s},
+"spec": {
+  "strategy": {"type": %q},
+  "template": {
+    "machineType": "machines_v1beta1_machine_openshift_io",
+    "machines_v1beta1_machine_openshift_io": {
+      "metadata": {"labels": {"machine.openshift.io/cluster-api-machine-role": "master"}},
+      "spec": {"providerSpec": {"value": {"ami": "ami-123", "instanceType": %q}}}
+    }
+  }
+}
+}`, metadata, strategy, instanceType))}
+}
+
 // TestAutoScaling checks specific cases for autoscaling CRDs
 func TestAutoScaling(t *testing.T) {
 	tests := []regularuserTests{

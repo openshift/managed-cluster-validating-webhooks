@@ -1,8 +1,10 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -27,19 +29,21 @@ import (
 // in the 'osd' package.
 
 const (
-	WebhookName           = "regular-user-validation"
-	docString             = `Managed OpenShift customers may not manage any objects in the following APIGroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects.`
-	mustGatherKind        = "MustGather"
-	mustGatherGroup       = "managed.openshift.io"
-	clusterVersionKind    = "ClusterVersion"
-	clusterVersionGroup   = "config.openshift.io"
-	customDomainKind      = "CustomDomain"
-	customDomainGroup     = "managed.openshift.io"
-	netNamespaceKind      = "NetNamespace"
-	netNamespaceGroup     = "network.openshift.io"
-	machineConfigKind     = "MachineConfig"
-	machineConfigPoolKind = "MachineConfigPool"
-	machineConfigGroup    = "machineconfiguration.openshift.io"
+	WebhookName                = "regular-user-validation"
+	docString                  = `Managed OpenShift customers may not manage any objects in the following APIGroups %s, nor may Managed OpenShift customers alter the APIServer, KubeAPIServer, OpenShiftAPIServer, ClusterVersion, Proxy or SubjectPermission objects. Cluster administrators and dedicated administrators may update a ControlPlaneMachineSet AWS instance type from a non-metal m5 or m6i type to an equivalent or larger non-metal m5 or m6i type.`
+	mustGatherKind             = "MustGather"
+	mustGatherGroup            = "managed.openshift.io"
+	clusterVersionKind         = "ClusterVersion"
+	clusterVersionGroup        = "config.openshift.io"
+	customDomainKind           = "CustomDomain"
+	customDomainGroup          = "managed.openshift.io"
+	controlPlaneMachineSetKind = "ControlPlaneMachineSet"
+	machineGroup               = "machine.openshift.io"
+	netNamespaceKind           = "NetNamespace"
+	netNamespaceGroup          = "network.openshift.io"
+	machineConfigKind          = "MachineConfig"
+	machineConfigPoolKind      = "MachineConfigPool"
+	machineConfigGroup         = "machineconfiguration.openshift.io"
 )
 
 var (
@@ -64,7 +68,26 @@ var (
 		// supported OSC version still relies on this identity.
 		"system:serviceaccount:openshift-sandboxed-containers-operator:default",
 	}
-	ceeGroup = "system:serviceaccounts:openshift-backplane-cee"
+	ceeGroup                                 = "system:serviceaccounts:openshift-backplane-cee"
+	controlPlaneMachineSetInstanceCapacities = map[string]instanceCapacity{
+		"m5.large":     {vCPU: 2, memoryGiB: 8},
+		"m5.xlarge":    {vCPU: 4, memoryGiB: 16},
+		"m5.2xlarge":   {vCPU: 8, memoryGiB: 32},
+		"m5.4xlarge":   {vCPU: 16, memoryGiB: 64},
+		"m5.8xlarge":   {vCPU: 32, memoryGiB: 128},
+		"m5.12xlarge":  {vCPU: 48, memoryGiB: 192},
+		"m5.16xlarge":  {vCPU: 64, memoryGiB: 256},
+		"m5.24xlarge":  {vCPU: 96, memoryGiB: 384},
+		"m6i.large":    {vCPU: 2, memoryGiB: 8},
+		"m6i.xlarge":   {vCPU: 4, memoryGiB: 16},
+		"m6i.2xlarge":  {vCPU: 8, memoryGiB: 32},
+		"m6i.4xlarge":  {vCPU: 16, memoryGiB: 64},
+		"m6i.8xlarge":  {vCPU: 32, memoryGiB: 128},
+		"m6i.12xlarge": {vCPU: 48, memoryGiB: 192},
+		"m6i.16xlarge": {vCPU: 64, memoryGiB: 256},
+		"m6i.24xlarge": {vCPU: 96, memoryGiB: 384},
+		"m6i.32xlarge": {vCPU: 128, memoryGiB: 512},
+	}
 
 	scope = admissionregv1.AllScopes
 	rules = []admissionregv1.RuleWithOperations{
@@ -156,6 +179,11 @@ var (
 	log = logf.Log.WithName(WebhookName)
 )
 
+type instanceCapacity struct {
+	vCPU      int
+	memoryGiB int
+}
+
 // RegularuserWebhook protects various objects from unauthorized manipulation
 type RegularuserWebhook struct {
 	s runtime.Scheme
@@ -233,6 +261,10 @@ func (s *RegularuserWebhook) authorized(request admissionctl.Request) admissionc
 		ret = admissionctl.Denied("Unauthenticated")
 		ret.UID = request.AdmissionRequest.UID
 		return ret
+	}
+
+	if isControlPlaneMachineSetInstanceTypeUpdateAllowed(request) {
+		return utils.WebhookResponse(request, true, "ControlPlaneMachineSet instance type update is authorized")
 	}
 
 	// Check MachineConfig resources first - only cluster-admins group allowed
@@ -322,6 +354,120 @@ func isMustGatherAuthorized(request admissionctl.Request) bool {
 func isCustomDomainAuthorized(request admissionctl.Request) bool {
 	return slices.Contains(request.UserInfo.Groups, "cluster-admins") ||
 		slices.Contains(request.UserInfo.Groups, "dedicated-admins")
+}
+
+// isControlPlaneMachineSetInstanceTypeUpdateAllowed permits only supported CPMS instance type increases.
+func isControlPlaneMachineSetInstanceTypeUpdateAllowed(request admissionctl.Request) bool {
+	if request.Operation != admissionv1.Update ||
+		!utils.RequestMatchesGroupKind(request, controlPlaneMachineSetKind, machineGroup) ||
+		(!slices.Contains(request.UserInfo.Groups, "cluster-admins") && !slices.Contains(request.UserInfo.Groups, "dedicated-admins")) {
+		return false
+	}
+
+	oldObject := map[string]any{}
+	newObject := map[string]any{}
+	if json.Unmarshal(request.OldObject.Raw, &oldObject) != nil || json.Unmarshal(request.Object.Raw, &newObject) != nil {
+		return false
+	}
+
+	oldInstanceType, oldCapacity, ok := removeInstanceType(oldObject)
+	if !ok {
+		return false
+	}
+	newInstanceType, newCapacity, ok := removeInstanceType(newObject)
+	if !ok || oldInstanceType == newInstanceType {
+		return false
+	}
+	if isManagedFieldsReset(newObject) {
+		return false
+	}
+	removeAPIServerManagedMetadata(oldObject)
+	removeAPIServerManagedMetadata(newObject)
+
+	return newCapacity.vCPU >= oldCapacity.vCPU &&
+		newCapacity.memoryGiB >= oldCapacity.memoryGiB &&
+		reflect.DeepEqual(oldObject, newObject)
+}
+
+// removeInstanceType extracts the supported AWS instance type and removes it before object comparison.
+func removeInstanceType(object map[string]any) (string, instanceCapacity, bool) {
+	spec, ok := object["spec"].(map[string]any)
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+	template, ok := spec["template"].(map[string]any)
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+	machine, ok := template["machines_v1beta1_machine_openshift_io"].(map[string]any)
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+	machineSpec, ok := machine["spec"].(map[string]any)
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+	providerSpec, ok := machineSpec["providerSpec"].(map[string]any)
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+	providerSpecValue, ok := providerSpec["value"].(map[string]any)
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+	instanceType, ok := providerSpecValue["instanceType"].(string)
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+	capacity, ok := controlPlaneMachineSetInstanceCapacities[instanceType]
+	if !ok {
+		return "", instanceCapacity{}, false
+	}
+
+	delete(providerSpecValue, "instanceType")
+	return instanceType, capacity, true
+}
+
+// isManagedFieldsReset reports whether an update asks the API server to reset field ownership.
+func isManagedFieldsReset(object map[string]any) bool {
+	metadata, ok := object["metadata"].(map[string]any)
+	if !ok {
+		return false
+	}
+
+	managedFields, ok := metadata["managedFields"].([]any)
+	if !ok {
+		return false
+	}
+	if len(managedFields) == 0 {
+		return true
+	}
+	if len(managedFields) != 1 {
+		return false
+	}
+
+	entry, ok := managedFields[0].(map[string]any)
+	return ok && len(entry) == 0
+}
+
+// removeAPIServerManagedMetadata removes metadata fields that may change during an update.
+func removeAPIServerManagedMetadata(object map[string]any) {
+	metadata, ok := object["metadata"].(map[string]any)
+	if !ok {
+		return
+	}
+
+	for _, field := range []string{
+		"creationTimestamp",
+		"deletionGracePeriodSeconds",
+		"deletionTimestamp",
+		"generation",
+		"managedFields",
+		"resourceVersion",
+		"selfLink",
+	} {
+		delete(metadata, field)
+	}
 }
 
 // isNetNamespaceAuthorized check if request is authorized for NetNamespace CR
