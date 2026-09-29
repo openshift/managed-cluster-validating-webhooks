@@ -1,12 +1,32 @@
 package utils
 
 import (
+	"regexp"
 	"testing"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	admissionctl "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
+
+func TestPrivilegedServiceAccountGroups(t *testing.T) {
+	pattern := regexp.MustCompile(PrivilegedServiceAccountGroups)
+	for _, test := range []struct {
+		group   string
+		allowed bool
+	}{
+		{group: "system:serviceaccounts:opendatahub", allowed: true},
+		{group: "system:serviceaccounts:opendatahub-other", allowed: false},
+		{group: "system:serviceaccounts:other-opendatahub", allowed: false},
+		{group: "system:serviceaccounts:redhat-ods-operator", allowed: true},
+	} {
+		t.Run(test.group, func(t *testing.T) {
+			if actual := pattern.MatchString(test.group); actual != test.allowed {
+				t.Errorf("group %q: expected allowed %v, got %v", test.group, test.allowed, actual)
+			}
+		})
+	}
+}
 
 func TestRequestMatchesGroupKind(t *testing.T) {
 	tests := []struct {
