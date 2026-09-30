@@ -88,6 +88,12 @@ func (t crudTest) rhoaiServiceAccount() crudTest {
 	return t
 }
 
+func (t crudTest) opendatahubServiceAccount() crudTest {
+	t.testData.username = "system:serviceaccount:opendatahub:operator"
+	t.testData.userGroups = []string{"system:serviceaccounts:opendatahub", "system:authenticated", "system:authenticated:oauth"}
+	return t
+}
+
 func (t crudTest) namespace(namespace string) crudTest {
 	t.testData.targetNamespace = namespace
 	return t
@@ -234,6 +240,8 @@ func TestUsers(t *testing.T) {
 		namespace("openshift-kube-apiserver").allowedServiceAccount().shouldBeAllowedCRUD()...)
 	tests = append(tests, newCrudTest("serviceaccount-managed-namespace-redhat-rhoam-observability").
 		namespace("redhat-rhoam-observability").redhatServiceAccount().shouldBeAllowedCRUD()...)
+	tests = append(tests, newCrudTest("opendatahub-sa-managed-namespace").
+		namespace("openshift-kube-apiserver").opendatahubServiceAccount().shouldBeAllowedCRUD()...)
 
 	tests = append(tests, newCrudTest("regular-user-openshift-ingress-no-podselector").
 		namespace("openshift-ingress").regularUser().shouldBeDeniedCRUD()...)
@@ -259,6 +267,10 @@ func TestUsers(t *testing.T) {
 		namespace("openshift-ingress").
 		podSelector("app", "kube-auth-proxy").
 		rhoaiServiceAccount().shouldBeAllowedCRUD()...)
+	tests = append(tests, newCrudTest("opendatahub-sa-openshift-ingress-no-ingress-label").
+		namespace("openshift-ingress").
+		podSelector("app", "kube-auth-proxy").
+		opendatahubServiceAccount().shouldBeAllowedCRUD()...)
 	tests = append(tests, newCrudTest("privileged-sa-openshift-ingress-no-ingress-label").
 		namespace("openshift-ingress").
 		podSelector("app", "payload-processing").
