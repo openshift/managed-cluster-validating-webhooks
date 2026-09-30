@@ -68,10 +68,10 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		}))
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
 
-		// Pre-flight: verify dedicated-admins RBAC is working at cluster level.
+		// Pre-flight: verify dedicated-admins cluster-level RBAC is working.
 		// This catches broken RBAC early (seconds) instead of timing out the
 		// 5-minute namespace-level probe, which would cascade-skip 18+ tests.
-		By("pre-flight: checking dedicated-admins RBAC is working at cluster level")
+		By("pre-flight: checking dedicated-admins can create SubjectAccessReviews")
 		sarGVR := schema.GroupVersionResource{
 			Group:    "authorization.k8s.io",
 			Version:  "v1",
@@ -85,9 +85,9 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				"user":   "test-user@redhat.com",
 				"groups": []interface{}{"dedicated-admins", "system:authenticated"},
 				"resourceAttributes": map[string]interface{}{
-					"verb":      "create",
-					"resource":  "configmaps",
-					"namespace": "default",
+					"group":    "authorization.k8s.io",
+					"resource": "subjectaccessreviews",
+					"verb":     "create",
 				},
 			},
 		})
@@ -103,7 +103,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			} else if !allowed {
 				reason, _, _ := unstructured.NestedString(sarResult.Object, "status", "reason")
 				fmt.Fprintf(GinkgoWriter, "\n=== RBAC Pre-flight Check Failed ===\n")
-				fmt.Fprintf(GinkgoWriter, "SubjectAccessReview: dedicated-admins cannot create configmaps in 'default' namespace\n")
+				fmt.Fprintf(GinkgoWriter, "SubjectAccessReview: dedicated-admins cannot create SubjectAccessReviews\n")
 				if reason != "" {
 					fmt.Fprintf(GinkgoWriter, "Reason: %s\n", reason)
 				}
@@ -132,7 +132,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				fmt.Fprintf(GinkgoWriter, "=== End RBAC Pre-flight Check ===\n\n")
 				Skip("Cluster does not have working dedicated-admins RBAC — skipping (likely a lease pool issue, not a webhook test failure)")
 			}
-			fmt.Fprintf(GinkgoWriter, "Pre-flight check passed: dedicated-admins can create configmaps in 'default' namespace\n")
+			fmt.Fprintf(GinkgoWriter, "Pre-flight check passed: dedicated-admins can create SubjectAccessReviews\n")
 		}
 
 		By("waiting for namespace permissions to be ready")
@@ -434,6 +434,14 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		// TODO: test "system:serviceaccounts:openshift-backplane-cee" group can use NetNamespace CR
 
 		It("allows dedicated-admin to manage CustomDomain CRs", func(ctx context.Context) {
+			crdClient, err := apiextensionsclientset.NewForConfig(clusterAdmink8s.GetConfig())
+			Expect(err).ShouldNot(HaveOccurred(), "Unable to create CRD client")
+			_, err = crdClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, "customdomains.managed.openshift.io", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				Skip("Skipping test: CustomDomain CRD not found in cluster")
+			}
+			Expect(err).NotTo(HaveOccurred(), "getting CustomDomain CRD")
+
 			dynamicClient, err := dynamic.NewForConfig(dedicatedAdmink8s.GetConfig())
 			Expect(err).ShouldNot(HaveOccurred(), "failed creating the dynamic client: %w", err)
 
