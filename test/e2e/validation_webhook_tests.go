@@ -15,6 +15,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	securityv1 "github.com/openshift/api/security/v1"
+	operatorconfig "github.com/openshift/managed-cluster-validating-webhooks/config"
 	"github.com/openshift/osde2e-common/pkg/clients/openshift"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -44,6 +45,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		dedicatedAdmink8s  *openshift.Client
 		userk8s            *openshift.Client
 		clusterAdmink8s    *openshift.Client
+		clusterAdminsK8s   *openshift.Client
 		unauthenticatedk8s *openshift.Client
 		dynamicClient      dynamic.Interface
 		testNamespace      *v1.Namespace
@@ -68,10 +70,10 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		}))
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to create test namespace")
 
-		// Pre-flight: verify dedicated-admins RBAC is working at cluster level.
+		// Pre-flight: verify dedicated-admins cluster-level RBAC is working.
 		// This catches broken RBAC early (seconds) instead of timing out the
 		// 5-minute namespace-level probe, which would cascade-skip 18+ tests.
-		By("pre-flight: checking dedicated-admins RBAC is working at cluster level")
+		By("pre-flight: checking dedicated-admins can create SubjectAccessReviews")
 		sarGVR := schema.GroupVersionResource{
 			Group:    "authorization.k8s.io",
 			Version:  "v1",
@@ -85,9 +87,9 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				"user":   "test-user@redhat.com",
 				"groups": []interface{}{"dedicated-admins", "system:authenticated"},
 				"resourceAttributes": map[string]interface{}{
-					"verb":      "create",
-					"resource":  "configmaps",
-					"namespace": "default",
+					"group":    "authorization.k8s.io",
+					"resource": "subjectaccessreviews",
+					"verb":     "create",
 				},
 			},
 		})
@@ -103,7 +105,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			} else if !allowed {
 				reason, _, _ := unstructured.NestedString(sarResult.Object, "status", "reason")
 				fmt.Fprintf(GinkgoWriter, "\n=== RBAC Pre-flight Check Failed ===\n")
-				fmt.Fprintf(GinkgoWriter, "SubjectAccessReview: dedicated-admins cannot create configmaps in 'default' namespace\n")
+				fmt.Fprintf(GinkgoWriter, "SubjectAccessReview: dedicated-admins cannot create SubjectAccessReviews\n")
 				if reason != "" {
 					fmt.Fprintf(GinkgoWriter, "Reason: %s\n", reason)
 				}
@@ -132,7 +134,7 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 				fmt.Fprintf(GinkgoWriter, "=== End RBAC Pre-flight Check ===\n\n")
 				Skip("Cluster does not have working dedicated-admins RBAC — skipping (likely a lease pool issue, not a webhook test failure)")
 			}
-			fmt.Fprintf(GinkgoWriter, "Pre-flight check passed: dedicated-admins can create configmaps in 'default' namespace\n")
+			fmt.Fprintf(GinkgoWriter, "Pre-flight check passed: dedicated-admins can create SubjectAccessReviews\n")
 		}
 
 		By("waiting for namespace permissions to be ready")
@@ -193,6 +195,8 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to setup impersonated dedicated admin client")
 		clusterAdmink8s, err = client.Impersonate("system:admin", "cluster-admins")
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to setup impersonated cluster admin client")
+		clusterAdminsK8s, err = client.Impersonate("cluster-admin@redhat.com", "cluster-admins")
+		Expect(err).ShouldNot(HaveOccurred(), "Unable to setup impersonated cluster-admins client")
 		userk8s, err = client.Impersonate("majora", "system:authenticated")
 		Expect(err).ShouldNot(HaveOccurred(), "Unable to setup impersonated user client")
 		unauthenticatedk8s, err = client.Impersonate("system:unauthenticated")
@@ -417,6 +421,46 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred(), "Expected to delete ConfigMap in test namespace")
 		})
 
+		It("blocks CPMS instance type updates when the CCS config is absent", func(ctx context.Context) {
+			configMap := &v1.ConfigMap{}
+			err := client.Get(ctx, operatorconfig.ValidationWebhookConfigMapName, namespaceName, configMap)
+			if err == nil {
+				Skip("CCS CPMS resize ConfigMap is present")
+			}
+			Expect(errors.IsNotFound(err)).To(BeTrue(), "getting CCS CPMS resize ConfigMap")
+
+			cpmsClient, err := dynamic.NewForConfig(clusterAdminsK8s.GetConfig())
+			Expect(err).NotTo(HaveOccurred(), "creating cluster-admin CPMS client")
+			controlPlaneMachineSets := cpmsClient.Resource(schema.GroupVersionResource{
+				Group: "machine.openshift.io", Version: "v1", Resource: "controlplanemachinesets",
+			}).Namespace("openshift-machine-api")
+			cpms, err := controlPlaneMachineSets.Get(ctx, "cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				Skip("ControlPlaneMachineSet is not present")
+			}
+			Expect(err).NotTo(HaveOccurred(), "getting ControlPlaneMachineSet")
+
+			instanceTypePath := []string{"spec", "template", "machines_v1beta1_machine_openshift_io", "spec", "providerSpec", "value", "instanceType"}
+			instanceType, found, err := unstructured.NestedString(cpms.Object, instanceTypePath...)
+			Expect(err).NotTo(HaveOccurred(), "getting ControlPlaneMachineSet instance type")
+			Expect(found).To(BeTrue(), "ControlPlaneMachineSet instance type is missing")
+
+			supportedInstanceTypes := map[string]struct{}{
+				"m5.large": {}, "m5.xlarge": {}, "m5.2xlarge": {}, "m5.4xlarge": {}, "m5.8xlarge": {}, "m5.12xlarge": {}, "m5.16xlarge": {}, "m5.24xlarge": {},
+				"m6i.large": {}, "m6i.xlarge": {}, "m6i.2xlarge": {}, "m6i.4xlarge": {}, "m6i.8xlarge": {}, "m6i.12xlarge": {}, "m6i.16xlarge": {}, "m6i.24xlarge": {},
+			}
+			if _, ok := supportedInstanceTypes[instanceType]; !ok {
+				Skip(fmt.Sprintf("ControlPlaneMachineSet instance type %q cannot be validly increased for this test", instanceType))
+			}
+
+			updatedCPMS := cpms.DeepCopy()
+			err = unstructured.SetNestedField(updatedCPMS.Object, "m6i.32xlarge", instanceTypePath...)
+			Expect(err).NotTo(HaveOccurred(), "setting ControlPlaneMachineSet instance type")
+			_, err = controlPlaneMachineSets.Update(ctx, updatedCPMS, metav1.UpdateOptions{DryRun: []string{metav1.DryRunAll}})
+			Expect(errors.IsForbidden(err)).To(BeTrue(), "expected ControlPlaneMachineSet update to be denied")
+			Expect(err.Error()).To(ContainSubstring(`admission webhook "regular-user-validation.managed.openshift.io" denied the request`))
+		})
+
 		It("blocks modifications to nodes", func(ctx context.Context) {
 			var nodes v1.NodeList
 			selectInfraNodes := resources.WithLabelSelector(labels.FormatLabels(map[string]string{"node-role.kubernetes.io": "infra"}))
@@ -434,6 +478,14 @@ var _ = Describe("Managed Cluster Validating Webhooks", Ordered, func() {
 		// TODO: test "system:serviceaccounts:openshift-backplane-cee" group can use NetNamespace CR
 
 		It("allows dedicated-admin to manage CustomDomain CRs", func(ctx context.Context) {
+			crdClient, err := apiextensionsclientset.NewForConfig(clusterAdmink8s.GetConfig())
+			Expect(err).ShouldNot(HaveOccurred(), "Unable to create CRD client")
+			_, err = crdClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, "customdomains.managed.openshift.io", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				Skip("Skipping test: CustomDomain CRD not found in cluster")
+			}
+			Expect(err).NotTo(HaveOccurred(), "getting CustomDomain CRD")
+
 			dynamicClient, err := dynamic.NewForConfig(dedicatedAdmink8s.GetConfig())
 			Expect(err).ShouldNot(HaveOccurred(), "failed creating the dynamic client: %w", err)
 

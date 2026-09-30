@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	templatev1 "github.com/openshift/api/template/v1"
+	operatorconfig "github.com/openshift/managed-cluster-validating-webhooks/config"
 	"github.com/openshift/managed-cluster-validating-webhooks/pkg/syncset"
 	webhooks "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks"
 	utils "github.com/openshift/managed-cluster-validating-webhooks/pkg/webhooks/utils"
@@ -634,6 +635,17 @@ func createDaemonSet() *appsv1.DaemonSet {
 					ServiceAccountName: serviceAccountName,
 					Volumes: []corev1.Volume{
 						{
+							Name: "validation-webhook-config",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: operatorconfig.ValidationWebhookConfigMapName,
+									},
+									Optional: pointer.Bool(true),
+								},
+							},
+						},
+						{
 							Name: "service-certs",
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
@@ -661,6 +673,11 @@ func createDaemonSet() *appsv1.DaemonSet {
 							Name:                     "webhooks",
 							Image:                    "${REGISTRY_IMG}@${IMAGE_DIGEST}",
 							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "validation-webhook-config",
+									MountPath: operatorconfig.ValidationWebhookConfigMount,
+									ReadOnly:  true,
+								},
 								{
 									Name:      "service-certs",
 									MountPath: "/service-certs",

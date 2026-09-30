@@ -17,7 +17,7 @@ import (
 
 const (
 	WebhookName string = "hcpnamespace-validation"
-	docString   string = "Validates HCP namespace deletion operations are only performed by authorized service accounts"
+	docString   string = "Validates that only authorized users and service accounts can delete protected HCP namespaces"
 )
 
 var (
