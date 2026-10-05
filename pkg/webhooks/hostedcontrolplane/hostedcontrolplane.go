@@ -116,7 +116,7 @@ func (s *HostedControlPlaneWebhook) authorized(request admissionctl.Request) adm
 	}
 
 	saName := strings.Split(request.UserInfo.Username, ":")
-	if len(saName) > 0 && slices.Contains(allowedServiceAccountsNames, saName[len(saName)-1]) {
+	if len(saName) == 4 && saName[0] == "system" && saName[1] == "serviceaccount" && saName[2] != "" && slices.Contains(allowedServiceAccountsNames, saName[3]) {
 		ret = admissionctl.Allowed("Service account is authorized to delete HostedControlPlane resources")
 		ret.UID = request.AdmissionRequest.UID
 		return ret

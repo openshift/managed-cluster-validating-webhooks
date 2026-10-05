@@ -200,6 +200,9 @@ objects:
               resources: {}
               terminationMessagePolicy: FallbackToLogsOnError
               volumeMounts:
+              - mountPath: /etc/validation-webhook-config
+                name: validation-webhook-config
+                readOnly: true
               - mountPath: /service-certs
                 name: service-certs
                 readOnly: true
@@ -215,6 +218,10 @@ objects:
             - effect: NoExecute
               key: node-role.kubernetes.io/master
             volumes:
+            - configMap:
+                name: validation-webhook-config
+                optional: true
+              name: validation-webhook-config
             - name: service-certs
               secret:
                 secretName: webhook-cert
