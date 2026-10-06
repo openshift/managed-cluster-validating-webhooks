@@ -120,9 +120,7 @@ objects:
         namespace: openshift-validation-webhook
       spec:
         endpoints:
-        - bearerTokenSecret:
-            key: ""
-          port: metrics
+        - port: metrics
         namespaceSelector:
           matchNames:
           - openshift-validation-webhook
