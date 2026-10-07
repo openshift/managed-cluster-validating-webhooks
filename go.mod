@@ -2,7 +2,7 @@ module github.com/openshift/managed-cluster-validating-webhooks
 
 go 1.26.0
 
-toolchain go1.26.5
+toolchain go1.27.1
 
 require (
 	github.com/evanphx/json-patch v5.9.11+incompatible
@@ -10,7 +10,7 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.44.0
-	github.com/openshift/api v0.0.0-20261005181437-18d5eb0e5ecb
+	github.com/openshift/api v0.0.0-20261006163836-502232e87aad
 	github.com/openshift/cluster-logging-operator v0.0.0-20230328172346-05f4f8be54d5
 	github.com/openshift/hive/apis v0.0.0-20261002161616-a00caa79b98d
 	github.com/openshift/operator-custom-metrics v0.5.1
