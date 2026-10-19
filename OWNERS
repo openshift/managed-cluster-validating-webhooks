@@ -1,8 +1,12 @@
 reviewers:
 - srep-functional-team-thor
 - rosa-staff-engineers
+- rosa-hcp-platform-staff-engineers
+- rosa-hcp-platform-core-team
 
 approvers:
 - tnierman
 - srep-functional-team-thor
 - rosa-staff-engineers
+- rosa-hcp-platform-staff-engineers
+- rosa-hcp-platform-core-team
