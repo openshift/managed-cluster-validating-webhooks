@@ -5,7 +5,7 @@ WORKDIR /opt/app-root/src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOFLAGS=-mod=mod \
+RUN GOOS=linux CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOFLAGS=-mod=mod \
     go build -buildvcs=false -gcflags="all=-trimpath=/opt/app-root/src" -asmflags="all=-trimpath=/opt/app-root/src" -tags="fips_enabled" \
     -o webhooks ./cmd
 
