@@ -10,7 +10,7 @@ RUN GOOS=linux CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOFLAGS=-mod=mod \
     -o webhooks ./cmd
 
 ####
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest
 
 ENV USER_UID=1001 \
     USER_NAME=webhooks
