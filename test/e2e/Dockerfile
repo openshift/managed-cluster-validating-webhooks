@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN  CGO_ENABLED=0 GOFLAGS="-mod=mod" go test ./test/e2e -v -c --tags=osde2e -o /e2e.test
 
-FROM registry.redhat.io/hi/core-runtime:latest
+FROM registry.access.redhat.com/hi/core-runtime:latest-openssl-fips
 COPY --from=builder /e2e.test /e2e.test
 USER 1001
 ENTRYPOINT [ "/e2e.test" ]

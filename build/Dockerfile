@@ -9,8 +9,9 @@ RUN GOOS=linux CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOFLAGS=-mod=mod \
     go build -buildvcs=false -gcflags="all=-trimpath=/opt/app-root/src" -asmflags="all=-trimpath=/opt/app-root/src" -tags="fips_enabled" \
     -o webhooks ./cmd
 
+    
 ####
-FROM registry.redhat.io/hi/core-runtime:latest
+FROM registry.access.redhat.com/hi/core-runtime:latest-openssl-fips
 
 ENV USER_UID=1001 \
     USER_NAME=webhooks
@@ -18,6 +19,8 @@ ENV USER_UID=1001 \
 COPY --from=builder /opt/app-root/src/webhooks /usr/local/bin/
 
 COPY build/bin /usr/local/bin
+
+USER root
 RUN  /usr/local/bin/user_setup
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
